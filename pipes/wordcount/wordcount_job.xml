@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    // Set the binary path on DFS
+    <name>hadoop.pipes.executable</name>
+    <value>bin/cpu-wordcount/cpu-wordcount</value>
+  </property>
+  <property>
+    <name>hadoop.pipes.java.recordreader</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hadoop.pipes.java.recordwriter</name>
+    <value>true</value>
+  </property>
+</configuration>
