@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    // Set the CPU binary path on DFS
+    <name>hadoop.pipes.executable</name>
+    <value>bin/kmeans2D/cpu-kmeans2D</value>
+  </property>
+<!--
+  <property>
+    // Set the GPU binary path on DFS
+    <name>hadoop.pipes.gpu.executable</name>
+    <value>bin/kmeans2D/gpu-kmeans2D</value>
+  </property>
+-->  
+  <property>
+    <name>hadoop.pipes.java.recordreader</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hadoop.pipes.java.recordwriter</name>
+    <value>true</value>
+  </property>
+</configuration>
