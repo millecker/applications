@@ -21,7 +21,7 @@ import org.apache.hama.bsp.KeyValueTextInputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
  
-public class Sum extends BSP<Text, DoubleWritable, Text, DoubleWritable, DoubleWritable> {
+public class Sum extends BSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
     public static final Log LOG = LogFactory.getLog(Sum.class);
     
     private String masterTask;
@@ -29,15 +29,16 @@ public class Sum extends BSP<Text, DoubleWritable, Text, DoubleWritable, DoubleW
 
     @Override
     public void bsp(
-        BSPPeer<Text, DoubleWritable, Text, DoubleWritable, DoubleWritable> peer)
+        BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
         throws IOException, SyncException, InterruptedException {
 
       double intermediateSum = 0.0;
       
       Text key = new Text();
-      DoubleWritable value = new DoubleWritable();
+      Text value = new Text();
       while (peer.readNext(key, value)) {
-    	  intermediateSum += value.get();
+    	  LOG.info("DEBUG: key: "+key+" value: "+value);
+    	  intermediateSum += Double.parseDouble(value.toString());
       }
 
       peer.send(masterTask, new DoubleWritable(intermediateSum));
@@ -46,7 +47,7 @@ public class Sum extends BSP<Text, DoubleWritable, Text, DoubleWritable, DoubleW
 
     @Override
     public void setup(
-        BSPPeer<Text, DoubleWritable, Text, DoubleWritable, DoubleWritable> peer)
+        BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
         throws IOException {
       // Choose one as a master
       this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
@@ -54,7 +55,7 @@ public class Sum extends BSP<Text, DoubleWritable, Text, DoubleWritable, DoubleW
 
     @Override
     public void cleanup(
-        BSPPeer<Text, DoubleWritable, Text, DoubleWritable, DoubleWritable> peer)
+        BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
         throws IOException {
     	
       if (peer.getPeerName().equals(masterTask)) {
@@ -98,7 +99,7 @@ public class Sum extends BSP<Text, DoubleWritable, Text, DoubleWritable, DoubleW
     // help Hama to locale the jar to be distributed
     job.setJarByClass(Sum.class);
     
-    job.setInputPath(new Path("/input/test.seq"));
+    job.setInputPath(new Path("input/examples/test.seq"));
     job.setInputFormat(KeyValueTextInputFormat.class);
     //job.setInputKeyClass(Text.class);
     //job.setInputValueClass(DoubleWritable.class);
