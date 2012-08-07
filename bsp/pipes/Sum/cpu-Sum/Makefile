@@ -1,8 +1,8 @@
 CC = g++
 CPPFLAGS = -m64 -I$(HAMA_HOME)/../../../../c++/install/include
 
-cpu-PiCalculation: cpu-PiCalculation.cc
+cpu-Sum: cpu-Sum.cc
 	$(CC) $(CPPFLAGS) $< -L$(HAMA_HOME)/../../../../c++/install/lib -lhamapipes -lhadooputils -lcrypto -lpthread -g -O2 -o $@
 
 clean:
-	rm -f cpu-PiCalculation
+	rm -f cpu-Sum
