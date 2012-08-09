@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-configuration-1.7.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-logging-1.1.1.jar"/>
@@ -10,5 +9,9 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/hama-core"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hama-examples"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hama-graph"/>
+	<classpathentry kind="lib" path="lib/tjungblut-math-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/trove-3.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/guava-12.0.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.7.0_04"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
