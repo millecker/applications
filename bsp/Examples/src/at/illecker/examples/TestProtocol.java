@@ -35,7 +35,8 @@ public class TestProtocol {
 		//conf.set("hama.pipes.executable", "/Users/bafu/workspace/applications/bsp/pipes/Sum/cpu-Sum/cpu-Sum");
 	   
 	    try {
-	    	DistributedCache.addCacheFile(new URI("/home/bafu/workspace/applications/bsp/pipes/Sum/cpu-Sum/cpu-Sum"), conf);
+	    	//DistributedCache.addCacheFile(new URI("/home/bafu/workspace/applications/bsp/pipes/Sum/cpu-Sum/cpu-Sum"), conf);
+	    	DistributedCache.addCacheFile(new URI("/home/bafu/workspace/applications/bsp/pipes/TestProtocol/testProtocol"), conf);
 		} catch (URISyntaxException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
@@ -66,7 +67,6 @@ public class TestProtocol {
 	    try {
 			
 	    	job.waitForCompletion(true);
-			
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
