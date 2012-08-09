@@ -2,13 +2,13 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/hama-core-0.5.0.jar"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/hama-examples-0.5.0.jar"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/hama-graph-0.5.0.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-configuration-1.7.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/hadoop-core-1.0.0.jar"/>
 	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/zookeeper-3.3.3.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/hama-core"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/hama-examples"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/hama-graph"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

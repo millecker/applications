@@ -10,15 +10,16 @@
 
 using std::string;
 using std::cout;
+using std::cerr;
 
 using HamaPipes::BSP;
 using HamaPipes::BSPContext;
 
 class SumBSP: public BSP {
 private:
-    string masterTask;
+  string masterTask;
 public:
-  SumBSP(BSPContext& context){}
+  SumBSP(BSPContext& context) {  }
 
   void bsp(BSPContext& context) {
     //std::vector<std::string> words =
@@ -26,14 +27,15 @@ public:
     
     double intermediateSum = 0.0;
       
-    //string key; // = context.getInputKey();
+    string key; // = context.getInputKey();
     string value; // = context.getInputValue();
     
-    while (!(value = context.getInputValue()).empty()) {
-      cout << "SumBSP bsp: key: " << context.getInputKey() << " value: "  << value  << "\n";
+    while(context.readNext(key,value)) {
+      cout << "SumBSP bsp: key: " << key << " value: "  << value  << "\n";
       intermediateSum += string2double(value);
+      
     }
-  
+    cerr << "SendMessage to Master: " << masterTask << " value: "  << intermediateSum  << "\n";
     context.sendMessage(masterTask, double2string(intermediateSum));
     context.sync();
   }
@@ -41,6 +43,7 @@ public:
   void setup(BSPContext& context) {
     // Choose one as a master
     masterTask = context.getPeerName(context.getNumPeers() / 2);
+    cerr << "MasterTask: " << masterTask << "\n";
   }
     
   void cleanup(BSPContext& context) {
@@ -48,12 +51,16 @@ public:
     if (context.getPeerName().compare(masterTask)==0) {
       double sum = 0.0;
       //std::int numPeers = context.getNumCurrentMessages();
-        
-      string received;
-      while (!(received = context.getCurrentMessage()).empty()) {
+      
+      cerr << "I'm the MasterTask fetch results!\n";
+      int msgCount = context.getNumCurrentMessages();
+      cerr << "MasterTask fetches " << msgCount << " results!\n";
+      for (int i=0; i<msgCount; i++) {
+        string received = context.getCurrentMessage();
+      
         sum += string2double(received);
       }
-          
+  
       context.write("Sum", double2string(sum));
     }
   }
