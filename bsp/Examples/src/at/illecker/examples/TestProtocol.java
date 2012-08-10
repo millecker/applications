@@ -3,16 +3,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
 import org.apache.hama.bsp.NullInputFormat;
-import org.apache.hama.bsp.NullOutputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.pipes.PipesBSP;
 
@@ -30,8 +26,9 @@ public class TestProtocol {
 		conf.set("bsp.local.tasks.maximum", "2"); 
 		conf.set("fs.default.name", "local"); 
 		
-	    // hier die executable etc in die conf reinsetzen     
-		//conf.set("hama.pipes.executable", "bin/cpu-Sum");
+		conf.setBoolean("hama.pipes.logging", true);
+		
+	    //conf.set("hama.pipes.executable", "bin/cpu-Sum");
 		//conf.set("hama.pipes.executable", "/Users/bafu/workspace/applications/bsp/pipes/Sum/cpu-Sum/cpu-Sum");
 	   
 	    try {
