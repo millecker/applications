@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <!-- // Set the binary path on DFS -->
+    <name>hama.pipes.executable</name>
+    <value>bin/testProtocol</value>
+<!-- <value>/home/bafu/workspace/applications/bsp/pipes/TestProtocol/testProtocol</value> -->
+  </property>
+  <property>
+    <name>hama.pipes.java.recordreader</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hama.pipes.java.recordwriter</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hama.pipes.logging</name>
+    <value>true</value>
+  </property>
+</configuration>

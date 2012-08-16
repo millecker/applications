@@ -12,5 +12,6 @@ hadoop dfs -rmr input/examples
 hadoop dfs -mkdir input/examples
 hadoop dfs -put input/* input/examples
 
-hama jar Examples.jar 
+#hama jar Examples.jar 
 #$1
+

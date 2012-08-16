@@ -100,7 +100,7 @@ public class Sum extends BSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
     // help Hama to locale the jar to be distributed
     job.setJarByClass(Sum.class);
     
-    job.setInputPath(new Path("input/examples/test.seq"));
+    job.setInputPath(new Path("hdfs://localhost/user/bafu/input/examples/test.seq"));
     job.setInputFormat(KeyValueTextInputFormat.class);
     //job.setInputKeyClass(Text.class);
     //job.setInputValueClass(DoubleWritable.class);
@@ -110,6 +110,7 @@ public class Sum extends BSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
     
     job.setOutputFormat(TextOutputFormat.class);
     FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+    job.setOutputPath(new Path("hdfs://localhost/user/bafu/output/examples/"));
     
     BSPJobClient jobClient = new BSPJobClient(conf);
     ClusterStatus cluster = jobClient.getClusterStatus(true);
