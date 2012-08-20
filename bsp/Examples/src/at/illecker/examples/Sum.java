@@ -1,4 +1,5 @@
 package at.illecker.examples;
+
 import java.io.IOException;
 
 import org.apache.commons.logging.Log;
@@ -17,118 +18,120 @@ import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
 import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
-import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.KeyValueTextInputFormat;
+import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
- 
 public class Sum extends BSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
-    public static final Log LOG = LogFactory.getLog(Sum.class);
-    
-    private String masterTask;
-    private static Path TMP_OUTPUT = new Path("/tmp/sum-" + System.currentTimeMillis());
+	public static final Log LOG = LogFactory.getLog(Sum.class);
 
-    @Override
-    public void bsp(
-        BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-        throws IOException, SyncException, InterruptedException {
+	private String masterTask;
 
-      double intermediateSum = 0.0;
-      
-      Text key = new Text();
-      Text value = new Text();
-      while (peer.readNext(key, value)) {
-    	  LOG.info("DEBUG: key: "+key+" value: "+value);
-    	  intermediateSum += Double.parseDouble(value.toString());
-      }
+	// private static Path TMP_OUTPUT = new Path("/tmp/sum-"
+	// + System.currentTimeMillis());
 
-      peer.send(masterTask, new DoubleWritable(intermediateSum));
-      peer.sync();
-    }
+	@Override
+	public void bsp(
+			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException, SyncException, InterruptedException {
 
-    @Override
-    public void setup(
-        BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-        throws IOException {
-      // Choose one as a master
-      this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-    }
+		double intermediateSum = 0.0;
 
-    @Override
-    public void cleanup(
-        BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-        throws IOException {
-    	
-      if (peer.getPeerName().equals(masterTask)) {
-        double sum = 0.0;
-        //int numPeers = peer.getNumCurrentMessages();
-        DoubleWritable received;
-        while ((received = peer.getCurrentMessage()) != null) {
-        	sum += received.get();
-        }
+		Text key = new Text();
+		Text value = new Text();
+		while (peer.readNext(key, value)) {
+			LOG.info("DEBUG: key: " + key + " value: " + value);
+			intermediateSum += Double.parseDouble(value.toString());
+		}
 
-        peer.write(new Text("Sum"), new DoubleWritable(sum));
-      }
-    }
+		peer.send(masterTask, new DoubleWritable(intermediateSum));
+		peer.sync();
+	}
 
-  static void printOutput(HamaConfiguration conf) throws IOException {
-    FileSystem fs = FileSystem.get(conf);
-    FileStatus[] files = fs.listStatus(TMP_OUTPUT);
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
-        FSDataInputStream in = fs.open(files[i].getPath());
-        IOUtils.copyBytes(in, System.out, conf, false);
-        in.close();
-        break;
-      }
-    }
+	@Override
+	public void setup(
+			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException {
+		// Choose one as a master
+		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+	}
 
-    fs.delete(TMP_OUTPUT, true);
-  }
+	@Override
+	public void cleanup(
+			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException {
 
-  public static void main(String[] args) throws InterruptedException,
-      IOException, ClassNotFoundException {
-    // BSP job configuration
-	  
-    HamaConfiguration conf = new HamaConfiguration();
+		if (peer.getPeerName().equals(masterTask)) {
+			double sum = 0.0;
+			// int numPeers = peer.getNumCurrentMessages();
+			DoubleWritable received;
+			while ((received = peer.getCurrentMessage()) != null) {
+				sum += received.get();
+			}
 
-    BSPJob job = new BSPJob(conf);
-    // Set the job name
-    job.setJobName("Sum Example");
-    // set the BSP class which shall be executed
-    job.setBspClass(Sum.class);
-    // help Hama to locale the jar to be distributed
-    job.setJarByClass(Sum.class);
-    
-    job.setInputPath(new Path("hdfs://localhost/user/bafu/input/examples/test.seq"));
-    job.setInputFormat(KeyValueTextInputFormat.class);
-    //job.setInputKeyClass(Text.class);
-    //job.setInputValueClass(DoubleWritable.class);
-    
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(DoubleWritable.class);
-    
-    job.setOutputFormat(TextOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
-    job.setOutputPath(new Path("hdfs://localhost/user/bafu/output/examples/"));
-    
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
+			peer.write(new Text("Sum"), new DoubleWritable(sum));
+		}
+	}
 
-    if (args.length > 0) {
-    	job.setNumBspTask(Integer.parseInt(args[0]));
-    } else {
-      // Set to maximum
-    	job.setNumBspTask(cluster.getMaxTasks());
-    }
-    LOG.info("DEBUG: NumBspTask: "+job.getNumBspTask());
-    
-    long startTime = System.currentTimeMillis();
-    if (job.waitForCompletion(true)) {
-      printOutput(conf);
-      System.out.println("Job Finished in "
-          + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
-    }
-  }
-  
+	static void printOutput(BSPJob job) throws IOException {
+		FileSystem fs = FileSystem.get(job.getConf());
+		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].getLen() > 0) {
+				FSDataInputStream in = fs.open(files[i].getPath());
+				IOUtils.copyBytes(in, System.out, job.getConf(), false);
+				in.close();
+				break;
+			}
+		}
+
+		// fs.delete(FileOutputFormat.getOutputPath(job), true);
+	}
+
+	public static void main(String[] args) throws InterruptedException,
+			IOException, ClassNotFoundException {
+		// BSP job configuration
+
+		HamaConfiguration conf = new HamaConfiguration();
+
+		BSPJob job = new BSPJob(conf);
+		// Set the job name
+		job.setJobName("Sum Example");
+		// set the BSP class which shall be executed
+		job.setBspClass(Sum.class);
+		// help Hama to locale the jar to be distributed
+		job.setJarByClass(Sum.class);
+
+		job.setInputPath(new Path("input/examples"));
+		job.setInputFormat(KeyValueTextInputFormat.class);
+		// job.setInputKeyClass(Text.class);
+		// job.setInputValueClass(DoubleWritable.class);
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(DoubleWritable.class);
+
+		job.setOutputFormat(TextOutputFormat.class);
+		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+		job.setOutputPath(new Path("output/examples"));
+
+		BSPJobClient jobClient = new BSPJobClient(conf);
+		ClusterStatus cluster = jobClient.getClusterStatus(true);
+
+		if (args.length > 0) {
+			job.setNumBspTask(Integer.parseInt(args[0]));
+		} else {
+			// Set to maximum
+			job.setNumBspTask(cluster.getMaxTasks());
+		}
+		LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+
+		long startTime = System.currentTimeMillis();
+		if (job.waitForCompletion(true)) {
+			printOutput(job);
+			System.out.println("Job Finished in "
+					+ (System.currentTimeMillis() - startTime) / 1000.0
+					+ " seconds");
+		}
+	}
+
 }

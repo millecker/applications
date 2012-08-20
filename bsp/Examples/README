@@ -1,4 +1,12 @@
+Examples
 
-Execute Examples:
+TestProtocol Example
+-> needs bin/testProtocol in HDFS! 
 
 ./Examples.sh at.illecker.examples.TestProtocol
+
+Sum Example
+ ./Examples.sh at.illecker.examples.Sum
+
+Pi Estimator
+ ./Examples.sh at.illecker.examples.MyEstimator {NumBspTasks}
