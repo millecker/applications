@@ -14,6 +14,6 @@ hadoop dfs -put cpu-wordcount/cpu-wordcount bin/cpu-wordcount
 
 hadoop dfs -rmr input/cpu-wordcount
 hadoop dfs -mkdir input/cpu-wordcount
-hadoop dfs -put input/* input/cpu-wordcount
+hadoop dfs -put input_small/* input/cpu-wordcount
 
 hadoop pipes -conf wordcount_job.xml -input input/cpu-wordcount -output output/cpu-wordcount
