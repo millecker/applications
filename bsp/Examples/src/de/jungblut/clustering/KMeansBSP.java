@@ -72,7 +72,7 @@ public final class KMeansBSP
 
 		Path centroids = new Path(peer.getConfiguration().get(CENTER_IN_PATH));
 		FileSystem fs = FileSystem.get(peer.getConfiguration());
-		final ArrayList<DoubleVector> centers = new ArrayList<>();
+		final ArrayList<DoubleVector> centers = new ArrayList<DoubleVector>();
 		// Java 6 modifications begin
 		SequenceFile.Reader reader = null;
 		try {
@@ -115,7 +115,7 @@ public final class KMeansBSP
 		maxIterations = peer.getConfiguration().getInt(MAX_ITERATIONS_KEY, -1);
 		// enable caching to store vectors in ram to get additional speed
 		if (peer.getConfiguration().getBoolean(CACHING_ENABLED_KEY, true)) {
-			cache = new ArrayList<>();
+			cache = new ArrayList<DoubleVector>();
 		}
 	}
 
@@ -372,7 +372,7 @@ public final class KMeansBSP
 	private static void readOutput(Configuration conf, Path out,
 			Path centerPath, FileSystem fs) throws IOException {
 		FileStatus[] stati = fs.listStatus(out);
-		TIntObjectHashMap<DoubleVector> centerMap = new TIntObjectHashMap<>();
+		TIntObjectHashMap<DoubleVector> centerMap = new TIntObjectHashMap<DoubleVector>();
 		SequenceFile.Reader centerReader = new SequenceFile.Reader(fs,
 				centerPath, conf);
 		int index = 0;
@@ -382,7 +382,7 @@ public final class KMeansBSP
 		}
 		centerReader.close();
 
-		TIntObjectHashMap<List<DoubleVector>> map = new TIntObjectHashMap<>();
+		TIntObjectHashMap<List<DoubleVector>> map = new TIntObjectHashMap<List<DoubleVector>>();
 		for (FileStatus status : stati) {
 			if (!status.isDir()) {
 				Path path = status.getPath();
@@ -394,7 +394,7 @@ public final class KMeansBSP
 				while (reader.next(key, v)) {
 					List<DoubleVector> list = map.get(key.get());
 					if (list == null) {
-						list = new ArrayList<>();
+						list = new ArrayList<DoubleVector>();
 						map.put(key.get(), list);
 					}
 					list.add(v.getVector());
@@ -405,7 +405,7 @@ public final class KMeansBSP
 		// add the centers as an individual part of the map to be distinctly
 		// plotted
 		map.put(new DenseIntVector(centerMap.keys()).getMaxValue() + 1,
-				new ArrayList<>(centerMap.valueCollection()));
+				new ArrayList<DoubleVector>(centerMap.valueCollection()));
 		GnuPlot.drawPoints(map);
 	}
 

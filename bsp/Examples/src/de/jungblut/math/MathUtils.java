@@ -42,7 +42,7 @@ public class MathUtils {
       }
     }
 
-    return new Tuple<>(matrix, meanVector);
+    return new Tuple<DoubleMatrix, DoubleVector>(matrix, meanVector);
   }
 
   /**

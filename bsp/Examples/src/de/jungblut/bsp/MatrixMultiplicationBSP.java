@@ -81,7 +81,7 @@ public final class MatrixMultiplicationBSP
 		// this
 		// better.
 		// a peer gets all column entries for multiple rows based on row number
-		TreeMap<Integer, VectorWritable> rowMap = new TreeMap<>();
+		TreeMap<Integer, VectorWritable> rowMap = new TreeMap<Integer, VectorWritable>();
 		ResultMessage currentMessage = null;
 		while ((currentMessage = peer.getCurrentMessage()) != null) {
 			VectorWritable vectorWritable = rowMap.get(currentMessage
