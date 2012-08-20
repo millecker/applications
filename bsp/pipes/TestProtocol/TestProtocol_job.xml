@@ -16,6 +16,6 @@
   </property>
   <property>
     <name>hama.pipes.logging</name>
-    <value>true</value>
+    <value>false</value>
   </property>
 </configuration>

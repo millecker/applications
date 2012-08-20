@@ -13,4 +13,8 @@
     <name>hama.pipes.java.recordwriter</name>
     <value>true</value>
   </property>
+  <property>
+    <name>hama.pipes.logging</name>
+    <value>true</value>
+  </property>
 </configuration>

@@ -13,7 +13,6 @@ import org.apache.hama.bsp.BSPJob;
 import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.pipes.PipesBSP;
-import org.apache.hama.pipes.Submitter;
 
 
 public class TestProtocol {

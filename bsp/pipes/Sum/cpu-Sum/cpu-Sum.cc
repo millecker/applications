@@ -35,7 +35,7 @@ public:
       intermediateSum += string2double(value);
       
     }
-    cerr << "SendMessage to Master: " << masterTask << " value: "  << intermediateSum  << "\n";
+    cout << "SendMessage to Master: " << masterTask << " value: "  << intermediateSum  << "\n";
     context.sendMessage(masterTask, double2string(intermediateSum));
     context.sync();
   }
@@ -43,7 +43,7 @@ public:
   void setup(BSPContext& context) {
     // Choose one as a master
     masterTask = context.getPeerName(context.getNumPeers() / 2);
-    cerr << "MasterTask: " << masterTask << "\n";
+    cout << "MasterTask: " << masterTask << "\n";
   }
     
   void cleanup(BSPContext& context) {
@@ -52,15 +52,15 @@ public:
       double sum = 0.0;
       //std::int numPeers = context.getNumCurrentMessages();
       
-      cerr << "I'm the MasterTask fetch results!\n";
+      cout << "I'm the MasterTask fetch results!\n";
       int msgCount = context.getNumCurrentMessages();
-      cerr << "MasterTask fetches " << msgCount << " results!\n";
+      cout << "MasterTask fetches " << msgCount << " results!\n";
       for (int i=0; i<msgCount; i++) {
         string received = context.getCurrentMessage();
       
         sum += string2double(received);
       }
-  
+      cout << "Sum " << sum << " write results...\n";
       context.write("Sum", double2string(sum));
     }
   }

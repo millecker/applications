@@ -16,4 +16,4 @@ hadoop dfs -rmr input/Sum
 hadoop dfs -mkdir input/Sum
 hadoop dfs -put input/* input/Sum
 
-#hama pipes -conf Sum_job.xml -input input/Sum -output output/Sum
+hama pipes -conf Sum_job.xml -input input/Sum/test.txt -output output/Sum
