@@ -14,6 +14,20 @@
     <value>true</value>
   </property>
   <property>
+    <name>bsp.input.format.class</name>
+    <value>org.apache.hama.bsp.KeyValueTextInputFormat</value>
+  </property>
+  <property>
+    <name>bsp.output.format.class</name>
+    <value>org.apache.hama.bsp.TextOutputFormat</value>
+  </property>
+<!--
+  <property>
+    <name>bsp.output.value.class</name>
+    <value>org.apache.hadoop.io.DoubleWritable</value>
+  </property>
+-->
+  <property>
     <name>hama.pipes.logging</name>
     <value>true</value>
   </property>

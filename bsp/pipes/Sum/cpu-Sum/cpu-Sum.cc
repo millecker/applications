@@ -4,9 +4,7 @@
 
 #include<stdlib.h>
 #include<string>
-#include<sstream>
 #include<iostream>
-#include<iomanip>
 
 using std::string;
 using std::cout;
@@ -14,6 +12,7 @@ using std::cerr;
 
 using HamaPipes::BSP;
 using HamaPipes::BSPContext;
+using namespace HadoopUtils;
 
 class SumBSP: public BSP {
 private:
@@ -22,21 +21,18 @@ public:
   SumBSP(BSPContext& context) {  }
 
   void bsp(BSPContext& context) {
-    //std::vector<std::string> words =
-    //  HadoopUtils::splitString(context.getInputValue(), " ");
     
     double intermediateSum = 0.0;
-      
-    string key; // = context.getInputKey();
-    string value; // = context.getInputValue();
+    string key;
+    string value;
     
     while(context.readNext(key,value)) {
       cout << "SumBSP bsp: key: " << key << " value: "  << value  << "\n";
-      intermediateSum += string2double(value);
+      intermediateSum += toDouble(value);
       
     }
     cout << "SendMessage to Master: " << masterTask << " value: "  << intermediateSum  << "\n";
-    context.sendMessage(masterTask, double2string(intermediateSum));
+    context.sendMessage(masterTask, toString(intermediateSum));
     context.sync();
   }
     
@@ -46,44 +42,20 @@ public:
     cout << "MasterTask: " << masterTask << "\n";
   }
     
-  void cleanup(BSPContext& context) {
-    
+  void cleanup(BSPContext& context) {    
     if (context.getPeerName().compare(masterTask)==0) {
-      double sum = 0.0;
-      //std::int numPeers = context.getNumCurrentMessages();
-      
       cout << "I'm the MasterTask fetch results!\n";
+      double sum = 0.0;
       int msgCount = context.getNumCurrentMessages();
       cout << "MasterTask fetches " << msgCount << " results!\n";
       for (int i=0; i<msgCount; i++) {
         string received = context.getCurrentMessage();
-      
-        sum += string2double(received);
+        sum += toDouble(received);
       }
       cout << "Sum " << sum << " write results...\n";
-      context.write("Sum", double2string(sum));
+      context.write("Sum", toString(sum));
     }
-  }
-
-    
-    string double2string(double d)
-    {
-        std::stringstream ss;
-        ss << std::setprecision(16) << d;
-        return ss.str();
-    }
-    
-    double string2double(const string& str) const {
-        const char* begin = str.c_str();
-        char* end;
-        double val = strtod(begin, &end);
-        size_t s = end - begin;
-        if(s < str.size()) {
-            cout << "SumBSP bsp: string2double: invalid double value: "  << str  << "\n";
-        }
-        return val;
-    }
-    
+  }    
 };
 
 int main(int argc, char *argv[]) {

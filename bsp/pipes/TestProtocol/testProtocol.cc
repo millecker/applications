@@ -84,7 +84,7 @@ public:
           string msg = context.getCurrentMessage();
           std::ostringstream oss;
           oss << "Output: " << msg;
-          context.write(myName, oss.str());
+          context.write(myName, oss.str());	
       }
   }
 };
