@@ -13,8 +13,9 @@ hadoop dfs -mkdir input/examples
 hadoop dfs -put input/* input/examples
 
 cd bin
-jar cf ../Examples.jar `find . -not -path "*/.svn/*" -not -type d` `find ../lib -not -path "*/.svn/*" -not -type d`
+jar cfm ../Examples.jar ../Manifest.txt `find . -not -path "*/.svn/*" -not -type d`
 cd ..
+jar uf Examples.jar `find lib -not -path "*/.svn/*" -not -type d`
 
 hama jar Examples.jar $@
 

@@ -10,3 +10,6 @@ Sum Example
 
 Pi Estimator
  ./Examples.sh at.illecker.examples.MyEstimator {NumBspTasks}
+
+MatrixMultiplication
+./Examples.sh de.jungblut.bsp.MatrixMultiplicationBSP
