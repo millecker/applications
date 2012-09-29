@@ -1,15 +1,14 @@
 Examples
 
 TestProtocol Example
--> needs bin/testProtocol in HDFS! 
-
-./Examples.sh at.illecker.examples.TestProtocol
+-> needs the bin/testProtocol binary in the HDFS! 
+./Examples.sh at.illecker.hama.examples.TestProtocol
 
 Sum Example
- ./Examples.sh at.illecker.examples.Sum
+ ./Examples.sh at.illecker.hama.examples.Sum
 
 Pi Estimator
- ./Examples.sh at.illecker.examples.MyEstimator {NumBspTasks}
+ ./Examples.sh at.illecker.hama.examples.MyEstimator {NumBspTasks}
 
 MatrixMultiplication
 ./Examples.sh de.jungblut.bsp.MatrixMultiplicationBSP

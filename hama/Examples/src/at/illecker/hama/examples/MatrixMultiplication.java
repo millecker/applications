@@ -1,4 +1,4 @@
-package at.illecker.examples;
+package at.illecker.hama.examples;
 
 import java.io.IOException;
 import java.util.Random;

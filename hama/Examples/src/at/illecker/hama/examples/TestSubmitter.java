@@ -1,4 +1,4 @@
-package at.illecker.examples;
+package at.illecker.hama.examples;
 
 import org.apache.hama.pipes.Submitter;
 
