@@ -5,16 +5,19 @@ import java.util.Random;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hama.HamaConfiguration;
-import org.apache.hama.bsp.Partitioner;
-import org.apache.hama.pipes.Submitter;
+import org.apache.hama.bsp.BSPJob;
+import org.apache.hama.bsp.SequenceFileInputFormat;
+import org.apache.hama.bsp.SequenceFileOutputFormat;
+import org.apache.hama.bsp.message.MessageManager;
 
+import de.jungblut.bsp.MatrixMultiplicationBSP;
+import de.jungblut.bsp.MatrixMultiplicationBSP.MatrixRowPartitioner;
 import de.jungblut.math.dense.DenseDoubleMatrix;
 import de.jungblut.writable.VectorWritable;
 
@@ -24,138 +27,99 @@ public class MatrixMultiplication {
 			.getLog(MatrixMultiplication.class);
 	private static final String HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
 
-	private SequenceFile.Reader reader;
-
 	public static void main(String[] args) throws IOException,
 			InterruptedException, ClassNotFoundException {
+
+		int n = 200;
+		if (args.length > 0) {
+			n = Integer.parseInt(args[0]);
+		}
+		System.out.println("DenseDoubleMatrix Size: " + n + "x" + n);
 
 		// only needed for writing input matrix to hdfs
 		HamaConfiguration conf = new HamaConfiguration();
 
-		for (int n = 200; n < 300; n++) {
-			System.out.println(n + "x" + n);
-			// use constant seeds to get reproducable results
-			DenseDoubleMatrix a = new DenseDoubleMatrix(n, n, new Random(42L));
-			DenseDoubleMatrix b = new DenseDoubleMatrix(n, n, new Random(1337L));
+		// use constant seeds to get reproducable results
+		DenseDoubleMatrix a = new DenseDoubleMatrix(n, n, new Random(42L));
+		DenseDoubleMatrix b = new DenseDoubleMatrix(n, n, new Random(1337L));
 
-			Path inPath = new Path("files/matrixmult/in/A.seq");
-			writeSequenceFileMatrix(conf, a, inPath, false);
-			Path bPath = new Path("files/matrixmult/in/B.seq");
-			// store this in column major format
-			writeSequenceFileMatrix(conf, b, bPath, true);
+		Path aPath = new Path("input/MatrixA.seq");
+		MatrixMultiplicationBSP.writeSequenceFileMatrix(conf, a, aPath, false);
 
-			conf.set(HAMA_MAT_MULT_B_PATH, bPath.toString());
-			Path outPath = new Path("files/matrixmult/out/");
+		Path bPath = new Path("input/MatrixB.seq");
+		// store this in column major format
+		MatrixMultiplicationBSP.writeSequenceFileMatrix(conf, b, bPath, true);
 
-			/* TODO */
-			// job.setPartitioner(MatrixRowPartitioner.class);
+		conf.set(HAMA_MAT_MULT_B_PATH, bPath.toString());
+		Path outPath = new Path("output/matrixmult");
 
-			String[] arr = {
-					"-conf",
-					"/home/bafu/workspace/applications/bsp/pipes/MatrixMultiplication/MatrixMultiplication_job.xml",
-					"-input", inPath.toString(), "-output", outPath.toString() };
+		conf.set(MessageManager.QUEUE_TYPE_CLASS,
+				"org.apache.hama.bsp.message.SortedMessageQueue");
+		conf.set("bsp.local.tasks.maximum", "2");
+		
+		// set Job Config
+		BSPJob job = new BSPJob(conf);
+		job.setInputFormat(SequenceFileInputFormat.class);
+		job.setInputPath(aPath);
 
-			try {
-				Submitter.main(arr);
+		job.setOutputKeyClass(IntWritable.class);
+		job.setOutputValueClass(VectorWritable.class);
 
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		job.setOutputFormat(SequenceFileOutputFormat.class);
+		job.setOutputPath(outPath);
 
-			DenseDoubleMatrix outputMatrix = new DenseDoubleMatrix(
-					a.getRowCount(), b.getColumnCount());
+		job.setBspClass(MatrixMultiplicationBSP.class);
+		job.setJarByClass(MatrixMultiplicationBSP.class);
+		/* TODO */
+		job.setPartitioner(MatrixRowPartitioner.class);
 
-			FileSystem fs = FileSystem.get(conf);
-			FileStatus[] stati = fs.listStatus(outPath);
-			for (FileStatus status : stati) {
-				if (!status.isDir()
-						&& !status.getPath().getName().endsWith(".crc")) {
-					Path path = status.getPath();
-					// Java 6 modifications begin
-					SequenceFile.Reader reader = null;
-					try {
-						reader = new SequenceFile.Reader(fs, path, conf);
-						IntWritable key = new IntWritable();
-						VectorWritable value = new VectorWritable();
-						while (reader.next(key, value)) {
-							outputMatrix.setRowVector(key.get(),
-									value.getVector());
-						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					} finally {
-						if (reader != null) {
-							try {
-								reader.close();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
-					}
-					// Java 6 modifications end
-				}
-			}
+		long startTime = System.currentTimeMillis();
+		job.waitForCompletion(true);
+		System.out.println("Job Finished in "
+				+ (System.currentTimeMillis() - startTime) / 1000.0
+				+ " seconds");
+		
+		// Get output Matrix and calculate Error
+		DenseDoubleMatrix outputMatrix = new DenseDoubleMatrix(a.getRowCount(),
+				b.getColumnCount());
 
-			double error = DenseDoubleMatrix.error(outputMatrix,
-					(DenseDoubleMatrix) a.multiply(b));
-			System.out.println(n + "x" + n + " Matrix absolute error is "
-					+ error);
-		}
-	}
+		FileSystem fs = FileSystem.get(conf);
+		FileStatus[] stati = fs.listStatus(outPath);
 
-	private static void writeSequenceFileMatrix(Configuration conf,
-			DenseDoubleMatrix denseDoubleMatrix, Path p, boolean columnMajor) {
-		SequenceFile.Writer writer = null;
-		try {
-			FileSystem fs = FileSystem.get(conf);
-			writer = new SequenceFile.Writer(fs, conf, p, IntWritable.class,
-					VectorWritable.class);
-			if (!columnMajor) {
-				for (int i = 0; i < denseDoubleMatrix.getRowCount(); i++) {
-					VectorWritable vectorWritable = new VectorWritable(
-							denseDoubleMatrix.getRowVector(i));
-					writer.append(new IntWritable(i), vectorWritable);
-				}
-			} else {
-				for (int i = 0; i < denseDoubleMatrix.getColumnCount(); i++) {
-					VectorWritable vectorWritable = new VectorWritable(
-							denseDoubleMatrix.getColumnVector(i));
-					writer.append(new IntWritable(i), vectorWritable);
-				}
-			}
+		for (FileStatus status : stati) {
+			if (!status.isDir() && !status.getPath().getName().endsWith(".crc")) {
+				Path path = status.getPath();
 
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (writer != null) {
+				// READ Output file
+				SequenceFile.Reader reader = null;
 				try {
-					writer.close();
+
+					reader = new SequenceFile.Reader(fs, path, conf);
+					IntWritable key = new IntWritable();
+					VectorWritable value = new VectorWritable();
+
+					// read row by row
+					while (reader.next(key, value)) {
+						outputMatrix.setRowVector(key.get(), value.getVector());
+					}
+
 				} catch (IOException e) {
 					e.printStackTrace();
+				} finally {
+					if (reader != null) {
+						try {
+							reader.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 		}
-	}
-	
 
-	/* TODO */
-	private static final class MatrixRowPartitioner implements
-			Partitioner<IntWritable, VectorWritable> {
-
-		@Override
-		public final int getPartition(IntWritable key, VectorWritable value,
-				int numTasks) {
-			return key.get() % (numTasks - 1);
-		}
-	}
-
-	public void reopenOtherMatrix(Configuration conf) throws IOException {
-		if (reader != null) {
-			reader.close();
-		}
-		reader = new SequenceFile.Reader(FileSystem.get(conf), new Path(
-				conf.get(HAMA_MAT_MULT_B_PATH)), conf);
+		double error = DenseDoubleMatrix.error(outputMatrix,
+				(DenseDoubleMatrix) a.multiply(b));
+		System.out.println(n + "x" + n + " Matrix absolute error is " + error);
 	}
 
 }

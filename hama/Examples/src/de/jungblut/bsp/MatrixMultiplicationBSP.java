@@ -57,8 +57,8 @@ public final class MatrixMultiplicationBSP
 		IntWritable rowKey = new IntWritable();
 		VectorWritable value = new VectorWritable();
 		while (peer.readNext(rowKey, value)) {
-			// System.out.println(peer.getPeerName() + " " + rowKey.get() + "|"
-			// + value.toString());
+			System.out.println(peer.getPeerName() + " " + rowKey.get() + "|"
+			 + value.toString());
 			IntWritable bMatrixKey = new IntWritable();
 			VectorWritable columnVector = new VectorWritable();
 			while (reader.next(bMatrixKey, columnVector)) {
@@ -193,7 +193,7 @@ public final class MatrixMultiplicationBSP
 		}
 	}
 
-	private static void writeSequenceFileMatrix(Configuration conf,
+	public static void writeSequenceFileMatrix(Configuration conf,
 			DenseDoubleMatrix denseDoubleMatrix, Path p, boolean columnMajor) {
 		SequenceFile.Writer writer = null;
 		try {
@@ -227,7 +227,7 @@ public final class MatrixMultiplicationBSP
 		}
 	}
 
-	private static final class MatrixRowPartitioner implements
+	public static final class MatrixRowPartitioner implements
 			Partitioner<IntWritable, VectorWritable> {
 
 		@Override
