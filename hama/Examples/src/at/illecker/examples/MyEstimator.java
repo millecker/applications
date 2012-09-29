@@ -23,6 +23,15 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
+/**
+ * @author MyEstimator Monte Carlo computation of pi
+ *         http://de.wikipedia.org/wiki/Monte-Carlo-Algorithmus
+ * 
+ *         Generate random points in the square [-1,1] X [-1,1]. The fraction of
+ *         these that lie in the unit disk x^2 + y^2 <= 1 will be approximately
+ *         pi/4.
+ */
+
 public class MyEstimator extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	public static final Log LOG = LogFactory.getLog(MyEstimator.class);
@@ -63,8 +72,11 @@ public class MyEstimator extends
 	public void cleanup(
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException {
+
 		if (peer.getPeerName().equals(masterTask)) {
+
 			double pi = 0.0;
+
 			int numPeers = peer.getNumCurrentMessages();
 			DoubleWritable received;
 			while ((received = peer.getCurrentMessage()) != null) {
@@ -72,7 +84,7 @@ public class MyEstimator extends
 			}
 
 			pi = pi / numPeers;
-			peer.write(new Text("Estimated value of PI is"),
+			peer.write(new Text("Estimated value of PI(3,14159265) is"),
 					new DoubleWritable(pi));
 		}
 	}
