@@ -5,8 +5,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,7 +30,6 @@ public final class MatrixMultiplicationBSP
 		extends
 		BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, ResultMessage> {
 
-	protected static final Log LOG = LogFactory.getLog(MatrixMultiplicationBSP.class);
 	private static final String HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
 
 	private SequenceFile.Reader reader;
@@ -57,8 +54,8 @@ public final class MatrixMultiplicationBSP
 		IntWritable rowKey = new IntWritable();
 		VectorWritable value = new VectorWritable();
 		while (peer.readNext(rowKey, value)) {
-			System.out.println(peer.getPeerName() + " " + rowKey.get() + "|"
-			 + value.toString());
+			// System.out.println(peer.getPeerName() + " " + rowKey.get() + "|"
+			// + value.toString());
 			IntWritable bMatrixKey = new IntWritable();
 			VectorWritable columnVector = new VectorWritable();
 			while (reader.next(bMatrixKey, columnVector)) {
@@ -71,8 +68,7 @@ public final class MatrixMultiplicationBSP
 				double dot = value.getVector().dot(columnVector.getVector());
 				// we use row based partitioning once again to distribute the
 				// outcome
-				peer.send(peer.getPeerName(rowKey.get()
-						% (peer.getNumPeers() - 1)),
+				peer.send(peer.getPeerName(rowKey.get() % peer.getNumPeers()),
 						new ResultMessage(rowKey.get(), bMatrixKey.get(), dot));
 			}
 			reopenOtherMatrix(peer.getConfiguration());
@@ -119,11 +115,10 @@ public final class MatrixMultiplicationBSP
 	public static void main(String[] args) throws IOException,
 			InterruptedException, ClassNotFoundException {
 
-		HamaConfiguration conf = new HamaConfiguration();
+		Configuration conf = new Configuration();
 		conf.set(MessageManager.QUEUE_TYPE_CLASS,
 				"org.apache.hama.bsp.message.SortedMessageQueue");
 		conf.set("bsp.local.tasks.maximum", "8");
-		LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
 
 		for (int n = 200; n < 300; n++) {
 			System.out.println(n + "x" + n);
@@ -140,7 +135,7 @@ public final class MatrixMultiplicationBSP
 			conf.set(HAMA_MAT_MULT_B_PATH, bPath.toString());
 			Path outPath = new Path("files/matrixmult/out/");
 
-			BSPJob job = new BSPJob(conf);
+			BSPJob job = new BSPJob(new HamaConfiguration(conf));
 			job.setInputFormat(SequenceFileInputFormat.class);
 			job.setInputPath(inPath);
 			job.setOutputKeyClass(IntWritable.class);
@@ -148,7 +143,6 @@ public final class MatrixMultiplicationBSP
 			job.setOutputFormat(SequenceFileOutputFormat.class);
 			job.setOutputPath(outPath);
 			job.setBspClass(MatrixMultiplicationBSP.class);
-			job.setJarByClass(MatrixMultiplicationBSP.class);
 			job.setPartitioner(MatrixRowPartitioner.class);
 			job.waitForCompletion(true);
 
@@ -161,16 +155,21 @@ public final class MatrixMultiplicationBSP
 				if (!status.isDir()
 						&& !status.getPath().getName().endsWith(".crc")) {
 					Path path = status.getPath();
-					// Java 6 modifications begin
+					/* JAVA 6 Modifications BEGIN */
+					// READ Output file
 					SequenceFile.Reader reader = null;
 					try {
+
 						reader = new SequenceFile.Reader(fs, path, conf);
 						IntWritable key = new IntWritable();
 						VectorWritable value = new VectorWritable();
+
+						// read row by row
 						while (reader.next(key, value)) {
 							outputMatrix.setRowVector(key.get(),
 									value.getVector());
 						}
+
 					} catch (IOException e) {
 						e.printStackTrace();
 					} finally {
@@ -182,7 +181,7 @@ public final class MatrixMultiplicationBSP
 							}
 						}
 					}
-					// Java 6 modifications end
+					/* JAVA 6 Modifications END */
 				}
 			}
 
@@ -227,13 +226,13 @@ public final class MatrixMultiplicationBSP
 		}
 	}
 
-	public static final class MatrixRowPartitioner implements
+	private static final class MatrixRowPartitioner implements
 			Partitioner<IntWritable, VectorWritable> {
 
 		@Override
 		public final int getPartition(IntWritable key, VectorWritable value,
 				int numTasks) {
-			return key.get() % (numTasks - 1);
+			return key.get() % numTasks;
 		}
 	}
 

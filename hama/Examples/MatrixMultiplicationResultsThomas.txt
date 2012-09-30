@@ -1,0 +1,132 @@
+
+ysh02-227-15:Examples bafu$ ./Examples.sh at.illecker.hama.examples.MatrixMultiplication 16
+DenseDoubleMatrix Size: 16x16
+12/09/30 15:10:40 INFO examples.MatrixMultiplication: DEBUG: NumBspTask: 4
+12/09/30 15:10:40 INFO examples.MatrixMultiplication: DEBUG: bsp.peers.num: 4
+12/09/30 15:10:40 INFO examples.MatrixMultiplication: DEBUG: bsp.tasks.maximum: 3
+12/09/30 15:10:40 INFO bsp.FileInputFormat: Total input paths to process : 1
+12/09/30 15:10:40 INFO bsp.FileInputFormat: Total # of splits: 2
+12/09/30 15:10:40 INFO bsp.BSPJobClient: Running job: job_201209301115_0008
+12/09/30 15:10:43 INFO bsp.BSPJobClient: Current supersteps number: 0
+12/09/30 15:10:46 INFO bsp.BSPJobClient: Current supersteps number: 1
+12/09/30 15:10:46 INFO bsp.BSPJobClient: The total number of supersteps: 1
+12/09/30 15:10:46 INFO bsp.BSPJobClient: Counters: 10
+12/09/30 15:10:46 INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     LAUNCHED_TASKS=2
+12/09/30 15:10:46 INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     SUPERSTEPS=1
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_SENT=3411
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     SUPERSTEP_SUM=2
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=461
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     IO_BYTES_READ=2356
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_RECEIVED=3411
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=512
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=16
+12/09/30 15:10:46 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=256
+Job Finished in 6.435 seconds
+16x16 Matrix absolute error is 1.3233858453531866E-13
+
+DenseDoubleMatrix Size: 100x100
+12/09/30 15:11:56 INFO examples.MatrixMultiplication: DEBUG: NumBspTask: 4
+12/09/30 15:11:56 INFO examples.MatrixMultiplication: DEBUG: bsp.peers.num: 4
+12/09/30 15:11:56 INFO examples.MatrixMultiplication: DEBUG: bsp.tasks.maximum: 3
+12/09/30 15:11:56 INFO bsp.FileInputFormat: Total input paths to process : 1
+12/09/30 15:11:56 INFO bsp.FileInputFormat: Total # of splits: 3
+12/09/30 15:11:56 INFO bsp.BSPJobClient: Running job: job_201209301115_0009
+12/09/30 15:11:59 INFO bsp.BSPJobClient: Current supersteps number: 0
+12/09/30 15:12:02 INFO bsp.BSPJobClient: Current supersteps number: 1
+12/09/30 15:12:05 INFO bsp.BSPJobClient: The total number of supersteps: 1
+12/09/30 15:12:05 INFO bsp.BSPJobClient: Counters: 10
+12/09/30 15:12:05 INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     LAUNCHED_TASKS=3
+12/09/30 15:12:05 INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     SUPERSTEPS=1
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_SENT=127934
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     SUPERSTEP_SUM=3
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=1147
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     IO_BYTES_READ=82460
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_RECEIVED=127934
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=20000
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=100
+12/09/30 15:12:05 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=10000
+Job Finished in 9.348 seconds
+100x100 Matrix absolute error is 7.581490990560269E-11
+
+DenseDoubleMatrix Size: 200x200
+12/09/30 15:12:30 INFO examples.MatrixMultiplication: DEBUG: NumBspTask: 4
+12/09/30 15:12:30 INFO examples.MatrixMultiplication: DEBUG: bsp.peers.num: 4
+12/09/30 15:12:30 INFO examples.MatrixMultiplication: DEBUG: bsp.tasks.maximum: 3
+12/09/30 15:12:30 INFO bsp.FileInputFormat: Total input paths to process : 1
+12/09/30 15:12:30 INFO bsp.FileInputFormat: Total # of splits: 3
+12/09/30 15:12:30 INFO bsp.BSPJobClient: Running job: job_201209301115_0010
+12/09/30 15:12:33 INFO bsp.BSPJobClient: Current supersteps number: 0
+12/09/30 15:12:39 INFO bsp.BSPJobClient: Current supersteps number: 1
+12/09/30 15:12:39 INFO bsp.BSPJobClient: The total number of supersteps: 1
+12/09/30 15:12:39 INFO bsp.BSPJobClient: Counters: 10
+12/09/30 15:12:39 INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     LAUNCHED_TASKS=3
+12/09/30 15:12:39 INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     SUPERSTEPS=1
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_SENT=504661
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     SUPERSTEP_SUM=3
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=1632
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     IO_BYTES_READ=325580
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_RECEIVED=504661
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=80000
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=200
+12/09/30 15:12:39 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=40000
+Job Finished in 9.357 seconds
+200x200 Matrix absolute error is 8.415881325163355E-10
+
+DenseDoubleMatrix Size: 500x500
+12/09/30 15:12:59 INFO examples.MatrixMultiplication: DEBUG: NumBspTask: 4
+12/09/30 15:12:59 INFO examples.MatrixMultiplication: DEBUG: bsp.peers.num: 4
+12/09/30 15:12:59 INFO examples.MatrixMultiplication: DEBUG: bsp.tasks.maximum: 3
+12/09/30 15:12:59 INFO bsp.FileInputFormat: Total input paths to process : 1
+12/09/30 15:12:59 INFO bsp.FileInputFormat: Total # of splits: 3
+12/09/30 15:12:59 INFO bsp.BSPJobClient: Running job: job_201209301115_0011
+12/09/30 15:13:02 INFO bsp.BSPJobClient: Current supersteps number: 0
+12/09/30 15:13:17 INFO bsp.BSPJobClient: Current supersteps number: 1
+12/09/30 15:13:17 INFO bsp.BSPJobClient: The total number of supersteps: 1
+12/09/30 15:13:17 INFO bsp.BSPJobClient: Counters: 10
+12/09/30 15:13:17 INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     LAUNCHED_TASKS=3
+12/09/30 15:13:17 INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     SUPERSTEPS=1
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_SENT=3082837
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     SUPERSTEP_SUM=3
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=12605
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     IO_BYTES_READ=2018980
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_RECEIVED=3082837
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=500000
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=500
+12/09/30 15:13:17 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=250000
+Job Finished in 18.414 seconds
+500x500 Matrix absolute error is 2.0521454757727042E-8
+
+DenseDoubleMatrix Size: 500x500
+12/09/30 15:13:54 INFO examples.MatrixMultiplication: DEBUG: NumBspTask: 4
+12/09/30 15:13:54 INFO examples.MatrixMultiplication: DEBUG: bsp.peers.num: 4
+12/09/30 15:13:54 INFO examples.MatrixMultiplication: DEBUG: bsp.tasks.maximum: 3
+12/09/30 15:13:54 INFO bsp.FileInputFormat: Total input paths to process : 1
+12/09/30 15:13:54 INFO bsp.FileInputFormat: Total # of splits: 3
+12/09/30 15:13:55 INFO bsp.FileInputFormat: Total input paths to process : 3
+12/09/30 15:13:55 INFO bsp.BSPJobClient: Running job: job_201209301115_0012
+12/09/30 15:13:58 INFO bsp.BSPJobClient: Current supersteps number: 0
+12/09/30 15:14:16 INFO bsp.BSPJobClient: Current supersteps number: 1
+12/09/30 15:14:16 INFO bsp.BSPJobClient: The total number of supersteps: 1
+12/09/30 15:14:16 INFO bsp.BSPJobClient: Counters: 10
+12/09/30 15:14:16 INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     LAUNCHED_TASKS=3
+12/09/30 15:14:16 INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     SUPERSTEPS=1
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_SENT=3084110
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     SUPERSTEP_SUM=3
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=14437
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     IO_BYTES_READ=2018940
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     COMPRESSED_BYTES_RECEIVED=3084110
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=500000
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=500
+12/09/30 15:14:16 INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=250000
+Job Finished in 21.71 seconds
+500x500 Matrix absolute error is 2.0521454757727042E-8
