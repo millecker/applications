@@ -35,11 +35,15 @@ public class MatrixMultiplication
 	private static final String HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
 
 	private SequenceFile.Reader reader;
+	private String masterTask;
 
 	@Override
 	public void setup(
 			BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
 			throws IOException, SyncException, InterruptedException {
+
+		// Choose one as a master, who sorts the matrix rows at the end
+		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 
 		reopenMatrixB(peer.getConfiguration());
 	}
@@ -72,26 +76,39 @@ public class MatrixMultiplication
 				colValues.getVector().set(bMatrixKey.get(), dot);
 
 			}
+			// 1) send calculated row to corresponding task
 			// peer.send(peer.getPeerName(rowKey.get() % peer.getNumPeers()),
 			// new MatrixRowMessage(rowKey.get(), colValues));
-			peer.write(new IntWritable(rowKey.get()), colValues);
+
+			// 2) write out row directly
+			// peer.write(new IntWritable(rowKey.get()), colValues);
+
+			// 3) send to master who sorts rows
+			peer.send(masterTask, new MatrixRowMessage(rowKey.get(), colValues));
 
 			reopenMatrixB(peer.getConfiguration());
 		}
 
-		/*
-		 * peer.sync();
-		 * 
-		 * MatrixRowMessage currentMatrixRowMessage = null; while
-		 * ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) { //
-		 * System
-		 * .out.println("WRITE OUT ROW: "+currentMatrixRowMessage.getRowIndex
-		 * ());
-		 * 
-		 * peer.write(new IntWritable(currentMatrixRowMessage.getRowIndex()),
-		 * currentMatrixRowMessage.getColValues()); }
-		 */
+		peer.sync();
 
+	}
+
+	@Override
+	public void cleanup(
+			BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+			throws IOException {
+
+		if (peer.getPeerName().equals(masterTask)) {
+			MatrixRowMessage currentMatrixRowMessage = null;
+			while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) { //
+				// System.out.println("WRITE OUT ROW: "
+				// + currentMatrixRowMessage.getRowIndex());
+
+				peer.write(
+						new IntWritable(currentMatrixRowMessage.getRowIndex()),
+						currentMatrixRowMessage.getColValues());
+			}
+		}
 	}
 
 	public void reopenMatrixB(Configuration conf) throws IOException {
@@ -111,6 +128,7 @@ public class MatrixMultiplication
 			n = Integer.parseInt(args[0]);
 			m = n;
 		}
+		
 		System.out.println("DenseDoubleMatrix Size: " + n + "x" + m);
 
 		// only needed for writing input matrix to hdfs
@@ -187,7 +205,8 @@ public class MatrixMultiplication
 					while (reader.next(key, value)) {
 						// System.out.println(key.get() + "|"
 						// + value.toString());
-						// System.out.println(key.get());
+						//System.out.println("ReadFile with RowIndex:"
+						//		+ key.get());
 
 						outputMatrix.setRowVector(key.get(), value.getVector());
 					}

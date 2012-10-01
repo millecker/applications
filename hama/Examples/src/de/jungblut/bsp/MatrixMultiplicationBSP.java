@@ -5,6 +5,8 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -30,6 +32,7 @@ public final class MatrixMultiplicationBSP
 		extends
 		BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, ResultMessage> {
 
+	protected static final Log LOG = LogFactory.getLog(MatrixMultiplicationBSP.class);
 	private static final String HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
 
 	private SequenceFile.Reader reader;
@@ -93,6 +96,8 @@ public final class MatrixMultiplicationBSP
 										otherMatrixColumnDimension));
 				rowMap.put(currentMessage.getTargetRow(), v);
 				vectorWritable = v;
+				System.out.println("Add Row: "+currentMessage
+					.getTargetRow());
 			}
 			vectorWritable.getVector().set(currentMessage.getTargetColumn(),
 					currentMessage.getValue());
@@ -115,10 +120,11 @@ public final class MatrixMultiplicationBSP
 	public static void main(String[] args) throws IOException,
 			InterruptedException, ClassNotFoundException {
 
-		Configuration conf = new Configuration();
+		HamaConfiguration conf = new HamaConfiguration();
 		conf.set(MessageManager.QUEUE_TYPE_CLASS,
 				"org.apache.hama.bsp.message.SortedMessageQueue");
 		conf.set("bsp.local.tasks.maximum", "8");
+		//LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
 
 		for (int n = 200; n < 300; n++) {
 			System.out.println(n + "x" + n);
@@ -126,16 +132,16 @@ public final class MatrixMultiplicationBSP
 			DenseDoubleMatrix a = new DenseDoubleMatrix(n, n, new Random(42L));
 			DenseDoubleMatrix b = new DenseDoubleMatrix(n, n, new Random(1337L));
 
-			Path inPath = new Path("files/matrixmult/in/A.seq");
+			Path inPath = new Path("input/examples/matrixmult/A.seq");
 			writeSequenceFileMatrix(conf, a, inPath, false);
-			Path bPath = new Path("files/matrixmult/in/B.seq");
+			Path bPath = new Path("input/examples/matrixmult/B.seq");
 			// store this in column major format
 			writeSequenceFileMatrix(conf, b, bPath, true);
 
 			conf.set(HAMA_MAT_MULT_B_PATH, bPath.toString());
-			Path outPath = new Path("files/matrixmult/out/");
+			Path outPath = new Path("output/examples/matrixmult/");
 
-			BSPJob job = new BSPJob(new HamaConfiguration(conf));
+			BSPJob job = new BSPJob(conf);
 			job.setInputFormat(SequenceFileInputFormat.class);
 			job.setInputPath(inPath);
 			job.setOutputKeyClass(IntWritable.class);
@@ -143,8 +149,14 @@ public final class MatrixMultiplicationBSP
 			job.setOutputFormat(SequenceFileOutputFormat.class);
 			job.setOutputPath(outPath);
 			job.setBspClass(MatrixMultiplicationBSP.class);
+			job.setJarByClass(MatrixMultiplicationBSP.class);
 			job.setPartitioner(MatrixRowPartitioner.class);
+           
+			long startTime = System.currentTimeMillis();
 			job.waitForCompletion(true);
+			System.out.println("Job Finished in "
+					+ (System.currentTimeMillis() - startTime) / 1000.0
+					+ " seconds");
 
 			DenseDoubleMatrix outputMatrix = new DenseDoubleMatrix(
 					a.getRowCount(), b.getColumnCount());
@@ -166,6 +178,7 @@ public final class MatrixMultiplicationBSP
 
 						// read row by row
 						while (reader.next(key, value)) {
+							//System.out.println("ReadFile RowIndex: "+key);
 							outputMatrix.setRowVector(key.get(),
 									value.getVector());
 						}

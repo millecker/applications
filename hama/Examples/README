@@ -12,3 +12,4 @@ Pi Estimator
 
 MatrixMultiplication
 ./Examples.sh de.jungblut.bsp.MatrixMultiplicationBSP
+./Examples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}
