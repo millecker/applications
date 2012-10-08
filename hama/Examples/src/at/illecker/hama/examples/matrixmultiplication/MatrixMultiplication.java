@@ -88,7 +88,8 @@ public class MatrixMultiplication
 
 			reopenMatrixB(peer.getConfiguration());
 		}
-
+		reader.close();
+		
 		peer.sync();
 
 	}
@@ -166,12 +167,16 @@ public class MatrixMultiplication
 
 		job.setInputFormat(SequenceFileInputFormat.class);
 		job.setInputPath(aPath);
+		LOG.info("DEBUG: bsp.input.dir: "
+				+ job.getConf().get("bsp.input.dir"));
 
 		job.setOutputKeyClass(IntWritable.class);
 		job.setOutputValueClass(VectorWritable.class);
 		job.setOutputFormat(SequenceFileOutputFormat.class);
 		job.setOutputPath(outPath);
-
+		LOG.info("DEBUG: bsp.output.dir: "
+				+ job.getConf().get("bsp.output.dir"));
+		
 		job.setBspClass(MatrixMultiplication.class);
 		job.setJarByClass(MatrixMultiplication.class);
 		job.setPartitioner(MatrixRowPartitioner.class);

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-hadoop dfs -rmr output/PiCalculation
+hadoop dfs -rmr output/pipes/matrixmult
 
-hadoop dfs -rmr bin/cpu-PiCalculation
-hadoop dfs -put cpu-PiCalculation/cpu-PiCalculation bin/cpu-PiCalculation
+hadoop dfs -rmr bin/cpu-MatrixMultiplication
+hadoop dfs -put cpu-MatrixMultiplication/cpu-MatrixMultiplication bin/cpu-MatrixMultiplication
 
-hama pipes -conf piCalculation_job.xml -output output/PiCalculation
+hama pipes -conf MatrixMultiplication_job.xml -output output/pipes/matrixmult

@@ -21,7 +21,11 @@
     <name>bsp.output.format.class</name>
     <value>org.apache.hama.bsp.SequenceFileOutputFormat</value>
   </property>
-<!--
+<!--    
+  <property>  
+  <name>bsp.output.dir</name>
+    <value>output/pipes/matrixmult</value>                                            
+  </property>
   <property>
     <name>bsp.output.key.class</name>
     <value>org.apache.hadoop.io.IntWritable</value>
@@ -42,5 +46,17 @@
   <property>
     <name>hama.messenger.queue.class</name>
     <value>org.apache.hama.bsp.message.SortedMessageQueue</value>                                            
+  </property>
+  <property>
+    <name>bsp.input.partitioner.class</name>
+    <value>PipesPartitioner</value>                                            
+  </property>
+  <property>
+    <name>bsp.input.dir</name>
+    <value>input/examples/MatrixA.seq</value>                                            
+  </property>
+  <property>
+    <name>hama.mat.mult.B.path</name>
+    <value>input/examples/MatrixB.seq</value>                                            
   </property>
 </configuration>

@@ -11,82 +11,106 @@ using std::string;
 using std::cout;
 
 using HamaPipes::BSP;
+using HamaPipes::BSPJob;
+using HamaPipes::Partitioner;
 using HamaPipes::BSPContext;
 using namespace HadoopUtils;
 
 class MatrixMultiplicationBSP: public BSP {
 private:
-    string HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
+    string masterTask;
+    int seqFileID;
+    string HAMA_MAT_MULT_B_PATH;
 public:
-  MatrixMultiplicationBSP(BSPContext& context) {
-      iterations = 10000;
+  MatrixMultiplicationBSP(BSPContext& context) { 
+    HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
   }
 
   void bsp(BSPContext& context) {
-    // properties for our output matrix C
-    int otherMatrixColumnDimension = -1;
-    bool otherVectorSparse = false;
+      
     string rowKey;
     string value;
-      
+    // while for each row of matrixA
     while(context.readNext(rowKey,value)) {
       // System.out.println(peer.getPeerName() + " " + rowKey.get() + "|"
       // + value.toString());
         
-      int fid = context.sequenceFileOpen(path,"r");
       string bMatrixKey;
-      string columnVector;
-      while (context.sequenceFileReadNext(fid,bMatrixKey,columnVector)) {
-        // detect the properties of our columnvector
-        if (otherMatrixColumnDimension == -1) {
-          otherMatrixColumnDimension = columnVector.getVector().getDimension();
-          otherVectorSparse = columnVector.getVector().isSparse();  
-        }
+      string bColumnVector;
+      //VectorWritable colValues = null;
+      string colValues;
+        
+      // while for each col of matrixB
+      while (context.sequenceFileReadNext(seqFileID,bMatrixKey,bColumnVector)) {
+        
+          cout << "bMatrixKey: " << bMatrixKey << "bColumnVector: " << bColumnVector << "\n";
+          //if (colValues == null)
+          //   colValues = new VectorWritable(new DenseDoubleVector(
+          //            columnVector.getVector().getDimension()));
           
-        double dot = value.getVector().dot(columnVector.getVector());
-        
-        // we use row based partitioning once again to distribute the
-        // outcome
-        context.sendMessage(context.getPeerName(
-                    rowKey.get() % (context.getNumPeers() - 1)),
-                    new ResultMessage(rowKey.get(), bMatrixKey.get(), dot));
+          //double dot = value.getVector().dot(columnVector.getVector());
+          
+          //colValues.getVector().set(bMatrixKey.get(), dot);
       }
-      reopenOtherMatrix(peer.getConfiguration());
         
+      context.sendMessage(masterTask, rowKey); //rowKey << ":" << colValues
         
-      context.sequenceFileClose(fid);
+      reopenMatrixB(context);
     }
+    context.sequenceFileClose(seqFileID);
       
-      
-    peer.sync();
-      
-    // TODO we have a sorted message queue now (in hama 0.5), we can recode
-    // this better.
-    // a peer gets all column entries for multiple rows based on row number
-      
-      
-      
-      
+    context.sync();
   }
     
   void setup(BSPContext& context) {
-    
+      // Choose one as a master
+      masterTask = context.getPeerName(context.getNumPeers() / 2);
       
+      reopenMatrixB(context);
   }
     
   void cleanup(BSPContext& context) {
-   
+      if (context.getPeerName().compare(masterTask)==0) {
+          cout << "I'm the MasterTask fetch results!\n";
+          
+          int msgCount = context.getNumCurrentMessages();
+          cout << "MasterTask fetches " << msgCount << " results!\n";
+          
+          for (int i=0; i<msgCount; i++) {
+              
+              string received = context.getCurrentMessage();
+              
+              cout << "RECEIVED MSG: " << received << "\n";
+              
+              //peer.write(
+              //           new IntWritable(currentMatrixRowMessage.getRowIndex()),
+              //           currentMatrixRowMessage.getColValues());
+              
+              //context.write("Sum", toString(sum));
+          }
+      }
   }
+    
+  void reopenMatrixB(BSPContext& context) {
+    context.sequenceFileClose(seqFileID);
+    const BSPJob* job = context.getBSPJob();
+    string path = job->get(HAMA_MAT_MULT_B_PATH);
+    cout << "sequenceFileOpen path: " << path << "\n";
+    seqFileID = context.sequenceFileOpen(path,"r");
+  } 
+    
 };
 
 
+
 class MatrixRowPartitioner: public Partitioner {
-    
-    int getPartition(BSPContext& context) {
-    //(IntWritable key, VectorWritable value, int numTasks) {
-        return key.get() % (numTasks - 1);
+public:
+    MatrixRowPartitioner(BSPContext& context) { }
+        
+    int partition(const string& key,const string& value, int32_t numOfReduces) {
+      return 0; //key.get() % numTasks;
     }
-}
+};
 
 int main(int argc, char *argv[]) {
   return HamaPipes::runTask(HamaPipes::TemplateFactory<MatrixMultiplicationBSP,MatrixRowPartitioner>());
