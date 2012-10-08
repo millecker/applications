@@ -49,7 +49,7 @@
   </property>
   <property>
     <name>bsp.input.partitioner.class</name>
-    <value>PipesPartitioner</value>                                            
+    <value>org.apache.hama.pipes.PipesPartitioner</value>                                            
   </property>
   <property>
     <name>bsp.input.dir</name>
