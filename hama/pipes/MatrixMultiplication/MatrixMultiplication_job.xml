@@ -3,7 +3,7 @@
   <property>
     // Set the binary path on DFS
     <name>hama.pipes.executable</name>
-    <value>bin/cpu-MatrixMultiplication</value>
+    <value>bin/cpu_MatrixMultiplication</value>
   </property>
   <property>
     <name>hama.pipes.java.recordreader</name>
