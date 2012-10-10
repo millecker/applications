@@ -8,8 +8,12 @@
 #$1
 
 hadoop dfs -rmr output/Sum
-
 hadoop dfs -rmr bin/cpu-Sum
+
+cd cpu-Sum
+make clean && make
+cd ..
+
 hadoop dfs -put cpu-Sum/cpu-Sum bin/cpu-Sum
 
 hadoop dfs -rmr input/Sum

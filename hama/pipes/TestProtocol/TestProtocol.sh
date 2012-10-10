@@ -8,8 +8,9 @@
 #$1
 
 hadoop dfs -rmr output/testProtocol
-
 hadoop dfs -rmr bin/testProtocol
+
+make clean && make
 hadoop dfs -put testProtocol bin/testProtocol
 
 #hadoop dfs -rmr input/Sum

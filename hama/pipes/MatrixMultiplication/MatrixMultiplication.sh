@@ -1,7 +1,11 @@
 #!/bin/bash
 
 hadoop dfs -rmr output/pipes/matrixmult
-hadoop dfs -rmr bin/cpu-MatrixMultiplication
+hadoop dfs -rmr bin/cpu_MatrixMultiplication
+
+cd cpu-MatrixMultiplication
+make clean && make
+cd ..
 
 hadoop dfs -put cpu-MatrixMultiplication/MatrixMultiplication bin/cpu_MatrixMultiplication
 

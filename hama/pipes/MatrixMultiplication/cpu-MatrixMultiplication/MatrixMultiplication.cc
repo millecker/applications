@@ -107,8 +107,9 @@ class MatrixRowPartitioner: public Partitioner {
 public:
     MatrixRowPartitioner(BSPContext& context) { }
         
-    int partition(const string& key,const string& value, int32_t numOfReduces) {
-      return 0; //key.get() % numTasks;
+    int partition(const string& key,const string& value, int32_t numTasks) {
+      cout << "partition key: " << key << " value: " << value << " numTasks: "<< numTasks <<"\n";
+      return toInt(key) % numTasks;
     }
 };
 
