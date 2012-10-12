@@ -92,11 +92,26 @@ public:
   }
     
   void reopenMatrixB(BSPContext& context) {
-    context.sequenceFileClose(seqFileID);
+    bool result = context.sequenceFileClose(seqFileID);
+    cout << "sequenceFileClose resultVal: " << result << "\n";
+    cout.flush();
+      
     const BSPJob* job = context.getBSPJob();
+    cout << "Test1 job: " << job << "\n";
+      cout.flush();
+      
     string path = job->get(HAMA_MAT_MULT_B_PATH);
+    
+    cout << "Test2" << "\n";
+      cout.flush();
+      
     cout << "sequenceFileOpen path: " << path << "\n";
+      cout.flush();
+      
     seqFileID = context.sequenceFileOpen(path,"r");
+      cout << "Test3" << "\n";
+      cout.flush();
+      
   } 
     
 };
@@ -108,7 +123,7 @@ public:
     MatrixRowPartitioner(BSPContext& context) { }
         
     int partition(const string& key,const string& value, int32_t numTasks) {
-      cout << "partition key: " << key << " value: " << value << " numTasks: "<< numTasks <<"\n";
+      //cout << "partition key: " << key << " value: " << value.substr(0,10) << "..." << " numTasks: "<< numTasks <<"\n";
       return toInt(key) % numTasks;
     }
 };
