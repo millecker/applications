@@ -1,15 +1,18 @@
 Examples
 
-TestProtocol Example
--> needs the bin/testProtocol binary in the HDFS! 
+# Hama Seqdumper which can operate with SequenceFiles
+hama seqdumper -libjars Examples.jar -seqFile input/examples/MatrixA.seq
+
+#TestProtocol Example
+#-> needs the bin/testProtocol binary in the HDFS! 
 ./Examples.sh at.illecker.hama.examples.TestProtocol
 
-Sum Example
- ./Examples.sh at.illecker.hama.examples.Sum
+#Sum Example
+./Examples.sh at.illecker.hama.examples.Sum
 
-Pi Estimator
- ./Examples.sh at.illecker.hama.examples.MyEstimator {NumBspTasks}
+#Pi Estimator
+./Examples.sh at.illecker.hama.examples.MyEstimator {NumBspTasks}
 
-MatrixMultiplication
+#MatrixMultiplication
 ./Examples.sh de.jungblut.bsp.MatrixMultiplicationBSP
 ./Examples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}

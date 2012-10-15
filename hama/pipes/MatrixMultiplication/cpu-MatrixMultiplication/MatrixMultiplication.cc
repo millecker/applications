@@ -1,6 +1,7 @@
 #include "hama/Pipes.hh"
 #include "hama/TemplateFactory.hh"
 #include "hadoop/StringUtils.hh"
+#include "DenseDoubleVector.hh"
 
 #include <time.h>
 #include <math.h>
@@ -15,6 +16,7 @@ using HamaPipes::BSPJob;
 using HamaPipes::Partitioner;
 using HamaPipes::BSPContext;
 using namespace HadoopUtils;
+using math::DenseDoubleVector;
 
 class MatrixMultiplicationBSP: public BSP {
 private:
@@ -23,37 +25,41 @@ private:
     string HAMA_MAT_MULT_B_PATH;
 public:
   MatrixMultiplicationBSP(BSPContext& context) { 
+    seqFileID = 0;
     HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
   }
 
   void bsp(BSPContext& context) {
       
-    string rowKey;
-    string value;
+    string aRowKey;
+    string aRowVectorStr;
     // while for each row of matrixA
-    while(context.readNext(rowKey,value)) {
-      // System.out.println(peer.getPeerName() + " " + rowKey.get() + "|"
-      // + value.toString());
+    while(context.readNext(aRowKey, aRowVectorStr)) {
+      cout << "aRowKey: " << aRowKey << " - aRowVectorStr: " << aRowVectorStr << "\n";
         
-      string bMatrixKey;
-      string bColumnVector;
-      //VectorWritable colValues = null;
-      string colValues;
+      DenseDoubleVector *aRowVector = new DenseDoubleVector(aRowVectorStr);
+      DenseDoubleVector *colValues = NULL;
+        
+      string bColKey;
+      string bColVectorStr;
         
       // while for each col of matrixB
-      while (context.sequenceFileReadNext(seqFileID,bMatrixKey,bColumnVector)) {
+      while (context.sequenceFileReadNext(seqFileID,bColKey,bColVectorStr)) {
         
-          cout << "bMatrixKey: " << bMatrixKey << "bColumnVector: " << bColumnVector << "\n";
-          //if (colValues == null)
-          //   colValues = new VectorWritable(new DenseDoubleVector(
-          //            columnVector.getVector().getDimension()));
+          cout << "bColKey: " << bColKey << " - bColVectorStr: " << bColVectorStr << "\n";
           
-          //double dot = value.getVector().dot(columnVector.getVector());
+          DenseDoubleVector *bColVector = new DenseDoubleVector(bColVectorStr);
           
-          //colValues.getVector().set(bMatrixKey.get(), dot);
+          if (colValues == NULL)
+             colValues = new DenseDoubleVector(bColVector->getDimension());
+          
+          double dot = aRowVector->dot(bColVector);
+          
+          colValues->set(toInt(bColKey), dot);
       }
-        
-      context.sendMessage(masterTask, rowKey); //rowKey << ":" << colValues
+      
+      break;
+      context.sendMessage(masterTask, aRowKey); //aRowKey << ":" << colValues
         
       reopenMatrixB(context);
     }
@@ -92,26 +98,17 @@ public:
   }
     
   void reopenMatrixB(BSPContext& context) {
-    bool result = context.sequenceFileClose(seqFileID);
-    cout << "sequenceFileClose resultVal: " << result << "\n";
-    cout.flush();
-      
+    if (seqFileID!=0)
+      context.sequenceFileClose(seqFileID);
+
     const BSPJob* job = context.getBSPJob();
-    cout << "Test1 job: " << job << "\n";
-      cout.flush();
-      
     string path = job->get(HAMA_MAT_MULT_B_PATH);
-    
-    cout << "Test2" << "\n";
-      cout.flush();
       
     cout << "sequenceFileOpen path: " << path << "\n";
-      cout.flush();
-      
-    seqFileID = context.sequenceFileOpen(path,"r");
-      cout << "Test3" << "\n";
-      cout.flush();
-      
+    seqFileID = context.sequenceFileOpen(path,"r",
+                "org.apache.hadoop.io.IntWritable",
+                "de.jungblut.writable.VectorWritable");
+    
   } 
     
 };
