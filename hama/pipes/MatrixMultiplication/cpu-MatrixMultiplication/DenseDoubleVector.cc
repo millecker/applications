@@ -1,11 +1,14 @@
 #include "hadoop/StringUtils.hh"
+#include "hadoop/Splitter.hh"
 #include "DenseDoubleVector.hh"
 #include <limits>
 #include <string>
+#include <vector>
 #include <iostream>
 
 using std::string;
 using std::cout;
+using HadoopUtils::Splitter;
 
 namespace math {
   
@@ -21,7 +24,16 @@ namespace math {
   }
 
   DenseDoubleVector::DenseDoubleVector(const string values) { 
-    cout << "DenseDoubleVector values: " << values << "\n";
+    //cout << "DenseDoubleVector values: " << values << "\n";
+          
+    Splitter split ( values, "," );
+      
+    size = split.size();
+    vector = new double[size];
+    //cout << "DenseDoubleVector value size: " << size << "\n";
+      
+    for ( Splitter::size_type i = 0; i < split.size(); i++ )
+      vector[i] = HadoopUtils::toDouble(split[i]);      
   }
 
   DenseDoubleVector::~DenseDoubleVector() { 
@@ -206,8 +218,12 @@ namespace math {
     
   string DenseDoubleVector::toString() {
     string str;
+    string delimiter = ",";
     for (int i = 0; i < size; i++)
+      if (i==0)
         str += HadoopUtils::toString(vector[i]);
+      else
+        str += delimiter + HadoopUtils::toString(vector[i]);  
           
     return str;
   }

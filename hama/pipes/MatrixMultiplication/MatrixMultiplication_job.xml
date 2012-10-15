@@ -17,11 +17,11 @@
     <name>bsp.input.format.class</name>
     <value>org.apache.hama.bsp.SequenceFileInputFormat</value>
   </property>
+<!--
   <property>
     <name>bsp.output.format.class</name>
     <value>org.apache.hama.bsp.SequenceFileOutputFormat</value>
   </property>
-<!--    
   <property>  
   <name>bsp.output.dir</name>
     <value>output/pipes/matrixmult</value>                                            

@@ -7,6 +7,7 @@
 #include <math.h>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 using std::string;
 using std::cout;
@@ -35,7 +36,7 @@ public:
     string aRowVectorStr;
     // while for each row of matrixA
     while(context.readNext(aRowKey, aRowVectorStr)) {
-      cout << "aRowKey: " << aRowKey << " - aRowVectorStr: " << aRowVectorStr << "\n";
+      //cout << "aRowKey: " << aRowKey << " - aRowVectorStr: " << aRowVectorStr << "\n";
         
       DenseDoubleVector *aRowVector = new DenseDoubleVector(aRowVectorStr);
       DenseDoubleVector *colValues = NULL;
@@ -46,7 +47,7 @@ public:
       // while for each col of matrixB
       while (context.sequenceFileReadNext(seqFileID,bColKey,bColVectorStr)) {
         
-          cout << "bColKey: " << bColKey << " - bColVectorStr: " << bColVectorStr << "\n";
+          //cout << "bColKey: " << bColKey << " - bColVectorStr: " << bColVectorStr << "\n";
           
           DenseDoubleVector *bColVector = new DenseDoubleVector(bColVectorStr);
           
@@ -57,9 +58,12 @@ public:
           
           colValues->set(toInt(bColKey), dot);
       }
-      
-      break;
-      context.sendMessage(masterTask, aRowKey); //aRowKey << ":" << colValues
+        
+      // Submit one calculated row
+      std::stringstream message;
+      message << aRowKey << ":" << colValues->toString();
+      //cout << "Send Message: " << message.str() << "\n";
+      context.sendMessage(masterTask, message.str()); 
         
       reopenMatrixB(context);
     }
@@ -77,22 +81,22 @@ public:
     
   void cleanup(BSPContext& context) {
       if (context.getPeerName().compare(masterTask)==0) {
-          cout << "I'm the MasterTask fetch results!\n";
+          //cout << "I'm the MasterTask fetch results!\n";
           
           int msgCount = context.getNumCurrentMessages();
-          cout << "MasterTask fetches " << msgCount << " results!\n";
+          //cout << "MasterTask fetches " << msgCount << " messages!\n";
           
           for (int i=0; i<msgCount; i++) {
               
               string received = context.getCurrentMessage();
+              //key:value1,value2,value3
+              int pos = (int)received.find(":");
+              string key = received.substr(0,pos);
+              string values = received.substr(pos+1,received.length());
               
-              cout << "RECEIVED MSG: " << received << "\n";
+              //cout << "RECEIVED MSG: key:" << key << " value: " << values.substr(0,20) << "\n";
               
-              //peer.write(
-              //           new IntWritable(currentMatrixRowMessage.getRowIndex()),
-              //           currentMatrixRowMessage.getColValues());
-              
-              //context.write("Sum", toString(sum));
+              context.write(key, values);
           }
       }
   }
@@ -104,12 +108,12 @@ public:
     const BSPJob* job = context.getBSPJob();
     string path = job->get(HAMA_MAT_MULT_B_PATH);
       
-    cout << "sequenceFileOpen path: " << path << "\n";
+    //cout << "sequenceFileOpen path: " << path << "\n";
     seqFileID = context.sequenceFileOpen(path,"r",
                 "org.apache.hadoop.io.IntWritable",
                 "de.jungblut.writable.VectorWritable");
     
-  } 
+  }
     
 };
 
