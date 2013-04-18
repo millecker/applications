@@ -74,12 +74,12 @@ public class Sum extends BSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
 	}
 
 	static void printOutput(BSPJob job) throws IOException {
-		FileSystem fs = FileSystem.get(job.getConf());
+		FileSystem fs = FileSystem.get(job.getConfiguration());
 		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].getLen() > 0) {
 				FSDataInputStream in = fs.open(files[i].getPath());
-				IOUtils.copyBytes(in, System.out, job.getConf(), false);
+				IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
 				in.close();
 				break;
 			}

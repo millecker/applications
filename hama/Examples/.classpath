@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-configuration-1.7.jar"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-lang-2.6.jar"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/hadoop-core-1.0.0.jar"/>
-	<classpathentry kind="lib" path="/hama-0.5.0-gpu/dist/target/hama-0.5.0/hama-0.5.0/lib/zookeeper-3.3.3.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hama-core"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hama-examples"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/hama-graph"/>
@@ -14,5 +9,11 @@
 	<classpathentry kind="lib" path="lib/guava-12.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="/hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT/lib/commons-configuration-1.7.jar"/>
+	<classpathentry kind="lib" path="/hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT/lib/commons-lang-2.6.jar"/>
+	<classpathentry kind="lib" path="/hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT/lib/hadoop-core-1.0.4.jar"/>
+	<classpathentry kind="lib" path="/hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT/lib/zookeeper-3.4.5.jar"/>
+	<classpathentry kind="lib" path="/hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT/lib/rootbeer-1.x-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

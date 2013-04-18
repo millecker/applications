@@ -16,3 +16,9 @@ hama seqdumper -libjars Examples.jar -seqFile input/examples/MatrixA.seq
 #MatrixMultiplication
 ./Examples.sh de.jungblut.bsp.MatrixMultiplicationBSP
 ./Examples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}
+
+
+############## ROOTBEER #############
+
+#Sum Example
+./Examples.sh at.illecker.hama.examples.rootbeer.Sum

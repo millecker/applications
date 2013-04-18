@@ -160,22 +160,22 @@ public class MatrixMultiplication
 		// job.setNumBspTask(4);
 		// LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
 		LOG.info("DEBUG: bsp.job.split.file: "
-				+ job.getConf().get("bsp.job.split.file"));
-		LOG.info("DEBUG: bsp.peers.num: " + job.getConf().get("bsp.peers.num"));
+				+ job.get("bsp.job.split.file"));
+		LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
 		LOG.info("DEBUG: bsp.tasks.maximum: "
-				+ job.getConf().get("bsp.tasks.maximum"));
+				+ job.get("bsp.tasks.maximum"));
 
 		job.setInputFormat(SequenceFileInputFormat.class);
 		job.setInputPath(aPath);
 		LOG.info("DEBUG: bsp.input.dir: "
-				+ job.getConf().get("bsp.input.dir"));
+				+ job.get("bsp.input.dir"));
 
 		job.setOutputKeyClass(IntWritable.class);
 		job.setOutputValueClass(VectorWritable.class);
 		job.setOutputFormat(SequenceFileOutputFormat.class);
 		job.setOutputPath(outPath);
 		LOG.info("DEBUG: bsp.output.dir: "
-				+ job.getConf().get("bsp.output.dir"));
+				+ job.get("bsp.output.dir"));
 		
 		job.setBspClass(MatrixMultiplication.class);
 		job.setJarByClass(MatrixMultiplication.class);
