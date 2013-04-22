@@ -22,6 +22,8 @@ import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.gpu.GpuBSP;
 
+import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+
 public class Sum extends
 		GpuBSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
 	public static final Log LOG = LogFactory.getLog(Sum.class);
@@ -29,9 +31,19 @@ public class Sum extends
 	private String masterTask;
 
 	@Override
+	public void setupGPU(
+			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer,
+			Rootbeer rootbeer) throws IOException {
+
+		// Choose one as a master
+		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+	}
+
+	@Override
 	public void bspGPU(
-			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-			throws IOException, SyncException, InterruptedException {
+			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer,
+			Rootbeer rootbeer) throws IOException, SyncException,
+			InterruptedException {
 
 		double intermediateSum = 0.0;
 
@@ -47,17 +59,9 @@ public class Sum extends
 	}
 
 	@Override
-	public void setupGPU(
-			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-			throws IOException {
-		// Choose one as a master
-		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-	}
-
-	@Override
 	public void cleanupGPU(
-			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-			throws IOException {
+			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer,
+			Rootbeer rootbeer) throws IOException {
 
 		if (peer.getPeerName().equals(masterTask)) {
 			double sum = 0.0;
@@ -131,4 +135,5 @@ public class Sum extends
 					+ " seconds");
 		}
 	}
+
 }
