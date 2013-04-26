@@ -8,8 +8,8 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
@@ -22,69 +22,30 @@ import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.gpu.GpuBSP;
 
-public class Sum extends
-		GpuBSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
-	public static final Log LOG = LogFactory.getLog(Sum.class);
+import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
-	private String masterTask;
+public class HelloRootbeer extends
+		GpuBSP<Text, Text, Text, Integer, IntWritable> {
+	public static final Log LOG = LogFactory.getLog(HelloRootbeer.class);
 
 	@Override
-	public void setupGPU(
-			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+	public void setupGPU(BSPPeer<Text, Text, Text, Integer, IntWritable> peer)
 			throws IOException {
 
-		// Choose one as a master
-		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 	}
 
 	@Override
-	public void bspGPU(
-			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+	public void bspGPU(BSPPeer<Text, Text, Text, Integer, IntWritable> peer)
 			throws IOException, SyncException, InterruptedException {
 
-		double intermediateSum = 0.0;
-
-		Text key = new Text();
-		Text value = new Text();
-		while (peer.readNext(key, value)) {
-			LOG.info("DEBUG: key: " + key + " value: " + value);
-			intermediateSum += Double.parseDouble(value.toString());
-		}
-
-		peer.send(masterTask, new DoubleWritable(intermediateSum));
-		peer.sync();
+		peer.write(new Text("HelloRootbeer - ThreadId"),
+				RootbeerGpu.getThreadId());
 	}
 
 	@Override
-	public void cleanupGPU(
-			BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+	public void cleanupGPU(BSPPeer<Text, Text, Text, Integer, IntWritable> peer)
 			throws IOException {
 
-		if (peer.getPeerName().equals(masterTask)) {
-			double sum = 0.0;
-			// int numPeers = peer.getNumCurrentMessages();
-			DoubleWritable received;
-			while ((received = peer.getCurrentMessage()) != null) {
-				sum += received.get();
-			}
-
-			peer.write(new Text("Sum"), new DoubleWritable(sum));
-		}
-	}
-
-	static void printOutput(BSPJob job) throws IOException {
-		FileSystem fs = FileSystem.get(job.getConfiguration());
-		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
-		for (int i = 0; i < files.length; i++) {
-			if (files[i].getLen() > 0) {
-				FSDataInputStream in = fs.open(files[i].getPath());
-				IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
-				in.close();
-				break;
-			}
-		}
-
-		// fs.delete(FileOutputFormat.getOutputPath(job), true);
 	}
 
 	public static void main(String[] args) throws InterruptedException,
@@ -95,11 +56,11 @@ public class Sum extends
 
 		BSPJob job = new BSPJob(conf);
 		// Set the job name
-		job.setJobName("Rootbeer Sum Example");
+		job.setJobName("HelloRootbeer Example");
 		// set the BSP class which shall be executed
-		job.setBspClass(Sum.class);
+		job.setBspClass(HelloRootbeer.class);
 		// help Hama to locale the jar to be distributed
-		job.setJarByClass(Sum.class);
+		job.setJarByClass(HelloRootbeer.class);
 
 		job.setInputPath(new Path("input/examples"));
 		job.setInputFormat(KeyValueTextInputFormat.class);
@@ -107,7 +68,7 @@ public class Sum extends
 		// job.setInputValueClass(DoubleWritable.class);
 
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(DoubleWritable.class);
+		job.setOutputValueClass(IntWritable.class);
 
 		job.setOutputFormat(TextOutputFormat.class);
 		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
@@ -131,6 +92,21 @@ public class Sum extends
 					+ (System.currentTimeMillis() - startTime) / 1000.0
 					+ " seconds");
 		}
+	}
+
+	static void printOutput(BSPJob job) throws IOException {
+		FileSystem fs = FileSystem.get(job.getConfiguration());
+		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].getLen() > 0) {
+				FSDataInputStream in = fs.open(files[i].getPath());
+				IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
+				in.close();
+				break;
+			}
+		}
+
+		// fs.delete(FileOutputFormat.getOutputPath(job), true);
 	}
 
 }
