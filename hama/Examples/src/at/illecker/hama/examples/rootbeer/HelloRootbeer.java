@@ -19,8 +19,8 @@ import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.KeyValueTextInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
+import org.apache.hama.bsp.gpu.GpuBSP;
 import org.apache.hama.bsp.sync.SyncException;
-import org.apache.hama.gpu.GpuBSP;
 
 import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 

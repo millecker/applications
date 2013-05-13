@@ -1,24 +1,24 @@
-Examples
+HamaExamples README
 
 # Hama Seqdumper which can operate with SequenceFiles
-hama seqdumper -libjars Examples.jar -seqFile input/examples/MatrixA.seq
+hama seqdumper -libjars HamaExamples.jar -seqFile input/examples/MatrixA.seq
 
-#TestProtocol Example
+# TestProtocol Example
 #-> needs the bin/testProtocol binary in the HDFS! 
-./Examples.sh at.illecker.hama.examples.TestProtocol
+./HamaExamples.sh at.illecker.hama.examples.TestProtocol
 
-#Sum Example
-./Examples.sh at.illecker.hama.examples.Sum
+# Sum Example
+./HamaExamples.sh at.illecker.hama.examples.Sum
 
-#Pi Estimator
-./Examples.sh at.illecker.hama.examples.MyEstimator {NumBspTasks}
+# Pi Estimator
+./HamaExamples.sh at.illecker.hama.examples.MyEstimator {NumBspTasks}
 
-#MatrixMultiplication
-./Examples.sh de.jungblut.bsp.MatrixMultiplicationBSP
-./Examples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}
+# MatrixMultiplication
+./HamaExamples.sh de.jungblut.bsp.MatrixMultiplicationBSP
+./HamaExamples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}
 
 
 ############## ROOTBEER #############
 
-#Sum Example
-./Examples.sh at.illecker.hama.examples.rootbeer.Sum
+# Sum Example
+./HamaExamples.sh at.illecker.hama.examples.rootbeer.Sum

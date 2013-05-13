@@ -1,26 +1,25 @@
 #!/bin/bash
 
 cd bin
-jar cfm ../Examples_tmp.jar ../Manifest.txt `find . -not -path "*/.svn/*" -not -type d`
+jar cfm ../HamaExamples_tmp1.jar ../Manifest.txt `find . -not -path "*/.svn/*" -not -type d`
 cd ..
 
-# Include jars into Example.jar
-# jar uf Examples.jar `find lib -not -path "*/.svn/*" -not -type d`
+LIBS=../../lib
 
-HAMA_DIR=../../../hama-trunk-gpu/hama-trunk-gpu/dist/target/hama-0.7.0-SNAPSHOT/hama-0.7.0-SNAPSHOT
-HAMA_LIB=$HAMA/lib
+# Include jars into HamaExample.jar
+# jar uf HamaExamples.jar `find $LIBS -not -path "*/.svn/*" -not -type d`
 
 # Pack jar including all lib jars
-#java -jar pack.jar -mainjar Examples_tmp.jar -directory lib -destjar Examples_tmp2.jar
+java -jar pack.jar -mainjar HamaExamples_tmp1.jar -libjar $LIBS/hama-core-0.7.0-SNAPSHOT.jar -destjar HamaExamples_tmp2.jar
+java -jar pack.jar -mainjar HamaExamples_tmp2.jar -libjar $LIBS/commons-logging-1.1.1.jar -destjar HamaExamples_tmp3.jar
+java -jar pack.jar -mainjar HamaExamples_tmp3.jar -libjar $LIBS/tjungblut-math-1.0.jar -destjar HamaExamples_tmp4.jar
 
-java -jar pack.jar -mainjar Examples_tmp.jar -libjar $HAMA_DIR/hama-core-0.7.0-SNAPSHOT.jar -destjar Examples.jar
+rm HamaExamples_tmp1.jar
+rm HamaExamples_tmp2.jar
+rm HamaExamples_tmp3.jar
 
-rm Examples_tmp.jar
-#rm Examples_tmp2.jar
-
-#mv Examples_tmp.jar Examples.jar
+mv HamaExamples_tmp4.jar HamaExamples.jar
 
 if [ "$1" == "gpu" ]; then
-#  java -Xmx1g -jar ../../../rootbeer/rootbeer1/Rootbeer.jar Examples.jar Examples-GPU.jar
-  java -Xmx2g -jar ../../../rootbeer/rootbeer1_rbclassload2/Rootbeer.jar Examples.jar Examples-GPU.jar
+  java -Xmx2g -jar ../../../rootbeer1/Rootbeer.jar HamaExamples.jar HamaExamples-GPU.jar
 fi

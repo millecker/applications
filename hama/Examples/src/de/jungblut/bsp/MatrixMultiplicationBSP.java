@@ -132,14 +132,14 @@ public final class MatrixMultiplicationBSP
 			DenseDoubleMatrix a = new DenseDoubleMatrix(n, n, new Random(42L));
 			DenseDoubleMatrix b = new DenseDoubleMatrix(n, n, new Random(1337L));
 
-			Path inPath = new Path("input/examples/matrixmult/A.seq");
+			Path inPath = new Path("input/hama/examples/matrixmult/A.seq");
 			writeSequenceFileMatrix(conf, a, inPath, false);
-			Path bPath = new Path("input/examples/matrixmult/B.seq");
+			Path bPath = new Path("input/hama/examples/matrixmult/B.seq");
 			// store this in column major format
 			writeSequenceFileMatrix(conf, b, bPath, true);
 
 			conf.set(HAMA_MAT_MULT_B_PATH, bPath.toString());
-			Path outPath = new Path("output/examples/matrixmult/");
+			Path outPath = new Path("output/hama/examples/matrixmult/");
 
 			BSPJob job = new BSPJob(conf);
 			job.setInputFormat(SequenceFileInputFormat.class);

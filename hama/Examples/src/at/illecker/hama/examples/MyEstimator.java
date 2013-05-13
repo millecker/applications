@@ -121,7 +121,7 @@ public class MyEstimator extends
 		job.setOutputValueClass(DoubleWritable.class);
 		job.setOutputFormat(TextOutputFormat.class);
 		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
-		job.setOutputPath(new Path("output/examples"));
+		job.setOutputPath(new Path("output/hama/examples"));
 
 		BSPJobClient jobClient = new BSPJobClient(conf);
 		ClusterStatus cluster = jobClient.getClusterStatus(true);

@@ -139,16 +139,16 @@ public class MatrixMultiplication
 		DenseDoubleMatrix a = new DenseDoubleMatrix(n, m, new Random(42L));
 		DenseDoubleMatrix b = new DenseDoubleMatrix(n, m, new Random(1337L));
 
-		Path aPath = new Path("input/examples/MatrixA.seq");
+		Path aPath = new Path("input/hama/examples/MatrixA.seq");
 		MatrixMultiplicationBSP.writeSequenceFileMatrix(conf, a, aPath, false);
 
-		Path bPath = new Path("input/examples/MatrixB.seq");
+		Path bPath = new Path("input/hama/examples/MatrixB.seq");
 		// store this in column major format
 		MatrixMultiplicationBSP.writeSequenceFileMatrix(conf, b, bPath, true);
 
 		conf.set(HAMA_MAT_MULT_B_PATH, bPath.toString());
 
-		Path outPath = new Path("output/examples/matrixmult");
+		Path outPath = new Path("output/hama/examples/matrixmult");
 
 		conf.set(MessageManager.QUEUE_TYPE_CLASS,
 				"org.apache.hama.bsp.message.SortedMessageQueue");

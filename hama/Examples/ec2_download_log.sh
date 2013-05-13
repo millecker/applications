@@ -7,4 +7,5 @@ fi
 
 rm Examples-GPU.log
 
-scp -i ~/.ec2/millecker.pem $1:./Examples/Examples-GPU.log .
+#scp -i ~/.ec2/millecker.pem $1:./Examples/Examples-GPU.log .
+scp -i ~/.ec2/millecker.pem $1:./Examples/Examples.jar Examples_including_all.jar
