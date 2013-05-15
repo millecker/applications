@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
@@ -17,41 +18,53 @@ import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
 import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
-import org.apache.hama.bsp.KeyValueTextInputFormat;
+import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.gpu.GpuBSP;
+import org.apache.hama.bsp.message.type.IntegerMessage;
 import org.apache.hama.bsp.sync.SyncException;
 
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
-
 public class HelloRootbeer extends
-		GpuBSP<Text, Text, Text, Integer, IntWritable> {
+		GpuBSP<NullWritable, NullWritable, IntWritable, Text, IntegerMessage> {
+
 	public static final Log LOG = LogFactory.getLog(HelloRootbeer.class);
+	public static final int NUM_SUPERSTEPS = 15;
+	private static Path TMP_OUTPUT = new Path(
+			"output/hama/examples/HelloRootbeer-" + System.currentTimeMillis());
 
 	@Override
-	public void setupGPU(BSPPeer<Text, Text, Text, Integer, IntWritable> peer)
-			throws IOException {
+	public void bspGPU(
+			BSPPeer<NullWritable, NullWritable, IntWritable, Text, IntegerMessage> peer) {
+		try {
 
-	}
+			for (int i = 0; i < NUM_SUPERSTEPS; i++) {
+				for (String otherPeer : peer.getAllPeerNames()) {
+					peer.send(otherPeer, new IntegerMessage(peer.getPeerName(),
+							i));
+				}
 
-	@Override
-	public void bspGPU(BSPPeer<Text, Text, Text, Integer, IntWritable> peer)
-			throws IOException, SyncException, InterruptedException {
+				peer.sync();
 
-		peer.write(new Text("HelloRootbeer - ThreadId"),
-				RootbeerGpu.getThreadId());
-	}
+				IntegerMessage msg = null;
+				while ((msg = (IntegerMessage) peer.getCurrentMessage()) != null) {
+					peer.write(new IntWritable(msg.getData()),
+							new Text(msg.getTag()));
+				}
+			}
 
-	@Override
-	public void cleanupGPU(BSPPeer<Text, Text, Text, Integer, IntWritable> peer)
-			throws IOException {
-
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (SyncException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void main(String[] args) throws InterruptedException,
 			IOException, ClassNotFoundException {
-		// BSP job configuration
 
+		// BSP job configuration
 		HamaConfiguration conf = new HamaConfiguration();
 
 		BSPJob job = new BSPJob(conf);
@@ -62,17 +75,13 @@ public class HelloRootbeer extends
 		// help Hama to locale the jar to be distributed
 		job.setJarByClass(HelloRootbeer.class);
 
-		job.setInputPath(new Path("input/examples"));
-		job.setInputFormat(KeyValueTextInputFormat.class);
-		// job.setInputKeyClass(Text.class);
-		// job.setInputValueClass(DoubleWritable.class);
+		job.setInputFormat(NullInputFormat.class);
 
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(IntWritable.class);
-
+		job.setOutputKeyClass(IntWritable.class);
+		job.setOutputValueClass(Text.class);
 		job.setOutputFormat(TextOutputFormat.class);
-		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
-		job.setOutputPath(new Path("output/examples"));
+		FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+		// job.setOutputPath(new Path("output/hama/examples"));
 
 		BSPJobClient jobClient = new BSPJobClient(conf);
 		ClusterStatus cluster = jobClient.getClusterStatus(true);
