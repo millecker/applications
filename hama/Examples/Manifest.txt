@@ -1,2 +1,1 @@
 Built-By: bafu
-Main-Class: at.illecker.hama.examples.rootbeer.HelloRootbeer

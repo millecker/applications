@@ -23,5 +23,5 @@ rm HamaExamples_tmp4.jar
 mv HamaExamples_tmp5.jar HamaExamples.jar
 
 if [ "$1" == "gpu" ]; then
-  java -Xmx2g -jar ../../../rootbeer1/Rootbeer.jar HamaExamples.jar HamaExamples-GPU.jar
+  java -Xmx2g -jar ../../../rootbeer1/Rootbeer.jar HamaExamples.jar HamaExamples-GPU.jar -nodoubles -norecursion -loadclass $2
 fi
