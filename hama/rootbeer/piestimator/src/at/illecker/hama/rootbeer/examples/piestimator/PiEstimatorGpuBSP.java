@@ -1,6 +1,8 @@
-package at.illecker.hama.examples;
+package at.illecker.hama.rootbeer.examples.piestimator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,8 +25,13 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
+import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
+import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+
 /**
- * @author MyEstimator Monte Carlo computation of pi
+ * @author PiEstimator Monte Carlo computation of pi
  *         http://de.wikipedia.org/wiki/Monte-Carlo-Algorithmus
  * 
  *         Generate random points in the square [-1,1] X [-1,1]. The fraction of
@@ -32,31 +39,49 @@ import org.apache.hama.bsp.sync.SyncException;
  *         pi/4.
  */
 
-public class MyEstimator extends
+public class PiEstimatorGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
-	public static final Log LOG = LogFactory.getLog(MyEstimator.class);
+	public static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
 	private String masterTask;
-	private static final int iterations = 10000;
-
-	// private static Path TMP_OUTPUT = new Path("/tmp/pi-" +
-	// System.currentTimeMillis());
+	private static final long iterations = 10000;
+	private static final int kernelCount = 1000;
 
 	@Override
 	public void bsp(
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException, SyncException, InterruptedException {
 
-		int in = 0;
-		for (int i = 0; i < iterations; i++) {
-			double x = 2.0 * Math.random() - 1.0, y = 2.0 * Math.random() - 1.0;
-			if ((Math.sqrt(x * x + y * y) < 1.0)) {
-				in++;
-			}
+		Stopwatch watch = new Stopwatch();
+		watch.start();
+
+		List<Kernel> kernels = new ArrayList<Kernel>();
+		for (int i = 0; i < kernelCount; i++) {
+			kernels.add(new PiEstimatorKernel(iterations));
+		}
+		Rootbeer rootbeer = new Rootbeer();
+		// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
+		rootbeer.runAll(kernels);
+
+		watch.stop();
+		System.out.println("gpu time: " + watch.elapsedTimeMillis() + " ms");
+		List<StatsRow> stats = rootbeer.getStats();
+		for (StatsRow row : stats) {
+			System.out.println("  StatsRow:");
+			System.out.println("    init time: " + row.getInitTime());
+			System.out
+					.println("    serial time: " + row.getSerializationTime());
+			System.out.println("    exec time: " + row.getExecutionTime());
+			System.out.println("    deserial time: "
+					+ row.getDeserializationTime());
+			System.out.println("    num blocks: " + row.getNumBlocks());
+			System.out.println("    num threads: " + row.getNumThreads());
 		}
 
-		double data = 4.0 * in / iterations;
-
-		peer.send(masterTask, new DoubleWritable(data));
+		// Send result to MasterTask
+		for (int i = 0; i < kernelCount; i++) {
+			peer.send(masterTask, new DoubleWritable(
+					((PiEstimatorKernel) kernels.get(i)).getResult()));
+		}
 		peer.sync();
 	}
 
@@ -64,6 +89,7 @@ public class MyEstimator extends
 	public void setup(
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException {
+
 		// Choose one as a master
 		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 	}
@@ -78,6 +104,7 @@ public class MyEstimator extends
 			double pi = 0.0;
 
 			int numPeers = peer.getNumCurrentMessages();
+
 			DoubleWritable received;
 			while ((received = peer.getCurrentMessage()) != null) {
 				pi += received.get();
@@ -110,11 +137,11 @@ public class MyEstimator extends
 
 		BSPJob job = new BSPJob(conf);
 		// Set the job name
-		job.setJobName("Pi Estimation Example");
+		job.setJobName("Rootbeer GPU PiEstimatior");
 		// set the BSP class which shall be executed
-		job.setBspClass(MyEstimator.class);
+		job.setBspClass(PiEstimatorGpuBSP.class);
 		// help Hama to locale the jar to be distributed
-		job.setJarByClass(MyEstimator.class);
+		job.setJarByClass(PiEstimatorGpuBSP.class);
 
 		job.setInputFormat(NullInputFormat.class);
 		job.setOutputKeyClass(Text.class);

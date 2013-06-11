@@ -17,5 +17,7 @@ hama/Examples/bin
 
 # Hama Rootbeer
 hama/rootbeer/bin
-hama/rootbeer/matrix/build
-hama/rootbeer/matrix/*.jar
+hama/rootbeer/piestimator/build
+hama/rootbeer/piestimator/*.jar
+hama/rootbeer/matrixmultiplication/build
+hama/rootbeer/matrixmultiplication/*.jar

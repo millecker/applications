@@ -1,4 +1,4 @@
-package at.illecker.hama.rootbeer.examples;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication;
 
 public class MatrixCpuThread implements Runnable {
 

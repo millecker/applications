@@ -1,0 +1,22 @@
+#!/bin/sh
+ROOT_DIR=../../..
+LIBS=$ROOT_DIR/lib
+ROOTBEER=$LIBS/rootbeer-1.x-SNAPSHOT.jar
+
+# Set library jars
+LIB_JARS="lib/rootbeer-1.x-SNAPSHOT.jar lib/tjungblut-math-1.0.jar"
+
+# Ant
+ant clean
+ant jar-gpu
+
+# Rootbeer
+java -jar $ROOTBEER PiEstimator.jar PiEstimator-GPU.jar
+
+# Include lib jars
+for jar in $LIB_JARS
+do
+  jar uf PiEstimator.jar -C $ROOT_DIR $jar
+done
+
+hama jar PiEstimator.jar

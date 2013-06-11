@@ -1,0 +1,5 @@
+#!/bin/sh
+ROOTBEER=../../../lib/rootbeer-1.x-SNAPSHOT.jar
+
+ant jar
+java -jar $ROOTBEER MatrixMultiplication.jar MatrixMultiplication-GPU.jar

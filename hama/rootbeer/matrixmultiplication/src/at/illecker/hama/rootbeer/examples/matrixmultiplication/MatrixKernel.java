@@ -1,4 +1,4 @@
-package at.illecker.hama.rootbeer.examples;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication;
 
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;

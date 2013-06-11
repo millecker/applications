@@ -20,7 +20,7 @@
     </target>
     
 	<target name="jar" depends="compile">
-        <jar destfile="MatrixApp.jar" basedir="${build.dir}">
+        <jar destfile="MatrixMultiplication.jar" basedir="${build.dir}">
             <manifest>
                 <attribute name="Main-Class" value="at.illecker.hama.rootbeer.examples.MatrixApp"/>
             </manifest>

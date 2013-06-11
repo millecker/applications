@@ -1,4 +1,4 @@
-package at.illecker.hama.rootbeer.examples;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication;
 
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
@@ -6,6 +6,9 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import java.util.List;
 import java.util.ArrayList;
+
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixCpuThread;
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixKernel;
 
 //see: http://www.shodor.org/media/content//petascale/materials/UPModules/matrixMultiplication/moduleDocument.pdf
 public class MatrixApp {
