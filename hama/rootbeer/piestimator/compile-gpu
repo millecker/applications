@@ -4,14 +4,20 @@ LIBS=$ROOT_DIR/lib
 ROOTBEER=$LIBS/rootbeer-1.x-SNAPSHOT.jar
 
 # Set library jars
-LIB_JARS="lib/rootbeer-1.x-SNAPSHOT.jar lib/tjungblut-math-1.0.jar"
+LIB_JARS="lib/tjungblut-math-1.0.jar"
 
 # Ant
 ant clean
-ant jar-gpu
+ant jar-rb
+
+# Pack libraries
+#java -jar ../pack.jar -mainjar PiEstimator.jar -libjar $LIBS/tjungblut-math-1.0.jar -destjar PiEstimator-rb.jar
 
 # Rootbeer
-java -jar $ROOTBEER PiEstimator.jar PiEstimator-GPU.jar
+java -jar $ROOTBEER PiEstimator-rb.jar PiEstimator-rb-GPU.jar
+
+# Combine Rootbeer-GPU (Kernel with other Sources)
+ant jar-gpu-combine
 
 # Include lib jars
 for jar in $LIB_JARS
@@ -19,4 +25,4 @@ do
   jar uf PiEstimator.jar -C $ROOT_DIR $jar
 done
 
-hama jar PiEstimator.jar
+#hama jar PiEstimator.jar

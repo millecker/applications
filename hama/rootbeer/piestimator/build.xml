@@ -3,6 +3,13 @@
 	<property name="src.dir" value="src"/>
 	<property name="build.dir" value="build/classes"/>
 	<property name="output.file" value="PiEstimator.jar"/>
+	<property name="output.file-rb" value="PiEstimator-rb.jar"/>
+	<property name="output.file-rb-gpu" value="PiEstimator-rb-GPU.jar"/>
+	<property name="rb-package.dir" value="at/illecker/hama/rootbeer/examples/piestimator"/>
+	<property name="rb-kernel.class" value="PiEstimatorKernel.class"/>
+	<property name="rb-main.class" value="PiEstimatorKernelWrapper.class"/>
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorGpuBSP"/>
+	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorCpuBSP"/>
 	
 	<path id="master-classpath">
 	  <fileset dir="${libraries}">
@@ -14,6 +21,8 @@
 	<target name="clean">
         <delete dir="build"/>
 		<delete file="${output.file}"/>
+		<delete file="${output.file-rb}"/>
+		<delete file="${output.file-rb-gpu}"/>
     </target>
     
 	<target name="compile">
@@ -21,10 +30,32 @@
         <javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="master-classpath" includeantruntime="false" />
     </target>
     
+	<target name="jar-rb" depends="compile">
+		<echo>Rootbeer Kernel: ${build.dir}${file.separator}${rb-kernel.dir}${file.separator}${rb-kernel.class}</echo>
+        <jar destfile="${output.file-rb}">
+          	<zipfileset dir="${build.dir}${file.separator}${rb-package.dir}" 
+        	                includes="${rb-main.class}"
+        	                fullpath="${rb-package.dir}${file.separator}${rb-main.class}"/>
+        	    <zipfileset dir="${build.dir}${file.separator}${rb-package.dir}" 
+        	        	                includes="${rb-kernel.class}"
+        	        	                fullpath="${rb-package.dir}${file.separator}${rb-kernel.class}"/>
+        	</jar>
+	</target>
+	
+	<target name="jar-gpu-combine" depends="compile">
+    	    <jar destfile="${output.file}">
+    	    	     <zipfileset dir="${build.dir}" excludes="${rb-package.dir}${file.separator}${rb-kernel.class},${rb-package.dir}${file.separator}${rb-main.class}" />
+	    	     <zipgroupfileset dir="." includes="${output.file-rb-gpu}" />
+    	    	     <manifest>
+	            <attribute name="Main-Class" value="${gpu.class}"/>
+	         </manifest>
+	    </jar>
+	 </target>
+	
 	<target name="jar-gpu" depends="compile">
         <jar destfile="${output.file}" basedir="${build.dir}">
             <manifest>
-                <attribute name="Main-Class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorGpuBSP"/>
+                <attribute name="Main-Class" value="${gpu.class}"/>
             </manifest>
         </jar>
     </target>
@@ -32,7 +63,7 @@
 	<target name="jar-cpu" depends="compile">
         <jar destfile="${output.file}" basedir="${build.dir}">
 	        <manifest>
-	            <attribute name="Main-Class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorCpuBSP"/>
+	            <attribute name="Main-Class" value="${cpu.class}"/>
 	        </manifest>
         </jar>
 	</target>

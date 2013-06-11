@@ -43,20 +43,25 @@ public class PiEstimatorGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	public static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
 	private String masterTask;
-	private static final long iterations = 10000;
-	private static final int kernelCount = 1000;
+	private static final long m_iterations = 10000;
+	private static final int m_kernelCount = 1000;
 
 	@Override
 	public void bsp(
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException, SyncException, InterruptedException {
 
+		/*
+		PiEstimatorKernelWrapper kernelWrapper = new PiEstimatorKernelWrapper(
+				kernelCount, iterations);
+		kernelWrapper.run();
+		*/
 		Stopwatch watch = new Stopwatch();
 		watch.start();
 
 		List<Kernel> kernels = new ArrayList<Kernel>();
-		for (int i = 0; i < kernelCount; i++) {
-			kernels.add(new PiEstimatorKernel(iterations));
+		for (int i = 0; i < m_kernelCount; i++) {
+			kernels.add(new PiEstimatorKernel(m_iterations));
 		}
 		Rootbeer rootbeer = new Rootbeer();
 		// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
@@ -76,9 +81,10 @@ public class PiEstimatorGpuBSP extends
 			System.out.println("    num blocks: " + row.getNumBlocks());
 			System.out.println("    num threads: " + row.getNumThreads());
 		}
-
+		
 		// Send result to MasterTask
-		for (int i = 0; i < kernelCount; i++) {
+		//List<Kernel> kernels = kernelWrapper.getKernels();
+		for (int i = 0; i < m_kernelCount; i++) {
 			peer.send(masterTask, new DoubleWritable(
 					((PiEstimatorKernel) kernels.get(i)).getResult()));
 		}
