@@ -8,6 +8,7 @@
 	<!-- Customization -->
 	<property name="output.file" value="PiEstimator" />
 	<property name="output.file-jar" value="${output.file}.jar" />
+	<property name="output.file-gpu-jar" value="${output.file}-GPU.jar" />
 	<property name="output.file-rb-jar" value="${output.file}-rb.jar" />
 	<property name="output.file-rb-gpu-jar" value="${output.file}-rb-GPU.jar" />
 	<!-- Customization -->
@@ -34,8 +35,9 @@
 	<target name="clean">
 		<delete dir="build" />
 		<delete file="${output.file-jar}" />
+		<delete file="${output.file-gpu-jar}" />
 		<delete file="${output.file-rb-jar}" />
-		<delete file="${output.file-rb-gpu-jar}" />
+	    <delete file="${output.file-rb-gpu-jar}" />
 	</target>
 
 	<target name="compile">
@@ -73,7 +75,9 @@
 			<arg value="${output.file-rb-jar}" />
 			<arg value="${output.file-rb-gpu-jar}" />
 		</exec>
+		<delete file="${output.file-rb-jar}" />
 		<antcall target="jar-gpu-combine" />
+		<delete file="${output.file-rb-gpu-jar}" />
 		<echo>Including lib jars: ${libjars-gpu}</echo>
 		<for list="${libjars-gpu}" param="libjar">
 			<sequential>
@@ -87,6 +91,7 @@
 				</exec>
 			</sequential>
 		</for>
+		<move file="${output.file-jar}" tofile="${output.file-gpu-jar}" />
 	</target>
 
 	<target name="jar-cpu" depends="compile">
@@ -114,10 +119,10 @@
 		<echo>RUN GPU for ${output.file}</echo>
 		<antcall target="clean" />
 		<antcall target="jar-gpu" />
-		<echo>hama jar ${output.file-jar}</echo>
+		<echo>hama jar ${output.file-gpu-jar}</echo>
 		<exec executable="hama">
 			<arg value="jar" />
-			<arg value="${output.file-jar}" />
+			<arg value="${output.file-gpu-jar}" />
 		</exec>
 	</target>
 
