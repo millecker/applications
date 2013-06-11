@@ -1,4 +1,6 @@
-HamaExamples README
+###############################################################################
+##### Hama Examples README                                                #####
+###############################################################################
 
 # Hama Seqdumper which can operate with SequenceFiles
 hama seqdumper -libjars HamaExamples.jar -seqFile input/examples/MatrixA.seq
@@ -16,3 +18,5 @@ hama seqdumper -libjars HamaExamples.jar -seqFile input/examples/MatrixA.seq
 # MatrixMultiplication
 ./HamaExamples.sh de.jungblut.bsp.MatrixMultiplicationBSP
 ./HamaExamples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}
+
+###############################################################################
