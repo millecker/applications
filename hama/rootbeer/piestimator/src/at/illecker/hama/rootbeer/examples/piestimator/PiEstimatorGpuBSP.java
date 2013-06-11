@@ -51,11 +51,6 @@ public class PiEstimatorGpuBSP extends
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException, SyncException, InterruptedException {
 
-		/*
-		PiEstimatorKernelWrapper kernelWrapper = new PiEstimatorKernelWrapper(
-				kernelCount, iterations);
-		kernelWrapper.run();
-		*/
 		Stopwatch watch = new Stopwatch();
 		watch.start();
 
@@ -81,9 +76,8 @@ public class PiEstimatorGpuBSP extends
 			System.out.println("    num blocks: " + row.getNumBlocks());
 			System.out.println("    num threads: " + row.getNumThreads());
 		}
-		
+
 		// Send result to MasterTask
-		//List<Kernel> kernels = kernelWrapper.getKernels();
 		for (int i = 0; i < m_kernelCount; i++) {
 			peer.send(masterTask, new DoubleWritable(
 					((PiEstimatorKernel) kernels.get(i)).getResult()));

@@ -25,4 +25,9 @@ public class PiEstimatorKernel implements Kernel {
 	public double getResult() {
 		return result;
 	}
+
+	public static void main(String[] args) {
+		// Dummy constructor invocation to keep Kernel constructor
+		new PiEstimatorKernel(1);
+	}
 }

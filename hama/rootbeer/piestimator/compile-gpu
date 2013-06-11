@@ -25,4 +25,4 @@ do
   jar uf PiEstimator.jar -C $ROOT_DIR $jar
 done
 
-#hama jar PiEstimator.jar
+hama jar PiEstimator.jar
