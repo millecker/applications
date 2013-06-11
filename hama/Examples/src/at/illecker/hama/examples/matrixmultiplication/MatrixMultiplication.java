@@ -89,7 +89,7 @@ public class MatrixMultiplication
 			reopenMatrixB(peer.getConfiguration());
 		}
 		reader.close();
-		
+
 		peer.sync();
 
 	}
@@ -129,7 +129,7 @@ public class MatrixMultiplication
 			n = Integer.parseInt(args[0]);
 			m = n;
 		}
-		
+
 		System.out.println("DenseDoubleMatrix Size: " + n + "x" + m);
 
 		// only needed for writing input matrix to hdfs
@@ -159,24 +159,20 @@ public class MatrixMultiplication
 
 		// job.setNumBspTask(4);
 		// LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
-		LOG.info("DEBUG: bsp.job.split.file: "
-				+ job.get("bsp.job.split.file"));
+		LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
 		LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
-		LOG.info("DEBUG: bsp.tasks.maximum: "
-				+ job.get("bsp.tasks.maximum"));
+		LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
 
 		job.setInputFormat(SequenceFileInputFormat.class);
 		job.setInputPath(aPath);
-		LOG.info("DEBUG: bsp.input.dir: "
-				+ job.get("bsp.input.dir"));
+		LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
 
 		job.setOutputKeyClass(IntWritable.class);
 		job.setOutputValueClass(VectorWritable.class);
 		job.setOutputFormat(SequenceFileOutputFormat.class);
 		job.setOutputPath(outPath);
-		LOG.info("DEBUG: bsp.output.dir: "
-				+ job.get("bsp.output.dir"));
-		
+		LOG.info("DEBUG: bsp.output.dir: " + job.get("bsp.output.dir"));
+
 		job.setBspClass(MatrixMultiplication.class);
 		job.setJarByClass(MatrixMultiplication.class);
 		job.setPartitioner(MatrixRowPartitioner.class);
@@ -210,8 +206,8 @@ public class MatrixMultiplication
 					while (reader.next(key, value)) {
 						// System.out.println(key.get() + "|"
 						// + value.toString());
-						//System.out.println("ReadFile with RowIndex:"
-						//		+ key.get());
+						// System.out.println("ReadFile with RowIndex:"
+						// + key.get());
 
 						outputMatrix.setRowVector(key.get(), value.getVector());
 					}

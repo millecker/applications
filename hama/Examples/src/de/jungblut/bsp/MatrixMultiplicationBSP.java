@@ -32,7 +32,8 @@ public final class MatrixMultiplicationBSP
 		extends
 		BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, ResultMessage> {
 
-	protected static final Log LOG = LogFactory.getLog(MatrixMultiplicationBSP.class);
+	protected static final Log LOG = LogFactory
+			.getLog(MatrixMultiplicationBSP.class);
 	private static final String HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
 
 	private SequenceFile.Reader reader;
@@ -85,7 +86,11 @@ public final class MatrixMultiplicationBSP
 		// a peer gets all column entries for multiple rows based on row number
 		TreeMap<Integer, VectorWritable> rowMap = new TreeMap<Integer, VectorWritable>();
 		ResultMessage currentMessage = null;
-		while ((currentMessage = peer.getCurrentMessage()) != null) {
+		while ((currentMessage = (ResultMessage) peer.getCurrentMessage()) != null) {
+			// System.out.println(peer.getPeerName() + " "
+			// + currentMessage.getTargetRow() + "x"
+			// + currentMessage.getTargetColumn() + " = "
+			// + currentMessage.getValue());
 			VectorWritable vectorWritable = rowMap.get(currentMessage
 					.getTargetRow());
 			if (vectorWritable == null) {
@@ -96,8 +101,7 @@ public final class MatrixMultiplicationBSP
 										otherMatrixColumnDimension));
 				rowMap.put(currentMessage.getTargetRow(), v);
 				vectorWritable = v;
-				System.out.println("Add Row: "+currentMessage
-					.getTargetRow());
+				System.out.println("Add Row: " + currentMessage.getTargetRow());
 			}
 			vectorWritable.getVector().set(currentMessage.getTargetColumn(),
 					currentMessage.getValue());
@@ -124,7 +128,7 @@ public final class MatrixMultiplicationBSP
 		conf.set(MessageManager.QUEUE_TYPE_CLASS,
 				"org.apache.hama.bsp.message.SortedMessageQueue");
 		conf.set("bsp.local.tasks.maximum", "8");
-		//LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
+		// LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
 
 		for (int n = 200; n < 300; n++) {
 			System.out.println(n + "x" + n);
@@ -151,7 +155,7 @@ public final class MatrixMultiplicationBSP
 			job.setBspClass(MatrixMultiplicationBSP.class);
 			job.setJarByClass(MatrixMultiplicationBSP.class);
 			job.setPartitioner(MatrixRowPartitioner.class);
-           
+
 			long startTime = System.currentTimeMillis();
 			job.waitForCompletion(true);
 			System.out.println("Job Finished in "
@@ -178,7 +182,7 @@ public final class MatrixMultiplicationBSP
 
 						// read row by row
 						while (reader.next(key, value)) {
-							//System.out.println("ReadFile RowIndex: "+key);
+							// System.out.println("ReadFile RowIndex: "+key);
 							outputMatrix.setRowVector(key.get(),
 									value.getVector());
 						}
