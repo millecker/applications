@@ -11,5 +11,11 @@ Thumbs.db
 
 # Binary files & folders
 ######################
+# Hama Examples
 hama/Examples/HamaExamples.jar
 hama/Examples/bin
+
+# Hama Rootbeer
+hama/rootbeer/bin
+hama/rootbeer/matrix/build
+hama/rootbeer/matrix/*.jar

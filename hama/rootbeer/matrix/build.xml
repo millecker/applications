@@ -1,0 +1,29 @@
+<project>
+	<property name="libraries" value="../../../lib"/>
+	<property name="src.dir" value="src"/>
+	<property name="build.dir" value="build/classes"/>
+		
+	<path id="master-classpath">
+	  <fileset dir="${libraries}">
+	    <include name="*.jar"/>
+	  </fileset>
+	  <pathelement path="${build.dir}"/>
+	</path>
+
+	<target name="clean">
+        <delete dir="build"/>
+    </target>
+    
+	<target name="compile">
+        <mkdir dir="${build.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="master-classpath" includeantruntime="false" />
+    </target>
+    
+	<target name="jar" depends="compile">
+        <jar destfile="MatrixApp.jar" basedir="${build.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="at.illecker.hama.rootbeer.examples.MatrixApp"/>
+            </manifest>
+        </jar>
+    </target>
+</project>
