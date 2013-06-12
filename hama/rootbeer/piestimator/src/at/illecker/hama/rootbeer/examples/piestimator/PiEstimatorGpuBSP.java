@@ -43,8 +43,8 @@ public class PiEstimatorGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	public static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
 	private String masterTask;
-	private static final long m_iterations = 10000;
-	private static final int m_kernelCount = 1000;
+	private static final long m_iterations = 100;
+	private static final int m_kernelCount = 3;
 
 	@Override
 	public void bsp(
@@ -147,6 +147,8 @@ public class PiEstimatorGpuBSP extends
 		job.setOutputFormat(TextOutputFormat.class);
 		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
 		job.setOutputPath(new Path("output/hama/examples"));
+		
+		job.set("bsp.child.java.opts","-Xmx4G");
 
 		BSPJobClient jobClient = new BSPJobClient(conf);
 		ClusterStatus cluster = jobClient.getClusterStatus(true);
