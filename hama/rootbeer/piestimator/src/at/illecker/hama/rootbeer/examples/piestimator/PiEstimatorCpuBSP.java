@@ -62,7 +62,7 @@ public class PiEstimatorCpuBSP extends
 		}
 
 		watch.stop();
-		System.out.println("cpu time: " + watch.elapsedTimeMillis() + " ms");
+		LOG.info("cpu time: " + watch.elapsedTimeMillis() + " ms");
 
 		// Send result to MasterTask
 		for (int i = 0; i < num_cores; i++) {

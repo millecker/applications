@@ -63,18 +63,16 @@ public class PiEstimatorGpuBSP extends
 		rootbeer.runAll(kernels);
 
 		watch.stop();
-		System.out.println("gpu time: " + watch.elapsedTimeMillis() + " ms");
+		LOG.info("gpu time: " + watch.elapsedTimeMillis() + " ms");
 		List<StatsRow> stats = rootbeer.getStats();
 		for (StatsRow row : stats) {
-			System.out.println("  StatsRow:");
-			System.out.println("    init time: " + row.getInitTime());
-			System.out
-					.println("    serial time: " + row.getSerializationTime());
-			System.out.println("    exec time: " + row.getExecutionTime());
-			System.out.println("    deserial time: "
-					+ row.getDeserializationTime());
-			System.out.println("    num blocks: " + row.getNumBlocks());
-			System.out.println("    num threads: " + row.getNumThreads());
+			LOG.info("  StatsRow:");
+			LOG.info("    init time: " + row.getInitTime());
+			LOG.info("    serial time: " + row.getSerializationTime());
+			LOG.info("    exec time: " + row.getExecutionTime());
+			LOG.info("    deserial time: " + row.getDeserializationTime());
+			LOG.info("    num blocks: " + row.getNumBlocks());
+			LOG.info("    num threads: " + row.getNumThreads());
 		}
 
 		// Send result to MasterTask
