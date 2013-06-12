@@ -1,4 +1,4 @@
-millecker-common
+Applications
 ================
 
 This code-sink includes example applications of
