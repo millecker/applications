@@ -1,4 +1,4 @@
-package at.illecker.hama.rootbeer.examples.piestimator;
+package at.illecker.hama.rootbeer.examples.hellorootbeer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,18 +30,9 @@ import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
-/**
- * @author PiEstimator Monte Carlo computation of pi
- *         http://de.wikipedia.org/wiki/Monte-Carlo-Algorithmus
- * 
- *         Generate random points in the square [-1,1] X [-1,1]. The fraction of
- *         these that lie in the unit disk x^2 + y^2 <= 1 will be approximately
- *         pi/4.
- */
-
-public class PiEstimatorGpuBSP extends
+public class HelloRootbeerGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
-	public static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
+	public static final Log LOG = LogFactory.getLog(HelloRootbeerGpuBSP.class);
 	private String masterTask;
 	private static final long m_iterations = 100;
 	private static final int m_kernelCount = 3;
@@ -56,7 +47,7 @@ public class PiEstimatorGpuBSP extends
 
 		List<Kernel> kernels = new ArrayList<Kernel>();
 		for (int i = 0; i < m_kernelCount; i++) {
-			kernels.add(new PiEstimatorKernel(m_iterations));
+			kernels.add(new HelloRootbeerKernel(m_iterations));
 		}
 		Rootbeer rootbeer = new Rootbeer();
 		// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
@@ -78,7 +69,7 @@ public class PiEstimatorGpuBSP extends
 		// Send result to MasterTask
 		for (int i = 0; i < m_kernelCount; i++) {
 			peer.send(masterTask, new DoubleWritable(
-					((PiEstimatorKernel) kernels.get(i)).getResult()));
+					((HelloRootbeerKernel) kernels.get(i)).getResult()));
 		}
 		peer.sync();
 	}
@@ -99,18 +90,14 @@ public class PiEstimatorGpuBSP extends
 
 		if (peer.getPeerName().equals(masterTask)) {
 
-			double pi = 0.0;
-
-			int numPeers = peer.getNumCurrentMessages();
+			double sum = 0.0;
 
 			DoubleWritable received;
 			while ((received = peer.getCurrentMessage()) != null) {
-				pi += received.get();
+				sum += received.get();
 			}
 
-			pi = pi / numPeers;
-			peer.write(new Text("Estimated value of PI(3,14159265) is"),
-					new DoubleWritable(pi));
+			peer.write(new Text("Result"), new DoubleWritable(sum));
 		}
 	}
 
@@ -135,11 +122,11 @@ public class PiEstimatorGpuBSP extends
 
 		BSPJob job = new BSPJob(conf);
 		// Set the job name
-		job.setJobName("Rootbeer GPU PiEstimatior");
+		job.setJobName("HelloRootbeer GPU Example");
 		// set the BSP class which shall be executed
-		job.setBspClass(PiEstimatorGpuBSP.class);
+		job.setBspClass(HelloRootbeerGpuBSP.class);
 		// help Hama to locale the jar to be distributed
-		job.setJarByClass(PiEstimatorGpuBSP.class);
+		job.setJarByClass(HelloRootbeerGpuBSP.class);
 
 		job.setInputFormat(NullInputFormat.class);
 		job.setOutputKeyClass(Text.class);

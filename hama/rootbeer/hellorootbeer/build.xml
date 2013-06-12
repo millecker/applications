@@ -1,0 +1,13 @@
+<project>
+	<property name="parent.dir" value=".." />
+	<!-- Custom Settings -->
+	<property name="output.file" value="HelloRootbeer" />
+	<property name="libjars-gpu" value="" />
+	<property name="libjars-cpu" value="" />
+	<property name="rb-package.dir" value="at/illecker/hama/rootbeer/examples/hellorootbeer" />
+	<property name="rb-kernel.class" value="HelloRootbeerKernel.class" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerGpuBSP" />
+	<property name="cpu.class" value="" />
+
+	<import file="${parent.dir}${file.separator}commonbuild.xml" />
+</project>

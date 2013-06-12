@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry kind="src" path="hellorootbeer/src"/>   
 	<classpathentry kind="src" path="piestimator/src"/>
 	<classpathentry kind="src" path="matrixmultiplication/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
