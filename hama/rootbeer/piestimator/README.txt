@@ -1,6 +1,8 @@
 ###############################################################################
-##### Hama Rootbeer Examples README                                       #####
+##### PiEstimator Example                                                 #####
 ###############################################################################
+
+# Use Apache Ant to build and run example
 
 # Clean all files
 ant clean
