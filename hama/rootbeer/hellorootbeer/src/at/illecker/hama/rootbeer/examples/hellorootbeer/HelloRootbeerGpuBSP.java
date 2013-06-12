@@ -69,7 +69,7 @@ public class HelloRootbeerGpuBSP extends
 		// Send result to MasterTask
 		for (int i = 0; i < m_kernelCount; i++) {
 			peer.send(masterTask, new DoubleWritable(
-					((HelloRootbeerKernel) kernels.get(i)).getResult()));
+					((HelloRootbeerKernel) kernels.get(i)).result));
 		}
 		peer.sync();
 	}

@@ -1,16 +1,22 @@
 <project default="run-gpu">
+	<!-- Custom Settings -->
+	<!--
 	<property name="root" value="../../.." />
+	-->
 	<property name="lib" value="lib" />
 	<property name="lib.dir" value="${root}${file.separator}${lib}" />
 	<property name="src.dir" value="src" />
 	<property name="build.dir" value="build/classes" />
-	<property name="rootbeer" value="${lib.dir}${file.separator}rootbeer-1.x-SNAPSHOT.jar" />
+	<property name="rootbeer" value="${lib.dir}${file.separator}rootbeer-1.0.47.jar" />
+	<property name="java.arg.xmx" value="-Xmx4G" />
+
 	<!-- Custom Settings -->
 	<!-- <property name="output.file" value="" /> -->
 	<property name="output.file-jar" value="${output.file}.jar" />
 	<property name="output.file-gpu-jar" value="${output.file}-GPU.jar" />
 	<property name="output.file-rb-jar" value="${output.file}-rb.jar" />
 	<property name="output.file-rb-gpu-jar" value="${output.file}-rb-GPU.jar" />
+
 	<!-- Custom Settings -->
 	<!--
 	<property name="libjars-gpu" value="${lib}${file.separator}tjungblut-math-1.0.jar" />
@@ -70,12 +76,14 @@
 		# Pack libraries
         #java -jar ../pack.jar -mainjar PiEstimator.jar -libjar $LIBS/tjungblut-math-1.0.jar -destjar PiEstimator-rb.jar
 		-->
-		<echo>java -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar}</echo>
+		<echo>java ${java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
 		<exec executable="java">
+			<arg value="${java.arg.xmx}" />
 			<arg value="-jar" />
 			<arg value="${rootbeer}" />
 			<arg value="${output.file-rb-jar}" />
 			<arg value="${output.file-rb-gpu-jar}" />
+			<arg value="${rootbeer.arg}" />
 		</exec>
 		<delete file="${output.file-rb-jar}" />
 		<antcall target="jar-gpu-combine" />
@@ -93,6 +101,7 @@
 				</exec>
 			</sequential>
 		</for>
+		<echo>Rename ${output.file-jar} to ${output.file-gpu-jar}</echo>
 		<move file="${output.file-jar}" tofile="${output.file-gpu-jar}" />
 	</target>
 
@@ -120,7 +129,22 @@
 	<target name="run-gpu">
 		<echo>RUN GPU for ${output.file}</echo>
 		<antcall target="clean" />
-		<antcall target="jar-gpu" />
+		<antcall target="jar-gpu">
+			<param name="rootbeer.arg" value="" />
+		</antcall>
+		<echo>hama jar ${output.file-gpu-jar}</echo>
+		<exec executable="hama">
+			<arg value="jar" />
+			<arg value="${output.file-gpu-jar}" />
+		</exec>
+	</target>
+
+	<target name="run-gpu-emu">
+		<echo>RUN GPU Emulation for ${output.file}</echo>
+		<antcall target="clean" />
+		<antcall target="jar-gpu">
+			<param name="rootbeer.arg" value="-nemu" />
+		</antcall>
 		<echo>hama jar ${output.file-gpu-jar}</echo>
 		<exec executable="hama">
 			<arg value="jar" />

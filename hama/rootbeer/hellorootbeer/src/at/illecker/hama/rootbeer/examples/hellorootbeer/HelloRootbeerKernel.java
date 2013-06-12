@@ -5,7 +5,7 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 public class HelloRootbeerKernel implements Kernel {
 
 	private long m_iterations;
-	private double result = 0;
+	public double result = 0;
 
 	public HelloRootbeerKernel(long iterations) {
 		m_iterations = iterations;
@@ -15,12 +15,10 @@ public class HelloRootbeerKernel implements Kernel {
 		result = m_iterations;
 	}
 
-	public double getResult() {
-		return result;
-	}
-
 	public static void main(String[] args) {
-		// Dummy constructor invocation to keep Kernel constructor
+		// Dummy constructor invocation
+		// to keep Kernel constructor in
+		// rootbeer transformation
 		new HelloRootbeerKernel(1);
 	}
 }

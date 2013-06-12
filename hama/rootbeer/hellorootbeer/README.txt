@@ -13,4 +13,7 @@ ant jar-gpu
 # Submit GPU Task to Hama
 ant run-gpu
 
+# Submit GPU emulated Task to Hama
+ant run-gpu-emu
+
 ###############################################################################

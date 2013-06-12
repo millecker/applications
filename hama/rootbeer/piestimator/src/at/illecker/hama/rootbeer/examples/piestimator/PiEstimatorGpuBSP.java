@@ -43,7 +43,7 @@ public class PiEstimatorGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	public static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
 	private String masterTask;
-	private static final long m_iterations = 100;
+	private static final long m_iterations = 1000;
 	private static final int m_kernelCount = 3;
 
 	@Override
@@ -78,7 +78,7 @@ public class PiEstimatorGpuBSP extends
 		// Send result to MasterTask
 		for (int i = 0; i < m_kernelCount; i++) {
 			peer.send(masterTask, new DoubleWritable(
-					((PiEstimatorKernel) kernels.get(i)).getResult()));
+					((PiEstimatorKernel) kernels.get(i)).result));
 		}
 		peer.sync();
 	}

@@ -5,7 +5,7 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 public class PiEstimatorKernel implements Kernel {
 
 	private long m_iterations;
-	private double result = 0;
+	public double result = 0;
 
 	public PiEstimatorKernel(long iterations) {
 		m_iterations = iterations;
@@ -22,12 +22,10 @@ public class PiEstimatorKernel implements Kernel {
 		result = 4.0 * in / m_iterations;
 	}
 
-	public double getResult() {
-		return result;
-	}
-
 	public static void main(String[] args) {
-		// Dummy constructor invocation to keep Kernel constructor
+		// Dummy constructor invocation
+		// to keep Kernel constructor in
+		// rootbeer transformation
 		new PiEstimatorKernel(1);
 	}
 }
