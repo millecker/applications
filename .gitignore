@@ -21,3 +21,6 @@ hama/rootbeer/piestimator/build
 hama/rootbeer/piestimator/*.jar
 hama/rootbeer/matrixmultiplication/build
 hama/rootbeer/matrixmultiplication/*.jar
+
+# Hadoop
+hadoop/karwendel_tutorial/bin
