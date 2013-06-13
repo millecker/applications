@@ -76,10 +76,9 @@ public class PiEstimatorCpuBSP extends
 		FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
 				.getOutputPath(job), peer.getTaskId() + ".log"));
 
-		outStream.writeUTF("BSP=PiEstimatorCpuBSP,");
-		outStream.writeUTF("ThreadCount=" + m_threadCount + ",");
-		outStream.writeUTF("Iterations=" + m_iterations + ",");
-		outStream.writeUTF("CPUTime=" + watch.elapsedTimeMillis() + "ms\n");
+		outStream.writeUTF("BSP=PiEstimatorCpuBSP,ThreadCount=" + m_threadCount
+				+ ",Iterations=" + m_iterations + ",CPUTime="
+				+ watch.elapsedTimeMillis() + "ms\n");
 		outStream.close();
 
 		// Send result to MasterTask
@@ -167,7 +166,7 @@ public class PiEstimatorCpuBSP extends
 		if (args.length > 0) {
 			if (args.length == 3) {
 				job.setNumBspTask(Integer.parseInt(args[0]));
-				job.set("piestimator.kernelCount", args[1]);
+				job.set("piestimator.threadCount", args[1]);
 				job.set("piestimator.iterations", args[2]);
 			} else {
 				System.out.println("Wrong argument size!");

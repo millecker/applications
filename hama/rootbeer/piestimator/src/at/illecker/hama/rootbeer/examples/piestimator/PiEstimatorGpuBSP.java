@@ -72,10 +72,9 @@ public class PiEstimatorGpuBSP extends
 		FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
 				.getOutputPath(job), peer.getTaskId() + ".log"));
 
-		outStream.writeUTF("BSP=PiEstimatorGpuBSP,");
-		outStream.writeUTF("KernelCount=" + m_kernelCount + ",");
-		outStream.writeUTF("Iterations=" + m_iterations + ",");
-		outStream.writeUTF("GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
+		outStream.writeUTF("BSP=PiEstimatorGpuBSP,KernelCount=" + m_kernelCount
+				+ ",Iterations=" + m_iterations + ",GPUTime="
+				+ watch.elapsedTimeMillis() + "ms\n");
 		List<StatsRow> stats = rootbeer.getStats();
 		for (StatsRow row : stats) {
 			outStream.writeUTF("  StatsRow:\n");
