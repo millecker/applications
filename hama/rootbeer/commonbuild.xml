@@ -126,17 +126,39 @@
 		</for>
 	</target>
 
+	<target name="run-hama">
+		<var name="hama.main.args" value="" />
+		<for list="${program.args}" param="program.arg" delimiter=" ">
+			<sequential>
+				<!-- already defined; no effect -->
+				<property name="@{program.arg}" value="" />
+				<!-- <propertycopy name="temp.arg" from="@{program.arg}" /> -->
+				<if>
+					<equals arg1="${@{program.arg}}" arg2="" />
+					<else>
+						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
+						<var name="hama.main.args" value="${hama.main.args} ${@{program.arg}}" />
+					</else>
+				</if>
+			</sequential>
+		</for>
+		<echo>hama jar ${hama.main.jar} ${hama.main.args}</echo>
+		<exec executable="hama">
+			<arg value="jar" />
+			<arg value="${hama.main.jar}" />
+			<arg line="${hama.main.args}" />
+		</exec>
+	</target>
+
 	<target name="run-gpu">
 		<echo>RUN GPU for ${output.file}</echo>
 		<antcall target="clean" />
 		<antcall target="jar-gpu">
 			<param name="rootbeer.arg" value="" />
 		</antcall>
-		<echo>hama jar ${output.file-gpu-jar}</echo>
-		<exec executable="hama">
-			<arg value="jar" />
-			<arg value="${output.file-gpu-jar}" />
-		</exec>
+		<antcall target="run-hama">
+			<param name="hama.main.jar" value="${output.file-gpu-jar}" />
+		</antcall>
 	</target>
 
 	<target name="run-gpu-emu">
@@ -145,23 +167,18 @@
 		<antcall target="jar-gpu">
 			<param name="rootbeer.arg" value="-nemu" />
 		</antcall>
-		<echo>hama jar ${output.file-gpu-jar}</echo>
-		<exec executable="hama">
-			<arg value="jar" />
-			<arg value="${output.file-gpu-jar}" />
-		</exec>
+		<antcall target="run-hama">
+			<param name="hama.main.jar" value="${output.file-gpu-jar}" />
+		</antcall>
 	</target>
 
 	<target name="run-cpu">
 		<echo>RUN CPU for ${output.file}</echo>
 		<antcall target="clean" />
 		<antcall target="jar-cpu" />
-		<!-- java -jar $ROOTBEER PiEstimator.jar PiEstimator-GPU.jar -nemu -->
-		<echo>hama jar ${output.file-jar}</echo>
-		<exec executable="hama">
-			<arg value="jar" />
-			<arg value="${output.file-jar}" />
-		</exec>
+		<antcall target="run-hama">
+			<param name="hama.main.jar" value="${output.file-jar}" />
+		</antcall>
 	</target>
 
 </project>
