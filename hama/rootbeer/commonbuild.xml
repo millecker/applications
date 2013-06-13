@@ -2,12 +2,13 @@
 	<!-- Custom Settings -->
 	<!--
 	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	-->
 	<property name="lib" value="lib" />
 	<property name="lib.dir" value="${root}${file.separator}${lib}" />
 	<property name="src.dir" value="src" />
 	<property name="build.dir" value="build/classes" />
-	<property name="rootbeer" value="${lib.dir}${file.separator}rootbeer-1.0.47.jar" />
+	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
 	<property name="java.arg.xmx" value="-Xmx4G" />
 
 	<!-- Custom Settings -->
@@ -161,11 +162,22 @@
 		</antcall>
 	</target>
 
-	<target name="run-gpu-emu">
-		<echo>RUN GPU Emulation for ${output.file}</echo>
+	<target name="run-gpu-nemu">
+		<echo>RUN GPU Native Emulation for ${output.file}</echo>
 		<antcall target="clean" />
 		<antcall target="jar-gpu">
 			<param name="rootbeer.arg" value="-nemu" />
+		</antcall>
+		<antcall target="run-hama">
+			<param name="hama.main.jar" value="${output.file-gpu-jar}" />
+		</antcall>
+	</target>
+	
+	<target name="run-gpu-jemu">
+		<echo>RUN GPU Java Emulation for ${output.file}</echo>
+		<antcall target="clean" />
+		<antcall target="jar-gpu">
+			<param name="rootbeer.arg" value="-jemu" />
 		</antcall>
 		<antcall target="run-hama">
 			<param name="hama.main.jar" value="${output.file-gpu-jar}" />

@@ -1,6 +1,6 @@
 <project>
 	<property name="root" value="../../.." />
-	<!-- Custom Settings -->
+	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	<property name="output.file" value="HelloRootbeer" />
 	<property name="libjars-gpu" value="" />
 	<property name="libjars-cpu" value="" />
@@ -9,6 +9,6 @@
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerGpuBSP" />
 	<property name="cpu.class" value="" />
 	<property name="program.args" value="NumBspTask KernelCount Iterations" />
-	
+
 	<import file="../commonbuild.xml" />
 </project>

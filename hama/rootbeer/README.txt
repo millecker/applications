@@ -16,8 +16,11 @@ ant jar-cpu
 # Submit GPU Task to Hama
 ant run-gpu
 
-# Submit GPU emulated Task to Hama
-ant run-gpu-emu
+# Submit GPU native emulated Task to Hama
+ant run-gpu-nemu
+
+# Submit GPU Java emulated Task to Hama
+ant run-gpu-jemu
 
 # Submit CPU Task to Hama
 ant run-cpu
