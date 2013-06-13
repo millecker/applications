@@ -46,6 +46,7 @@ public class PiEstimatorCpuBSP extends
 	private static final long threadCount = Runtime.getRuntime()
 			.availableProcessors();
 	private static final long iterations = 10000;
+	// Long.MAX = 9223372036854775807
 
 	private String m_masterTask;
 	private int m_threadCount;

@@ -48,6 +48,7 @@ public class PiEstimatorGpuBSP extends
 					+ System.currentTimeMillis());
 	private static final long kernelCount = 4;
 	private static final long iterations = 10000;
+	// Long.MAX = 9223372036854775807
 
 	private String m_masterTask;
 	private int m_kernelCount;

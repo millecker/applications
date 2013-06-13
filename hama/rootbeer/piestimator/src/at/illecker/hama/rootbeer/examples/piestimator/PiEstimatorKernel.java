@@ -12,8 +12,8 @@ public class PiEstimatorKernel implements Kernel {
 	}
 
 	public void gpuMethod() {
-		int in = 0;
-		for (int i = 0; i < m_iterations; i++) {
+		long in = 0;
+		for (long i = 0; i < m_iterations; i++) {
 			double x = 2.0 * Math.random() - 1.0, y = 2.0 * Math.random() - 1.0;
 			if ((Math.sqrt(x * x + y * y) < 1.0)) {
 				in++;
