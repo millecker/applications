@@ -3,6 +3,9 @@
 	<classpathentry kind="src" path="hellorootbeer/src"/>
 	<classpathentry kind="src" path="piestimator/src"/>
 	<classpathentry kind="src" path="matrixmultiplication/src"/>
+	<classpathentry kind="src" path="pagerank/src"/>
+	<classpathentry kind="src" path="singleshortestpath/src"/>
+	<classpathentry kind="src" path="util/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-configuration-1.7.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-io-2.4.jar"/>
@@ -15,5 +18,6 @@
 	<classpathentry kind="lib" path="/applications/lib/trove-3.0.2.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/zookeeper-3.4.5.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/rootbeer-1.0.47.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/hama-graph-0.7.0-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
