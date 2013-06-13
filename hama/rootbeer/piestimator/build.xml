@@ -8,6 +8,7 @@
 	<property name="rb-kernel.class" value="PiEstimatorKernel.class" />
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorGpuBSP" />
 	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorCpuBSP" />
+	<property name="program.args" value="NumBspTask KernelCount Iterations" />
 
 	<import file="..${file.separator}commonbuild.xml" />
 </project>

@@ -33,9 +33,13 @@ import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class HelloRootbeerGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
-	public static final Log LOG = LogFactory.getLog(HelloRootbeerGpuBSP.class);
-	private static long kernelCount = 100;
-	private static long iterations = 1000;
+	private static final Log LOG = LogFactory.getLog(HelloRootbeerGpuBSP.class);
+	private static final Path TMP_OUTPUT = new Path(
+			"output/hama/rootbeer/examples/hellorootbeer-"
+					+ System.currentTimeMillis());
+	private static final long kernelCount = 100;
+	private static final long iterations = 10000;
+
 	private String m_masterTask;
 	private int m_kernelCount;
 	private long m_iterations;
@@ -49,7 +53,6 @@ public class HelloRootbeerGpuBSP extends
 		Stopwatch watch = new Stopwatch();
 		watch.start();
 		Rootbeer rootbeer = new Rootbeer();
-		// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
 		rootbeer.runAll(kernels);
 		watch.stop();
 
@@ -117,7 +120,9 @@ public class HelloRootbeerGpuBSP extends
 				sum += received.get();
 			}
 
-			peer.write(new Text("Result"), new DoubleWritable(sum));
+			peer.write(new Text("Result of "
+					+ (peer.getNumPeers() * m_kernelCount * m_iterations)
+					+ " calculations is"), new DoubleWritable(sum));
 		}
 	}
 
@@ -152,8 +157,7 @@ public class HelloRootbeerGpuBSP extends
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(DoubleWritable.class);
 		job.setOutputFormat(TextOutputFormat.class);
-		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
-		job.setOutputPath(new Path("output/hama/rootbeer/examples/hellorootbeer"));
+		FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
 
 		job.set("bsp.child.java.opts", "-Xmx4G");
 
@@ -173,7 +177,6 @@ public class HelloRootbeerGpuBSP extends
 				return;
 			}
 		} else {
-			// Set to maximum
 			job.setNumBspTask(cluster.getMaxTasks());
 			job.set("hellorootbeer.kernelCount", ""
 					+ HelloRootbeerGpuBSP.kernelCount);

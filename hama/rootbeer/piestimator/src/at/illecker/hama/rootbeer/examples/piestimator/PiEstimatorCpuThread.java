@@ -3,7 +3,7 @@ package at.illecker.hama.rootbeer.examples.piestimator;
 public class PiEstimatorCpuThread implements Runnable {
 	private Thread m_thread;
 	private long m_iterations;
-	private double result = 0;
+	public double result;
 
 	public PiEstimatorCpuThread(long iterations) {
 		m_iterations = iterations;
@@ -33,7 +33,4 @@ public class PiEstimatorCpuThread implements Runnable {
 		}
 	}
 	
-	public double getResult() {
-		return result;
-	}
 }

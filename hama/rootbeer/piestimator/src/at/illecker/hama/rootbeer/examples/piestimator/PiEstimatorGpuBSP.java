@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -41,10 +42,17 @@ import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
-	public static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
-	private String masterTask;
-	private static final long m_iterations = 1000;
-	private static final int m_kernelCount = 3;
+	private static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
+	private static final Path TMP_OUTPUT = new Path(
+			"output/hama/rootbeer/examples/piestimatorGPU-"
+					+ System.currentTimeMillis());
+	private static final long kernelCount = 4;
+	private static final long iterations = 10000;
+
+	private String m_masterTask;
+	private int m_kernelCount;
+	private long m_iterations;
+	private List<Kernel> kernels = new ArrayList<Kernel>();
 
 	@Override
 	public void bsp(
@@ -53,31 +61,40 @@ public class PiEstimatorGpuBSP extends
 
 		Stopwatch watch = new Stopwatch();
 		watch.start();
-
-		List<Kernel> kernels = new ArrayList<Kernel>();
-		for (int i = 0; i < m_kernelCount; i++) {
-			kernels.add(new PiEstimatorKernel(m_iterations));
-		}
 		Rootbeer rootbeer = new Rootbeer();
 		// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
 		rootbeer.runAll(kernels);
-
 		watch.stop();
-		LOG.info("gpu time: " + watch.elapsedTimeMillis() + " ms");
+
+		// Write log to dfs
+		BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
+		FileSystem fs = FileSystem.get(peer.getConfiguration());
+		FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
+				.getOutputPath(job), peer.getTaskId() + ".log"));
+
+		outStream.writeUTF("BSP=PiEstimatorGpuBSP,");
+		outStream.writeUTF("KernelCount=" + m_kernelCount + ",");
+		outStream.writeUTF("Iterations=" + m_iterations + ",");
+		outStream.writeUTF("GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
 		List<StatsRow> stats = rootbeer.getStats();
 		for (StatsRow row : stats) {
-			LOG.info("  StatsRow:");
-			LOG.info("    init time: " + row.getInitTime());
-			LOG.info("    serial time: " + row.getSerializationTime());
-			LOG.info("    exec time: " + row.getExecutionTime());
-			LOG.info("    deserial time: " + row.getDeserializationTime());
-			LOG.info("    num blocks: " + row.getNumBlocks());
-			LOG.info("    num threads: " + row.getNumThreads());
+			outStream.writeUTF("  StatsRow:\n");
+			outStream.writeUTF("    init time: " + row.getInitTime() + "\n");
+			outStream.writeUTF("    serial time: " + row.getSerializationTime()
+					+ "\n");
+			outStream.writeUTF("    exec time: " + row.getExecutionTime()
+					+ "\n");
+			outStream.writeUTF("    deserial time: "
+					+ row.getDeserializationTime() + "\n");
+			outStream.writeUTF("    num blocks: " + row.getNumBlocks() + "\n");
+			outStream
+					.writeUTF("    num threads: " + row.getNumThreads() + "\n");
 		}
+		outStream.close();
 
 		// Send result to MasterTask
 		for (int i = 0; i < m_kernelCount; i++) {
-			peer.send(masterTask, new DoubleWritable(
+			peer.send(m_masterTask, new DoubleWritable(
 					((PiEstimatorKernel) kernels.get(i)).result));
 		}
 		peer.sync();
@@ -88,8 +105,16 @@ public class PiEstimatorGpuBSP extends
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException {
 
+		this.m_kernelCount = Integer.parseInt(peer.getConfiguration().get(
+				"piestimator.kernelCount"));
+		this.m_iterations = Long.parseLong(peer.getConfiguration().get(
+				"piestimator.iterations"));
 		// Choose one as a master
-		this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+		this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+
+		for (int i = 0; i < m_kernelCount; i++) {
+			kernels.add(new PiEstimatorKernel(m_iterations));
+		}
 	}
 
 	@Override
@@ -97,20 +122,22 @@ public class PiEstimatorGpuBSP extends
 			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
 			throws IOException {
 
-		if (peer.getPeerName().equals(masterTask)) {
+		if (peer.getPeerName().equals(m_masterTask)) {
 
 			double pi = 0.0;
 
-			int numPeers = peer.getNumCurrentMessages();
+			int numMessages = peer.getNumCurrentMessages();
 
 			DoubleWritable received;
 			while ((received = peer.getCurrentMessage()) != null) {
 				pi += received.get();
 			}
 
-			pi = pi / numPeers;
-			peer.write(new Text("Estimated value of PI(3,14159265) is"),
-					new DoubleWritable(pi));
+			pi = pi / numMessages;
+			peer.write(new Text("Estimated value of PI(3,14159265) using "
+					+ (numMessages * m_iterations)
+					// + (peer.getNumPeers() * m_kernelCount * m_iterations)
+					+ " points is"), new DoubleWritable(pi));
 		}
 	}
 
@@ -119,10 +146,10 @@ public class PiEstimatorGpuBSP extends
 		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].getLen() > 0) {
+				System.out.println("File " + files[i].getPath());
 				FSDataInputStream in = fs.open(files[i].getPath());
 				IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
 				in.close();
-				break;
 			}
 		}
 		// fs.delete(FileOutputFormat.getOutputPath(job), true);
@@ -145,8 +172,7 @@ public class PiEstimatorGpuBSP extends
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(DoubleWritable.class);
 		job.setOutputFormat(TextOutputFormat.class);
-		// FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
-		job.setOutputPath(new Path("output/hama/examples"));
+		FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
 
 		job.set("bsp.child.java.opts", "-Xmx4G");
 
@@ -154,12 +180,26 @@ public class PiEstimatorGpuBSP extends
 		ClusterStatus cluster = jobClient.getClusterStatus(true);
 
 		if (args.length > 0) {
-			job.setNumBspTask(Integer.parseInt(args[0]));
+			if (args.length == 3) {
+				job.setNumBspTask(Integer.parseInt(args[0]));
+				job.set("piestimator.kernelCount", args[1]);
+				job.set("piestimator.iterations", args[2]);
+			} else {
+				System.out.println("Wrong argument size!");
+				System.out.println("    Argument1=NumBspTask");
+				System.out.println("    Argument2=hellorootbeer.kernelCount");
+				System.out.println("    Argument2=hellorootbeer.iterations");
+				return;
+			}
 		} else {
-			// Set to maximum
 			job.setNumBspTask(cluster.getMaxTasks());
+			job.set("piestimator.kernelCount", ""
+					+ PiEstimatorGpuBSP.kernelCount);
+			job.set("piestimator.iterations", "" + PiEstimatorGpuBSP.iterations);
 		}
-		LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+		LOG.info("NumBspTask: " + job.getNumBspTask());
+		LOG.info("KernelCount: " + job.get("piestimator.kernelCount"));
+		LOG.info("Iterations: " + job.get("piestimator.iterations"));
 
 		long startTime = System.currentTimeMillis();
 		if (job.waitForCompletion(true)) {

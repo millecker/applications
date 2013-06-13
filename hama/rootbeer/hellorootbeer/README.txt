@@ -11,9 +11,9 @@ ant clean
 ant jar-gpu
 
 # Submit GPU Task to Hama
-ant run-gpu [-DNumBspTask=3 -DKernelCount=100 -DIterations=1000]
+ant run-gpu [-DNumBspTask=3 -DKernelCount=100 -DIterations=10000]
 
 # Submit GPU emulated Task to Hama
-ant run-gpu-emu [-DNumBspTask=3 -DKernelCount=100 -DIterations=1000]
+ant run-gpu-emu [-DNumBspTask=3 -DKernelCount=100 -DIterations=10000]
 
 ###############################################################################
