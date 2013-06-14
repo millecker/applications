@@ -62,7 +62,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 	private static final String OUT_CARD = "output.vector.cardinality";
 	private static final Path TMP_OUTPUT = new Path(
-			"output/hadoop/rootbeer/examples/matrixmultiplicationGPU-"
+			"output/hadoop/rootbeer/examples/matrixmultiplication/GPU-"
 					+ System.currentTimeMillis());
 	private static final Path MATRIX_A_PATH = new Path(
 			"input/hadoop/rootbeer/examples/MatrixA.seq");

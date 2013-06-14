@@ -41,7 +41,7 @@ public class PiEstimatorCpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	private static final Log LOG = LogFactory.getLog(PiEstimatorCpuBSP.class);
 	private static final Path TMP_OUTPUT = new Path(
-			"output/hama/rootbeer/examples/piestimatorCPU-"
+			"output/hama/rootbeer/examples/piestimator/CPU-"
 					+ System.currentTimeMillis());
 	private static final long threadCount = Runtime.getRuntime()
 			.availableProcessors();

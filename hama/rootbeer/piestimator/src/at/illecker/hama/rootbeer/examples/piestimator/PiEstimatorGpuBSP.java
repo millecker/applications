@@ -44,7 +44,7 @@ public class PiEstimatorGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	private static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
 	private static final Path TMP_OUTPUT = new Path(
-			"output/hama/rootbeer/examples/piestimatorGPU-"
+			"output/hama/rootbeer/examples/piestimator/GPU-"
 					+ System.currentTimeMillis());
 	private static final long kernelCount = 4;
 	private static final long iterations = 10000;

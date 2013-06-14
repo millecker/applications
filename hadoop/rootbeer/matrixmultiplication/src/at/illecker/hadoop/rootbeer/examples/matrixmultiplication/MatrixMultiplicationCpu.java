@@ -64,7 +64,7 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 	private static final String OUT_CARD = "output.vector.cardinality";
 	private static final Path TMP_OUTPUT = new Path(
-			"output/hadoop/rootbeer/examples/matrixmultiplicationCPU-"
+			"output/hadoop/rootbeer/examples/matrixmultiplication/CPU-"
 					+ System.currentTimeMillis());
 	private static final Path MATRIX_A_PATH = new Path(
 			"input/hadoop/rootbeer/examples/MatrixA.seq");

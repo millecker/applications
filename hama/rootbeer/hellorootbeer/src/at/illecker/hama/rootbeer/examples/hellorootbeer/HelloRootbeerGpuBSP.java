@@ -35,7 +35,7 @@ public class HelloRootbeerGpuBSP extends
 		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
 	private static final Log LOG = LogFactory.getLog(HelloRootbeerGpuBSP.class);
 	private static final Path TMP_OUTPUT = new Path(
-			"output/hama/rootbeer/examples/hellorootbeer-"
+			"output/hama/rootbeer/examples/hellorootbeer/GPU-"
 					+ System.currentTimeMillis());
 	private static final long kernelCount = 100;
 	private static final long iterations = 10000;
