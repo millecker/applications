@@ -73,6 +73,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			"input/hadoop/rootbeer/examples/MatrixB.seq");
 	private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
 			+ "/MatrixC.seq");
+	private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
+			+ "/MatrixD.seq");
 
 	public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
 			Path bPath, Path outPath, int outCardinality) {
@@ -148,10 +150,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
-		DistributedRowMatrix.writeDistributedRowMatrix(conf, numRows, numCols,
-				new Random(42L), MATRIX_A_PATH);
-		DistributedRowMatrix.writeDistributedRowMatrix(conf, numRows, numCols,
-				new Random(1337L), MATRIX_B_PATH);
+		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRows,
+				numCols, new Random(42L), MATRIX_A_PATH);
+		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRows,
+				numCols, new Random(1337L), MATRIX_B_PATH);
 
 		// Load DistributedRowMatrix a and b
 		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
@@ -165,25 +167,37 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		a.setConf(conf);
 		b.setConf(conf);
 
-		System.out.println("Matrix A:");
-		DistributedRowMatrix.printDistributedMatrix(a);
-		System.out.println("Matrix B:");
-		DistributedRowMatrix.printDistributedMatrix(b);
-
+		// Transpose within a new MapReduce job
 		long startTime = System.currentTimeMillis();
+		DistributedRowMatrix c = a.times(b, MATRIX_C_PATH, true, true);
+		System.out.println("Job Finished in "
+				+ (System.currentTimeMillis() - startTime) / 1000.0
+				+ " seconds");
 
-		DistributedRowMatrix c = a.times(b, MATRIX_C_PATH);
+		// Transpose without new MapReduce job
+		startTime = System.currentTimeMillis();
+		DistributedRowMatrix d = a.times(b, MATRIX_D_PATH, true, false);
+		System.out.println("Job Finished in "
+				+ (System.currentTimeMillis() - startTime) / 1000.0
+				+ " seconds");
 
+		// Transpose and Multiply without new MapReduce job
+		startTime = System.currentTimeMillis();
+		DistributedRowMatrix e = a.times(b, MATRIX_D_PATH, false, false);
 		System.out.println("Job Finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 
 		System.out.println("Matrix A:");
-		DistributedRowMatrix.printDistributedMatrix(a);
+		a.printDistributedRowMatrix();
 		System.out.println("Matrix B:");
-		DistributedRowMatrix.printDistributedMatrix(b);
+		b.printDistributedRowMatrix();
 		System.out.println("Matrix C:");
-		DistributedRowMatrix.printDistributedMatrix(c);
+		c.printDistributedRowMatrix();
+		System.out.println("Matrix D:");
+		d.printDistributedRowMatrix();
+		System.out.println("Matrix E:");
+		e.printDistributedRowMatrix();
 
 		printOutput(conf);
 		return 0;

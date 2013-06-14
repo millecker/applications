@@ -143,10 +143,10 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
-		DistributedRowMatrix.writeDistributedRowMatrix(conf, numRows, numCols,
-				new Random(42L), MATRIX_A_PATH);
-		DistributedRowMatrix.writeDistributedRowMatrix(conf, numRows, numCols,
-				new Random(1337L), MATRIX_B_PATH);
+		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRows,
+				numCols, new Random(42L), MATRIX_A_PATH);
+		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRows,
+				numCols, new Random(1337L), MATRIX_B_PATH);
 
 		// Load DistributedRowMatrix a and b
 		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
@@ -162,7 +162,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		long startTime = System.currentTimeMillis();
 
-		a.times(b, TMP_OUTPUT);
+		a.times(b, TMP_OUTPUT, true, true);
 
 		printOutput(conf);
 		System.out.println("Job Finished in "

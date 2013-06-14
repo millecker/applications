@@ -193,13 +193,18 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 * 
 	 * @param other
 	 *            a DistributedRowMatrix
+	 * @param boolean submitTimesJob, Multiply Matrix within a new MapReduce Job
+	 * @param submitTransposeJob
+	 *            Transpose Matrix within a new MapReduce Job
 	 * @return a DistributedRowMatrix containing the product
 	 */
-	public DistributedRowMatrix times(DistributedRowMatrix other)
+	public DistributedRowMatrix times(DistributedRowMatrix other,
+			boolean submitMatrixMultiplyJob, boolean submitTransposeJob)
 			throws IOException {
 
 		return times(other, new Path(outputTmpBasePath.getParent(),
-				"productWith-" + (System.nanoTime() & 0xFF)));
+				"productWith-" + (System.nanoTime() & 0xFF)),
+				submitMatrixMultiplyJob, submitTransposeJob);
 	}
 
 	/**
@@ -209,9 +214,12 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 *            a DistributedRowMatrix
 	 * @param outPath
 	 *            path to write result to
+	 * @param submitTransposeJob
+	 *            Transpose Matrix within a new MapReduce Job
 	 * @return a DistributedRowMatrix containing the product
 	 */
-	public DistributedRowMatrix times(DistributedRowMatrix other, Path outPath)
+	public DistributedRowMatrix times(DistributedRowMatrix other, Path outPath,
+			boolean submitMatrixMultiplyJob, boolean submitTransposeJob)
 			throws IOException {
 		if (numRows != other.numRows()) {
 			throw new CardinalityException(numRows, other.numRows());
@@ -220,18 +228,66 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		Configuration initialConf = getConf() == null ? new Configuration()
 				: getConf();
 
-		DistributedRowMatrix transposed = this.transpose();
+		// Transpose Matrix
+		DistributedRowMatrix transposed;
+		if (submitTransposeJob) {
+			transposed = this.transpose();
 
+		} else { // Transpose without new MapReduce Job
+
+			final double[][] transposedMatrix = new double[numCols][numRows];
+			Iterator<MatrixSlice> iterator = this.iterateAll();
+			int i = 0;
+			while (iterator.hasNext()) {
+				Vector rowVector = iterator.next().vector();
+				for (int j = 0; j < rowVector.size(); j++) {
+					transposedMatrix[j][i] = rowVector.getElement(j).get();
+				}
+				i++;
+			}
+			Path transposedPath = new Path(outputTmpBasePath.getParent(),
+					"transpose-" + (System.nanoTime() & 0xFF));
+			try {
+				writeDistributedRowMatrix(this.conf, transposedMatrix,
+						transposedPath);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			transposed = new DistributedRowMatrix(transposedPath,
+					outputTmpBasePath, numCols, numRows);
+			transposed.setConf(conf);
+		}
+		// Debug
 		System.out.println("DistributedRowMatrix.times transposed:");
-		printDistributedMatrix(transposed);
+		transposed.printDistributedRowMatrix();
 
-		Configuration conf = MatrixMultiplicationCpu
-				.createMatrixMultiplicationCpuConf(initialConf,
-						transposed.rowPath, other.rowPath, outPath,
-						other.numCols);
+		// Multiply Matrix with transposed one
+		if (submitMatrixMultiplyJob) {
+			Configuration conf = MatrixMultiplicationCpu
+					.createMatrixMultiplicationCpuConf(initialConf,
+							transposed.rowPath, other.rowPath, outPath,
+							other.numCols);
 
-		JobClient.runJob(new JobConf(conf));
+			JobClient.runJob(new JobConf(conf));
 
+		} else { // MatrixMultiply without new MapReduce Job
+
+			final double[][] matrixA = this.toDoubleArray();
+			final double[][] matrixB = other.toDoubleArray();
+			final double[][] matrixC = new double[this.numRows][other.numCols];
+
+			int m = this.numRows;
+			int n = this.numCols;
+			int p = other.numCols;
+			for (int k = 0; k < n; k++) {
+				for (int i = 0; i < m; i++) {
+					for (int j = 0; j < p; j++) {
+						matrixC[i][j] = matrixC[i][j] + matrixA[i][k]
+								* matrixB[k][j];
+					}
+				}
+			}
+		}
 		DistributedRowMatrix out = new DistributedRowMatrix(outPath,
 				outputTmpPath, numCols, other.numCols());
 		out.setConf(conf);
@@ -410,10 +466,9 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		}
 	}
 
-	public static void writeDistributedRowMatrix(Configuration conf, int rows,
-			int columns, Random rand, Path path) throws Exception {
+	public static void createRandomDistributedRowMatrix(Configuration conf,
+			int rows, int columns, Random rand, Path path) throws Exception {
 
-		// First build double Matrix and fill with random values
 		final double[][] matrix = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
@@ -422,14 +477,19 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 			}
 		}
 
-		// Write Matrix to dfs
+		writeDistributedRowMatrix(conf, matrix, path);
+	}
+
+	public static void writeDistributedRowMatrix(Configuration conf,
+			final double[][] matrix, Path path) throws Exception {
+
 		SequenceFile.Writer writer = null;
 		try {
 			FileSystem fs = FileSystem.get(conf);
 			writer = new SequenceFile.Writer(fs, conf, path, IntWritable.class,
 					VectorWritable.class);
 
-			for (int i = 0; i < rows; i++) {
+			for (int i = 0; i < matrix.length; i++) {
 				DenseVector rowVector = new DenseVector(matrix[i]);
 				writer.append(new IntWritable(i), new VectorWritable(rowVector));
 			}
@@ -447,9 +507,9 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		}
 	}
 
-	public static int printDistributedMatrix(DistributedRowMatrix matrix) {
-		System.out.println("RowPath: " + matrix.getRowPath());
-		Iterator<MatrixSlice> iterator = matrix.iterateAll();
+	public int printDistributedRowMatrix() {
+		System.out.println("RowPath: " + this.rowPath);
+		Iterator<MatrixSlice> iterator = this.iterateAll();
 		int count = 0;
 		while (iterator.hasNext()) {
 			MatrixSlice slice = iterator.next();
@@ -465,4 +525,17 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		return count;
 	}
 
+	public double[][] toDoubleArray() {
+		final double[][] matrix = new double[this.numRows][this.numCols];
+		Iterator<MatrixSlice> iterator = this.iterateAll();
+		int i = 0;
+		while (iterator.hasNext()) {
+			Vector rowVector = iterator.next().vector();
+			for (int j = 0; j < rowVector.size(); j++) {
+				matrix[i][j] = rowVector.getElement(j).get();
+			}
+			i++;
+		}
+		return matrix;
+	}
 }
