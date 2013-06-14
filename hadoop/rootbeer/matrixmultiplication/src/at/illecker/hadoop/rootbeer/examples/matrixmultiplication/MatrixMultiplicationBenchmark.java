@@ -3,6 +3,7 @@ package at.illecker.hadoop.rootbeer.examples.matrixmultiplication;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
@@ -13,17 +14,8 @@ import com.google.caliper.SimpleBenchmark;
 
 public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 
-	private static final Path OUTPUT_DIR = new Path(
-			"output/hadoop/rootbeer/examples/matrixmultiplication/bench");
-	private static final Path MATRIX_A_PATH = new Path(OUTPUT_DIR
-			+ "/MatrixA.seq");
-	private static final Path MATRIX_B_PATH = new Path(OUTPUT_DIR
-			+ "/MatrixB.seq");
-	private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
-			+ "/MatrixC.seq");
-
-	@Param({ "2", "4",})
-		// "5", "10", "20", "40", "60", "80", "100", "500", "1000", "2000" })
+	@Param({ "2", "4", })
+	// "5", "10", "20", "40", "60", "80", "100", "500", "1000", "2000" })
 	private int n;
 
 	@Param
@@ -34,6 +26,10 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 																			// HADOOP_GPU_TRANSPOSE_MAP_REDUCE
 	};
 
+	private Path OUTPUT_DIR;
+	private Path MATRIX_A_PATH;
+	private Path MATRIX_B_PATH;
+	private Path MATRIX_C_PATH;
 	private Configuration conf;
 	private DistributedRowMatrix matrixA;
 	private DistributedRowMatrix matrixB;
@@ -41,7 +37,37 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 	@Override
 	protected void setUp() throws Exception {
 		conf = new Configuration();
-		// conf.set("tmpjars", "../../../lib/hadoop-core-1.3.0-SNAPSHOT.jar");
+
+		System.out.println("Load Hadoop default configuration.");
+		String HADOOP_HOME = System.getenv("HADOOP_HOME");
+		System.out.println("HADOOP_HOME: " + System.getenv("HADOOP_HOME"));
+		System.out
+				.println("HADOOP_INSTALL: " + System.getenv("HADOOP_INSTALL"));
+
+		if (HADOOP_HOME != null)
+			HADOOP_HOME = System.getenv("HADOOP_INSTALL");
+
+		if (HADOOP_HOME != null) {
+			System.out.println("Load HADOOP config...");
+			conf.addResource(new Path(HADOOP_HOME, "src/core/core-default.xml"));
+			conf.addResource(new Path(HADOOP_HOME, "src/hdfs/hdfs-default.xml"));
+			conf.addResource(new Path(HADOOP_HOME,
+					"src/mapred/mapred-default.xml"));
+			conf.addResource(new Path(HADOOP_HOME, "conf/core-site.xml"));
+			conf.addResource(new Path(HADOOP_HOME, "conf/hdfs-site.xml"));
+			conf.addResource(new Path(HADOOP_HOME, "conf/mapred-site.xml"));
+			System.out.println("LOADED HADOOP config...");
+		}
+
+		// Setup outputs
+		FileSystem hdfs = FileSystem.get(conf);
+		OUTPUT_DIR = new Path(hdfs.getHomeDirectory(),
+				"output/hadoop/rootbeer/examples/matrixmultiplication/bench");
+		MATRIX_A_PATH = new Path(OUTPUT_DIR + "/MatrixA.seq");
+		MATRIX_B_PATH = new Path(OUTPUT_DIR + "/MatrixB.seq");
+		MATRIX_C_PATH = new Path(OUTPUT_DIR + "/MatrixC.seq");
+
+		System.out.println("OUTPUT_DIR: " + OUTPUT_DIR);
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
@@ -100,7 +126,7 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 							+ ((submitMatrixMultiplyJob) ? "_matrixMultiplyMR"
 									: "_transposeJava")
 							+ ((submitTransposeJob) ? "_transposeMR"
-									: "_transposeJava") + ".seq"),
+									: "_transposeJava")),
 					submitMatrixMultiplyJob, submitTransposeJob);
 
 			return resultMatrixHadoopCPU.numRows();

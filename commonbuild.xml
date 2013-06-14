@@ -19,14 +19,16 @@
 	<!-- ***** Custom settings for local build.xml ***** -->
 	<!-- <property name="output.file" value="" /> -->
 	<property name="output.file-jar" value="${output.file}.jar" />
+	<property name="output.file-bench-jar" value="${output.file}-Benchmark.jar" />
+	<property name="output.file-bench-tmp-jar" value="${output.file}-Benchmark_tmp.jar" />
 	<property name="output.file-gpu-jar" value="${output.file}-GPU.jar" />
 	<property name="output.file-rb-jar" value="${output.file}-rb.jar" />
 	<property name="output.file-rb-gpu-jar" value="${output.file}-rb-GPU.jar" />
 
 	<!-- ***** Custom settings for local build.xml ***** -->
 	<!--
-	<property name="libjars-gpu" value="${lib}${file.separator}tjungblut-math-1.0.jar" />
-	<property name="libjars-cpu" value="${lib}${file.separator}tjungblut-math-1.0.jar,${lib}${file.separator}rootbeer-1.x-SNAPSHOT.jar" />
+	<property name="libjars.gpu" value="${lib}${file.separator}tjungblut-math-1.0.jar" />
+	<property name="libjars.cpu" value="${lib}${file.separator}tjungblut-math-1.0.jar,${lib}${file.separator}rootbeer-1.x-SNAPSHOT.jar" />
 	<property name="rb-package.dir" value="at/illecker/hama/rootbeer/examples/piestimator" />
 	<property name="rb-kernel.class" value="PiEstimatorKernel.class" />
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorGpuBSP" />
@@ -34,14 +36,16 @@
     <property name="program.args" value="arg0 arg1 arg2" />
     -->
 	<!-- if properties were already defined, it has no effect! -->
-	<property name="libjars-gpu" value="" />
-	<property name="libjars-cpu" value="" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
 	<property name="rb-package.dir" value="" />
 	<property name="rb-kernel.class" value="" />
 	<property name="gpu.class" value="" />
 	<property name="cpu.class" value="" />
+	<property name="bench.class" value="" />
 	<property name="program" value="" />
-	<property name="program.options" value="hama|hadoop" />
+	<property name="program.options" value="java|hama|hadoop" />
 	<property name="program.args" value="" />
 
 	<!-- ***** Load ant contrib for Loops and If Tasks ***** -->
@@ -65,6 +69,7 @@
 	<target name="clean">
 		<delete dir="build" />
 		<delete file="${output.file-jar}" />
+		<delete file="${output.file-bench-jar}" />
 		<delete file="${output.file-gpu-jar}" />
 		<delete file="${output.file-rb-jar}" />
 		<delete file="${output.file-rb-gpu-jar}" />
@@ -112,10 +117,6 @@
 	<!-- ****************************************************************** -->
 	<target name="jar-gpu" depends="compile">
 		<antcall target="-jar-rb" />
-		<!-- 
-		# Pack libraries
-        #java -jar ../pack.jar -mainjar PiEstimator.jar -libjar $LIBS/tjungblut-math-1.0.jar -destjar PiEstimator-rb.jar
-		-->
 		<echo>java ${java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
 		<exec executable="java">
 			<arg value="${java.arg.xmx}" />
@@ -128,8 +129,8 @@
 		<delete file="${output.file-rb-jar}" />
 		<antcall target="-jar-gpu-combine" />
 		<delete file="${output.file-rb-gpu-jar}" />
-		<echo>Including lib jars: ${libjars-gpu}</echo>
-		<for list="${libjars-gpu}" param="libjar">
+		<echo>Including lib jars: ${libjars.gpu}</echo>
+		<for list="${libjars.gpu}" param="libjar">
 			<sequential>
 				<echo>jar uf ${output.file-jar} -C ${root} @{libjar}</echo>
 				<exec executable="jar">
@@ -155,8 +156,8 @@
 				<attribute name="Main-Class" value="${cpu.class}" />
 			</manifest>
 		</jar>
-		<echo>Including lib jars: ${libjars-cpu}</echo>
-		<for list="${libjars-cpu}" param="libjar">
+		<echo>Including lib jars: ${libjars.cpu}</echo>
+		<for list="${libjars.cpu}" param="libjar">
 			<sequential>
 				<echo>jar uf ${output.file-jar} -C ${root} @{libjar}</echo>
 				<exec executable="jar">
@@ -168,6 +169,39 @@
 				</exec>
 			</sequential>
 		</for>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET jar-bench                                                   -->
+	<!-- Generate jar file and pack dependent libs                          -->
+	<!-- ****************************************************************** -->
+	<target name="jar-bench" depends="compile">
+		<jar destfile="${output.file-bench-tmp-jar}" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${bench.class}" />
+			</manifest>
+		</jar>
+		<echo>Main-Class: ${bench.class}</echo>
+		<!-- Setup libjar arguments -->
+		<echo>Including lib jars: ${libjars.bench}</echo>
+		<var name="libjar.args" value="" />
+		<for list="${libjars.bench}" param="libjar">
+			<sequential>
+				<var name="libjar.args" value="${libjar.args}-libjar ${root}${file.separator}@{libjar} " />
+			</sequential>
+		</for>
+		<!-- Pack libraries -->
+		<echo>java -jar ${lib.dir}/pack.jar -mainjar ${output.file-bench-jar}.tmp ${libjar.args} -destjar ${output.file-bench-jar}</echo>
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${lib.dir}/pack.jar" />
+			<arg value="-mainjar" />
+			<arg value="${output.file-bench-tmp-jar}" />
+			<arg line="${libjar.args}" />
+			<arg value="-destjar" />
+			<arg value="${output.file-bench-jar}" />
+		</exec>
+		<delete file="${output.file-bench-tmp-jar}" />
 	</target>
 
 	<!-- ****************************************************************** -->
@@ -225,6 +259,33 @@
 			<arg line="${hadoop.main.args}" />
 		</exec>
 	</target>
+	<!-- ****************************************************************** -->
+	<!-- PRIVATE TARGET run-java                                            -->
+	<!-- Executing java jar with {java.main.args}                           -->
+	<!-- ****************************************************************** -->
+	<target name="-run-java">
+		<var name="java.main.args" value="" />
+		<for list="${program.args}" param="program.arg" delimiter=" ">
+			<sequential>
+				<!-- if already defined; no effect -->
+				<property name="@{program.arg}" value="" />
+				<!-- <propertycopy name="temp.arg" from="@{program.arg}" /> -->
+				<if>
+					<equals arg1="${@{program.arg}}" arg2="" />
+					<else>
+						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
+						<var name="java.main.args" value="${java.main.args} ${@{program.arg}}" />
+					</else>
+				</if>
+			</sequential>
+		</for>
+		<echo>java -jar ${java.main.jar} ${java.main.args}</echo>
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${java.main.jar}" />
+			<arg line="${java.main.args}" />
+		</exec>
+	</target>
 
 	<!-- ****************************************************************** -->
 	<!-- PRIVATE TARGET -run-program                                        -->
@@ -232,22 +293,30 @@
 	<!-- ****************************************************************** -->
 	<target name="-run-program">
 		<if>
-			<equals arg1="${program}" arg2="hama" />
+			<equals arg1="${program.bin}" arg2="hama" />
 			<then>
 				<antcall target="-run-hama">
 					<param name="hama.main.jar" value="${program.main.jar}" />
 				</antcall>
 			</then>
 			<elseif>
-				<equals arg1="${program}" arg2="hadoop" />
+				<equals arg1="${program.bin}" arg2="hadoop" />
 				<then>
 					<antcall target="-run-hadoop">
 						<param name="hadoop.main.jar" value="${program.main.jar}" />
 					</antcall>
 				</then>
 			</elseif>
+			<elseif>
+				<equals arg1="${program.bin}" arg2="java" />
+				<then>
+					<antcall target="-run-java">
+						<param name="java.main.jar" value="${program.main.jar}" />
+					</antcall>
+				</then>
+			</elseif>
 			<else>
-				<echo>Program ${program} is not available!</echo>
+				<echo>Program ${program.bin} is not available!</echo>
 			</else>
 		</if>
 	</target>
@@ -342,6 +411,7 @@
 					<param name="rootbeer.arg" value="-jemu" />
 				</antcall>
 				<antcall target="-run-program">
+					<param name="program.bin" value="${program}" />
 					<param name="program.main.jar" value="${output.file-gpu-jar}" />
 				</antcall>
 			</else>
@@ -372,7 +442,32 @@
 				<antcall target="clean" />
 				<antcall target="jar-cpu" />
 				<antcall target="-run-program">
+					<param name="program.bin" value="${program}" />
 					<param name="program.main.jar" value="${output.file-jar}" />
+				</antcall>
+			</else>
+		</if>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET run-bench                                                   -->
+	<!-- Run Benchmark jar                                                  -->
+	<!-- ****************************************************************** -->
+	<target name="run-bench">
+		<echo>RUN Benchmark for ${output.file}</echo>
+		<if>
+			<equals arg1="${bench.class}" arg2="" />
+			<then>
+				<echo>Missing Benchmark class {bench.class} specification in build.xml!</echo>
+				<echo>No Benchmark implementation available!</echo>
+			</then>
+			<else>
+				<echo>Run with java</echo>
+				<antcall target="clean" />
+				<antcall target="jar-bench" />
+				<antcall target="-run-program">
+					<param name="program.bin" value="java" />
+					<param name="program.main.jar" value="${output.file-bench-jar}" />
 				</antcall>
 			</else>
 		</if>

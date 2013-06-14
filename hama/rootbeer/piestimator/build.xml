@@ -2,8 +2,8 @@
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	<property name="output.file" value="PiEstimator" />
-	<property name="libjars-gpu" value="${lib}${file.separator}tjungblut-math-1.0.jar" />
-	<property name="libjars-cpu" value="${lib}${file.separator}tjungblut-math-1.0.jar,${lib}${file.separator}${rootbeer.version}" />
+	<property name="libjars.gpu" value="${lib}${file.separator}tjungblut-math-1.0.jar" />
+	<property name="libjars.cpu" value="${lib}${file.separator}tjungblut-math-1.0.jar,${lib}${file.separator}${rootbeer.version}" />
 	<property name="rb-package.dir" value="at/illecker/hama/rootbeer/examples/piestimator" />
 	<property name="rb-kernel.class" value="PiEstimatorKernel.class" />
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorGpuBSP" />
