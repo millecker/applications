@@ -220,11 +220,15 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		Configuration initialConf = getConf() == null ? new Configuration()
 				: getConf();
 
-		DistributedRowMatrix transposed  = this.transpose();
-		
+		DistributedRowMatrix transposed = this.transpose();
+
+		System.out.println("DistributedRowMatrix.times transposed:");
+		printDistributedMatrix(transposed);
+
 		Configuration conf = MatrixMultiplicationCpu
-				.createMatrixMultiplicationCpuConf(initialConf, transposed.rowPath,
-						other.rowPath, outPath, other.numCols);
+				.createMatrixMultiplicationCpuConf(initialConf,
+						transposed.rowPath, other.rowPath, outPath,
+						other.numCols);
 
 		JobClient.runJob(new JobConf(conf));
 
@@ -413,8 +417,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		final double[][] matrix = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				//matrix[i][j] = rand.nextDouble();
-				matrix[i][j] = rand.nextInt(9)+1;
+				// matrix[i][j] = rand.nextDouble();
+				matrix[i][j] = rand.nextInt(9) + 1;
 			}
 		}
 

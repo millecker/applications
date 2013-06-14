@@ -252,10 +252,13 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			Vector multiplier = firstIsOutFrag ? ((VectorWritable) v.get(1))
 					.get() : ((VectorWritable) v.get(0)).get();
 
+			logMapper.writeChars("map,outFrag=" + outFrag + "\n");
+			logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+
 			VectorWritable outVector = new VectorWritable();
-			for (Vector.Element e : multiplier.nonZeroes()) {
+			for (Vector.Element e : outFrag.nonZeroes()) {
 				row.set(e.index());
-				outVector.set(outFrag.times(e.get()));
+				outVector.set(multiplier.times(e.get()));
 
 				out.collect(row, outVector);
 				logMapper.writeChars("map,collect,key=" + index + ",value="
