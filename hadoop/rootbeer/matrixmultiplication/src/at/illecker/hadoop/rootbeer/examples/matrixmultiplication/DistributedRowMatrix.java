@@ -41,6 +41,7 @@ import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
 import org.apache.mahout.math.MatrixSlice;
 import org.apache.mahout.math.Vector;
+import org.apache.mahout.math.Vector.Element;
 import org.apache.mahout.math.VectorIterable;
 import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.hadoop.MatrixColumnMeansJob;
@@ -219,8 +220,10 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		Configuration initialConf = getConf() == null ? new Configuration()
 				: getConf();
 
+		DistributedRowMatrix transposed  = this.transpose();
+		
 		Configuration conf = MatrixMultiplicationCpu
-				.createMatrixMultiplicationCpuConf(initialConf, rowPath,
+				.createMatrixMultiplicationCpuConf(initialConf, transposed.rowPath,
 						other.rowPath, outPath, other.numCols);
 
 		JobClient.runJob(new JobConf(conf));
@@ -260,7 +263,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	}
 
 	public DistributedRowMatrix transpose() throws IOException {
-		Path outputPath = new Path(rowPath.getParent(), "transpose-"
+		Path outputPath = new Path(outputTmpBasePath, "transpose-"
 				+ (System.nanoTime() & 0xFF));
 		Configuration initialConf = getConf() == null ? new Configuration()
 				: getConf();
@@ -410,7 +413,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		final double[][] matrix = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				matrix[i][j] = rand.nextDouble();
+				//matrix[i][j] = rand.nextDouble();
+				matrix[i][j] = rand.nextInt(9)+1;
 			}
 		}
 
@@ -438,4 +442,23 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 			}
 		}
 	}
+
+	public static int printDistributedMatrix(DistributedRowMatrix matrix) {
+		System.out.println("RowPath: " + matrix.getRowPath());
+		Iterator<MatrixSlice> iterator = matrix.iterateAll();
+		int count = 0;
+		while (iterator.hasNext()) {
+			MatrixSlice slice = iterator.next();
+			Vector v = slice.vector();
+			int size = v.size();
+			for (int i = 0; i < size; i++) {
+				Element e = v.getElement(i);
+				count++;
+				System.out.print(e.get() + " ");
+			}
+			System.out.println();
+		}
+		return count;
+	}
+
 }
