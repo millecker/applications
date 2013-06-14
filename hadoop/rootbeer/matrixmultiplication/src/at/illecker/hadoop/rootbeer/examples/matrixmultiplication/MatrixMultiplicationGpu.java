@@ -164,7 +164,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		a.times(b, TMP_OUTPUT);
 
-		printOutput(new JobConf(conf));
+		printOutput(conf);
 		System.out.println("Job Finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
@@ -172,14 +172,14 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 		return 0;
 	}
 
-	static void printOutput(JobConf job) throws IOException {
-		FileSystem fs = FileSystem.get(job);
-		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+	static void printOutput(Configuration conf) throws IOException {
+		FileSystem fs = TMP_OUTPUT.getFileSystem(conf);
+		FileStatus[] files = fs.listStatus(TMP_OUTPUT);
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].getLen() > 0) {
 				System.out.println("File " + files[i].getPath());
 				// FSDataInputStream in = fs.open(files[i].getPath());
-				// IOUtils.copyBytes(in, System.out, job, false);
+				// IOUtils.copyBytes(in, System.out, conf, false);
 				// in.close();
 			}
 		}

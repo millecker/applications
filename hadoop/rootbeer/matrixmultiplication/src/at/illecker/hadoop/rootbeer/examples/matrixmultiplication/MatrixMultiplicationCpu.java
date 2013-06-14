@@ -25,9 +25,11 @@ import java.util.Random;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobConf;
@@ -127,7 +129,7 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		addOption("numRows", "nr", "Number of rows of input matrix", true);
 		addOption("numCols", "nc", "Number of columns of input matrix", true);
-		
+
 		Map<String, List<String>> argMap = parseArguments(strings);
 		if (argMap == null) {
 			return -1;
@@ -140,7 +142,6 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		LOG.info("numRows: " + numRows);
 		LOG.info("numCols: " + numCols);
 		LOG.info("outputPath: " + TMP_OUTPUT);
-		
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
@@ -162,10 +163,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		b.setConf(conf);
 
 		long startTime = System.currentTimeMillis();
-		
+
 		a.times(b, TMP_OUTPUT);
-		
-		printOutput(new JobConf(conf));
+
+		printOutput(conf);
 		System.out.println("Job Finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
@@ -173,14 +174,14 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		return 0;
 	}
 
-	static void printOutput(JobConf job) throws IOException {
-		FileSystem fs = FileSystem.get(job);
-		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+	static void printOutput(Configuration conf) throws IOException {
+		FileSystem fs = TMP_OUTPUT.getFileSystem(conf);
+		FileStatus[] files = fs.listStatus(TMP_OUTPUT);
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].getLen() > 0) {
 				System.out.println("File " + files[i].getPath());
 				// FSDataInputStream in = fs.open(files[i].getPath());
-				// IOUtils.copyBytes(in, System.out, job, false);
+				// IOUtils.copyBytes(in, System.out, conf, false);
 				// in.close();
 			}
 		}

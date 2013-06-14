@@ -13,16 +13,16 @@ ant jar-gpu
 # Build CPU jar file
 ant jar-cpu
 
-# Submit GPU Task to Hama
+# Submit GPU Task to Hadoop
 ant run-gpu
 
-# Submit GPU native emulated Task to Hama
+# Submit GPU native emulated Task to Hadoop
 ant run-gpu-nemu
 
-# Submit GPU Java emulated Task to Hama
+# Submit GPU Java emulated Task to Hadoop
 ant run-gpu-jemu
 
-# Submit CPU Task to Hama
+# Submit CPU Task to Hadoop
 ant run-cpu
 
 ###############################################################################
