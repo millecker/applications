@@ -193,7 +193,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 * 
 	 * @param other
 	 *            a DistributedRowMatrix
-	 * @param boolean submitTimesJob, Multiply Matrix within a new MapReduce Job
+	 * @param submitMatrixMultiplyJob
+	 *            Multiply Matrix within a new MapReduce Job
 	 * @param submitTransposeJob
 	 *            Transpose Matrix within a new MapReduce Job
 	 * @return a DistributedRowMatrix containing the product
@@ -214,6 +215,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 *            a DistributedRowMatrix
 	 * @param outPath
 	 *            path to write result to
+	 * @param submitMatrixMultiplyJob
+	 *            Multiply Matrix within a new MapReduce Job
 	 * @param submitTransposeJob
 	 *            Transpose Matrix within a new MapReduce Job
 	 * @return a DistributedRowMatrix containing the product

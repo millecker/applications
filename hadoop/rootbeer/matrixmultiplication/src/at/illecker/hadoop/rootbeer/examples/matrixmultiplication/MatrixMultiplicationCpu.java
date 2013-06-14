@@ -162,7 +162,7 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
 				OUTPUT_DIR, numRows, numCols);
 
-		conf.set("bsp.child.java.opts", "-Xmx4G");
+		//conf.set("bsp.child.java.opts", "-Xmx4G");
 
 		a.setConf(conf);
 		b.setConf(conf);
