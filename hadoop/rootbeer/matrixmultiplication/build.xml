@@ -1,0 +1,15 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
+	<property name="output.file" value="MatrixMultiplication" />
+	<property name="libjars-gpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT.jar,${lib}${file.separator}mahout-math-0.8-SNAPSHOT.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}guava-12.0.jar" />
+	<property name="libjars-cpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT.jar,${lib}${file.separator}mahout-math-0.8-SNAPSHOT.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}guava-12.0.jar" />
+	<property name="rb-package.dir" value="at/illecker/hadoop/rootbeer/examples/matrixmultiplication" />
+	<property name="rb-kernel.class" value="MatrixMultiplicationKernel.class" />
+	<property name="gpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationGpu" />
+	<property name="cpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationCpu" />
+	<property name="program" value="hadoop" />
+	<property name="program.args" value="numRows numCols" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>

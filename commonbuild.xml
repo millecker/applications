@@ -171,7 +171,7 @@
 	</target>
 
 	<!-- ****************************************************************** -->
-	<!-- PRIVATE TARGET jar-cpu                                             -->
+	<!-- PRIVATE TARGET run-hama                                            -->
 	<!-- Executing hama jar with {hama.main.args}                           -->
 	<!-- ****************************************************************** -->
 	<target name="-run-hama">
@@ -195,6 +195,34 @@
 			<arg value="jar" />
 			<arg value="${hama.main.jar}" />
 			<arg line="${hama.main.args}" />
+		</exec>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- PRIVATE TARGET run-hadoop                                          -->
+	<!-- Executing hadoop jar with {hadoop.main.args}                       -->
+	<!-- ****************************************************************** -->
+	<target name="-run-hadoop">
+		<var name="hadoop.main.args" value="" />
+		<for list="${program.args}" param="program.arg" delimiter=" ">
+			<sequential>
+				<!-- if already defined; no effect -->
+				<property name="@{program.arg}" value="" />
+				<!-- <propertycopy name="temp.arg" from="@{program.arg}" /> -->
+				<if>
+					<equals arg1="${@{program.arg}}" arg2="" />
+					<else>
+						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
+						<var name="hadoop.main.args" value="${hadoop.main.args} ${@{program.arg}}" />
+					</else>
+				</if>
+			</sequential>
+		</for>
+		<echo>hadoop jar ${hadoop.main.jar} ${hadoop.main.args}</echo>
+		<exec executable="hadoop">
+			<arg value="jar" />
+			<arg value="${hadoop.main.jar}" />
+			<arg line="${hadoop.main.args}" />
 		</exec>
 	</target>
 
