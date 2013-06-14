@@ -8,31 +8,3 @@
 Icon?
 ehthumbs.db
 Thumbs.db
-
-# Binary files & folders
-######################
-# Hama Examples
-hama/examples/HamaExamples.jar
-hama/examples/bin
-
-# Hama Rootbeer
-hama/rootbeer/bin
-
-hama/rootbeer/hellorootbeer/build
-hama/rootbeer/hellorootbeer/*.jar
-
-hama/rootbeer/piestimator/build
-hama/rootbeer/piestimator/*.jar
-
-hama/rootbeer/matrixmultiplication/build
-hama/rootbeer/matrixmultiplication/*.jar
-
-hama/rootbeer/pagerank/build
-hama/rootbeer/pagerank/*.jar
-hama/rootbeer/pagerank/input/web-Google.txt
-
-hama/rootbeer/singleshortestpath/build
-hama/rootbeer/singleshortestpath/*.jar
-
-# Hadoop
-hadoop/karwendel_tutorial/bin
