@@ -8,7 +8,8 @@
 	<property name="rb-kernel.class" value="HelloRootbeerKernel.class" />
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerGpuBSP" />
 	<property name="cpu.class" value="" />
+	<property name="program" value="hama" />
 	<property name="program.args" value="NumBspTask KernelCount Iterations" />
 
-	<import file="../commonbuild.xml" />
+	<import file="${root}${file.separator}commonbuild.xml" />
 </project>

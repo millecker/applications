@@ -1,0 +1,353 @@
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+<!-- Apache Ant commonbuild.xml                                             -->
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+<project>
+	<!-- ***** Custom settings for local build.xml ***** -->
+	<!--
+	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
+	-->
+	<property name="lib" value="lib" />
+	<property name="lib.dir" value="${root}${file.separator}${lib}" />
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build/classes" />
+	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
+	<property name="java.arg.xmx" value="-Xmx4G" />
+
+	<!-- ***** Custom settings for local build.xml ***** -->
+	<!-- <property name="output.file" value="" /> -->
+	<property name="output.file-jar" value="${output.file}.jar" />
+	<property name="output.file-gpu-jar" value="${output.file}-GPU.jar" />
+	<property name="output.file-rb-jar" value="${output.file}-rb.jar" />
+	<property name="output.file-rb-gpu-jar" value="${output.file}-rb-GPU.jar" />
+
+	<!-- ***** Custom settings for local build.xml ***** -->
+	<!--
+	<property name="libjars-gpu" value="${lib}${file.separator}tjungblut-math-1.0.jar" />
+	<property name="libjars-cpu" value="${lib}${file.separator}tjungblut-math-1.0.jar,${lib}${file.separator}rootbeer-1.x-SNAPSHOT.jar" />
+	<property name="rb-package.dir" value="at/illecker/hama/rootbeer/examples/piestimator" />
+	<property name="rb-kernel.class" value="PiEstimatorKernel.class" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorGpuBSP" />
+	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorCpuBSP" />
+    <property name="program.args" value="arg0 arg1 arg2" />
+    -->
+	<!-- if properties were already defined, it has no effect! -->
+	<property name="libjars-gpu" value="" />
+	<property name="libjars-cpu" value="" />
+	<property name="rb-package.dir" value="" />
+	<property name="rb-kernel.class" value="" />
+	<property name="gpu.class" value="" />
+	<property name="cpu.class" value="" />
+	<property name="program" value="" />
+	<property name="program.options" value="hama|hadoop" />
+	<property name="program.args" value="" />
+
+	<!-- ***** Load ant contrib for Loops and If Tasks ***** -->
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="${lib.dir}${file.separator}ant-contrib-0.6.jar" />
+		</classpath>
+	</taskdef>
+
+	<!-- ***** Setting up the master classpath including libs and local build.dir ***** -->
+	<path id="master-classpath">
+		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<pathelement path="${build.dir}" />
+	</path>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET CLEAN                                                       -->
+	<!-- ****************************************************************** -->
+	<target name="clean">
+		<delete dir="build" />
+		<delete file="${output.file-jar}" />
+		<delete file="${output.file-gpu-jar}" />
+		<delete file="${output.file-rb-jar}" />
+		<delete file="${output.file-rb-gpu-jar}" />
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET COMPILE                                                     -->
+	<!-- ****************************************************************** -->
+	<target name="compile">
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="master-classpath" includeantruntime="false" />
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- PRIVATE TARGET jar-rb                                              -->
+	<!-- Building a temp jar including only the rootbeer kernel             -->
+	<!-- ****************************************************************** -->
+	<target name="-jar-rb" depends="compile">
+		<echo>Rootbeer Kernel: ${build.dir}${file.separator}${rb-package.dir}${file.separator}${rb-kernel.class}</echo>
+		<jar destfile="${output.file-rb-jar}">
+			<zipfileset dir="${build.dir}${file.separator}${rb-package.dir}" includes="${rb-kernel.class}" fullpath="${rb-package.dir}${file.separator}${rb-kernel.class}" />
+		</jar>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- PRIVATE TARGET jar-gpu-combine                                     -->
+	<!-- Combining generated rootbeer jar with outher sources               -->
+	<!-- ****************************************************************** -->
+	<target name="-jar-gpu-combine" depends="compile">
+		<jar destfile="${output.file-jar}">
+			<zipfileset dir="${build.dir}" excludes="${rb-package.dir}${file.separator}${rb-kernel.class}" />
+			<zipgroupfileset dir="." includes="${output.file-rb-gpu-jar}" />
+			<manifest>
+				<attribute name="Main-Class" value="${gpu.class}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET jar-gpu                                                     -->
+	<!--   1) Generate rootbeer jar including only the rootbeer kernel      -->
+	<!--   2) Execute Rootbeer transformation with {rootbeer.arg}           -->
+	<!--   3) Combine rootbeer result jar with other sources                -->
+	<!--   4) Include dependent libs                                        -->
+	<!-- ****************************************************************** -->
+	<target name="jar-gpu" depends="compile">
+		<antcall target="-jar-rb" />
+		<!-- 
+		# Pack libraries
+        #java -jar ../pack.jar -mainjar PiEstimator.jar -libjar $LIBS/tjungblut-math-1.0.jar -destjar PiEstimator-rb.jar
+		-->
+		<echo>java ${java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
+		<exec executable="java">
+			<arg value="${java.arg.xmx}" />
+			<arg value="-jar" />
+			<arg value="${rootbeer}" />
+			<arg value="${output.file-rb-jar}" />
+			<arg value="${output.file-rb-gpu-jar}" />
+			<arg value="${rootbeer.arg}" />
+		</exec>
+		<delete file="${output.file-rb-jar}" />
+		<antcall target="-jar-gpu-combine" />
+		<delete file="${output.file-rb-gpu-jar}" />
+		<echo>Including lib jars: ${libjars-gpu}</echo>
+		<for list="${libjars-gpu}" param="libjar">
+			<sequential>
+				<echo>jar uf ${output.file-jar} -C ${root} @{libjar}</echo>
+				<exec executable="jar">
+					<arg value="uf" />
+					<arg value="${output.file-jar}" />
+					<arg value="-C" />
+					<arg value="${root}" />
+					<arg value="@{libjar}" />
+				</exec>
+			</sequential>
+		</for>
+		<echo>Rename ${output.file-jar} to ${output.file-gpu-jar}</echo>
+		<move file="${output.file-jar}" tofile="${output.file-gpu-jar}" />
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET jar-cpu                                                     -->
+	<!-- Generate jar file and include dependent libs                       -->
+	<!-- ****************************************************************** -->
+	<target name="jar-cpu" depends="compile">
+		<jar destfile="${output.file-jar}" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${cpu.class}" />
+			</manifest>
+		</jar>
+		<echo>Including lib jars: ${libjars-cpu}</echo>
+		<for list="${libjars-cpu}" param="libjar">
+			<sequential>
+				<echo>jar uf ${output.file-jar} -C ${root} @{libjar}</echo>
+				<exec executable="jar">
+					<arg value="uf" />
+					<arg value="${output.file-jar}" />
+					<arg value="-C" />
+					<arg value="${root}" />
+					<arg value="@{libjar}" />
+				</exec>
+			</sequential>
+		</for>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- PRIVATE TARGET jar-cpu                                             -->
+	<!-- Executing hama jar with {hama.main.args}                           -->
+	<!-- ****************************************************************** -->
+	<target name="-run-hama">
+		<var name="hama.main.args" value="" />
+		<for list="${program.args}" param="program.arg" delimiter=" ">
+			<sequential>
+				<!-- if already defined; no effect -->
+				<property name="@{program.arg}" value="" />
+				<!-- <propertycopy name="temp.arg" from="@{program.arg}" /> -->
+				<if>
+					<equals arg1="${@{program.arg}}" arg2="" />
+					<else>
+						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
+						<var name="hama.main.args" value="${hama.main.args} ${@{program.arg}}" />
+					</else>
+				</if>
+			</sequential>
+		</for>
+		<echo>hama jar ${hama.main.jar} ${hama.main.args}</echo>
+		<exec executable="hama">
+			<arg value="jar" />
+			<arg value="${hama.main.jar}" />
+			<arg line="${hama.main.args}" />
+		</exec>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- PRIVATE TARGET -run-program                                        -->
+	<!-- Execute program ${program} using {program.main.jar}                -->
+	<!-- ****************************************************************** -->
+	<target name="-run-program">
+		<if>
+			<equals arg1="${program}" arg2="hama" />
+			<then>
+				<antcall target="-run-hama">
+					<param name="hama.main.jar" value="${program.main.jar}" />
+				</antcall>
+			</then>
+			<elseif>
+				<equals arg1="${program}" arg2="hadoop" />
+				<then>
+					<antcall target="-run-hadoop">
+						<param name="hadoop.main.jar" value="${program.main.jar}" />
+					</antcall>
+				</then>
+			</elseif>
+			<else>
+				<echo>Program ${program} is not available!</echo>
+			</else>
+		</if>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET run-gpu                                                     -->
+	<!-- Run GPU jar (no rootbeer emulation)                                -->
+	<!-- ****************************************************************** -->
+	<target name="run-gpu">
+		<echo>RUN GPU for ${output.file}</echo>
+		<if>
+			<equals arg1="${gpu.class}" arg2="" />
+			<then>
+				<echo>Missing GPU class {gpu.class} specification in build.xml!</echo>
+				<echo>No GPU implementation available!</echo>
+			</then>
+			<elseif>
+				<equals arg1="${program}" arg2="" />
+				<then>
+					<echo>No program was specified in build.xml!</echo>
+					<echo>Possible programs: ${program.options}</echo>
+				</then>
+			</elseif>
+			<else>
+				<echo>Run with ${program}</echo>
+				<antcall target="clean" />
+				<antcall target="jar-gpu">
+					<param name="rootbeer.arg" value="" />
+				</antcall>
+				<antcall target="-run-program">
+					<param name="program.main.jar" value="${output.file-gpu-jar}" />
+				</antcall>
+			</else>
+		</if>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET run-gpu-nemu                                                -->
+	<!-- Run GPU jar (native rootbeer emulation)                            -->
+	<!-- ****************************************************************** -->
+	<target name="run-gpu-nemu">
+		<echo>RUN GPU Native Emulation for ${output.file}</echo>
+		<if>
+			<equals arg1="${gpu.class}" arg2="" />
+			<then>
+				<echo>Missing GPU class {gpu.class} specification in build.xml!</echo>
+				<echo>No GPU implementation available!</echo>
+			</then>
+			<elseif>
+				<equals arg1="${program}" arg2="" />
+				<then>
+					<echo>No program was specified in build.xml!</echo>
+					<echo>Possible programs: ${program.options}</echo>
+				</then>
+			</elseif>
+			<else>
+				<echo>Run with ${program}</echo>
+				<antcall target="clean" />
+				<antcall target="jar-gpu">
+					<param name="rootbeer.arg" value="-nemu" />
+				</antcall>
+				<antcall target="-run-program">
+					<param name="program.main.jar" value="${output.file-gpu-jar}" />
+				</antcall>
+			</else>
+		</if>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET run-gpu-jemu                                                -->
+	<!-- Run GPU jar (Java rootbeer emulation)                              -->
+	<!-- ****************************************************************** -->
+	<target name="run-gpu-jemu">
+		<echo>RUN GPU Java Emulation for ${output.file}</echo>
+		<if>
+			<equals arg1="${gpu.class}" arg2="" />
+			<then>
+				<echo>Missing GPU class {gpu.class} specification in build.xml!</echo>
+				<echo>No GPU implementation available!</echo>
+			</then>
+			<elseif>
+				<equals arg1="${program}" arg2="" />
+				<then>
+					<echo>No program was specified in build.xml!</echo>
+					<echo>Possible programs: ${program.options}</echo>
+				</then>
+			</elseif>
+			<else>
+				<echo>Run with ${program}</echo>
+				<antcall target="clean" />
+				<antcall target="jar-gpu">
+					<param name="rootbeer.arg" value="-jemu" />
+				</antcall>
+				<antcall target="-run-program">
+					<param name="program.main.jar" value="${output.file-gpu-jar}" />
+				</antcall>
+			</else>
+		</if>
+	</target>
+
+	<!-- ****************************************************************** -->
+	<!-- TARGET run-cpu                                                     -->
+	<!-- Run CPU jar                                                        -->
+	<!-- ****************************************************************** -->
+	<target name="run-cpu">
+		<echo>RUN CPU for ${output.file}</echo>
+		<if>
+			<equals arg1="${cpu.class}" arg2="" />
+			<then>
+				<echo>Missing CPU class {cpu.class} specification in build.xml!</echo>
+				<echo>No CPU implementation available!</echo>
+			</then>
+			<elseif>
+				<equals arg1="${program}" arg2="" />
+				<then>
+					<echo>No program was specified in build.xml!</echo>
+					<echo>Possible programs: ${program.options}</echo>
+				</then>
+			</elseif>
+			<else>
+				<echo>Run with ${program}</echo>
+				<antcall target="clean" />
+				<antcall target="jar-cpu" />
+				<antcall target="-run-program">
+					<param name="program.main.jar" value="${output.file-jar}" />
+				</antcall>
+			</else>
+		</if>
+	</target>
+
+</project>
