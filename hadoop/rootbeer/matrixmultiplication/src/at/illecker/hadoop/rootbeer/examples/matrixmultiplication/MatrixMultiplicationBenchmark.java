@@ -8,13 +8,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 
+import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
-import com.google.caliper.Runner;
-import com.google.caliper.SimpleBenchmark;
+import com.google.caliper.runner.CaliperMain;
 
-public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
+public class MatrixMultiplicationBenchmark extends Benchmark {
 
-	@Param({ "5", "10", "20", "40", "60", "80", "100", "500", "1000", "2000" })
+	@Param({ "5", "10", "20", "40", "45", "50", "55", })
+	// "80", "100", "500", "1000", "2000" })
 	private int n;
 
 	@Param
@@ -25,7 +26,8 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 		// , HADOOP_GPU_TRANSPOSE_MAP_REDUCE
 	};
 
-	private Path OUTPUT_DIR;
+	private static final String OUTPUT_DIR = "output/hadoop/rootbeer/examples/matrixmultiplication/bench";
+	private Path OUTPUT_DIR_PATH;
 	private Path MATRIX_A_PATH;
 	private Path MATRIX_B_PATH;
 	private Path MATRIX_C_PATH;
@@ -51,17 +53,23 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 			conf.addResource(new Path(HADOOP, "conf/core-site.xml"));
 			conf.addResource(new Path(HADOOP, "conf/hdfs-site.xml"));
 			conf.addResource(new Path(HADOOP, "conf/mapred-site.xml"));
+
+			try {
+				FileSystem.get(conf);
+			} catch (Exception e) {
+				// HDFS not reachable run Benchmark locally
+				conf = new Configuration();
+			}
 		}
 
 		// Setup outputs
-		FileSystem hdfs = FileSystem.get(conf);
-		OUTPUT_DIR = new Path(hdfs.getHomeDirectory(),
-				"output/hadoop/rootbeer/examples/matrixmultiplication/bench");
-		MATRIX_A_PATH = new Path(OUTPUT_DIR + "/MatrixA.seq");
-		MATRIX_B_PATH = new Path(OUTPUT_DIR + "/MatrixB.seq");
-		MATRIX_C_PATH = new Path(OUTPUT_DIR + "/MatrixC.seq");
+		OUTPUT_DIR_PATH = new Path(OUTPUT_DIR + "/bench_"
+				+ System.currentTimeMillis());
+		System.out.println("OUTPUT_DIR_PATH: " + OUTPUT_DIR_PATH);
 
-		System.out.println("OUTPUT_DIR: " + OUTPUT_DIR);
+		MATRIX_A_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixA.seq");
+		MATRIX_B_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixB.seq");
+		MATRIX_C_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixC.seq");
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
@@ -71,11 +79,16 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 				new Random(1337L), MATRIX_B_PATH);
 
 		// Load DistributedRowMatrix a and b
-		matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR, n, n);
-		matrixB = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, n, n);
+		matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR_PATH, n, n);
+		matrixB = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR_PATH, n, n);
 
 		matrixA.setConf(conf);
 		matrixB.setConf(conf);
+	}
+
+	@Override
+	protected void tearDown() throws Exception {
+		// System.out.println("Hey, I'm tearing up the joint.");
 	}
 
 	public void timeCalculate(int reps) {
@@ -163,11 +176,8 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 	 * return 0; }
 	 */
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
-		Runner.main(MatrixMultiplicationBenchmark.class, args);
+		CaliperMain.main(MatrixMultiplicationBenchmark.class, args);
 	}
 
 }

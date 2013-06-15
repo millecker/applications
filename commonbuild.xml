@@ -194,7 +194,7 @@
 			</sequential>
 		</for>
 		<!-- Pack libraries -->
-		<echo>java -jar ${lib.dir}/pack.jar -mainjar ${output.file-bench-jar}.tmp ${libjar.args} -destjar ${output.file-bench-jar}</echo>
+		<echo>java -jar ${lib.dir}/pack.jar -mainjar ${output.file-bench-tmp-jar} ${libjar.args} -destjar ${output.file-bench-jar}</echo>
 		<exec executable="java">
 			<arg value="-jar" />
 			<arg value="${lib.dir}/pack.jar" />
