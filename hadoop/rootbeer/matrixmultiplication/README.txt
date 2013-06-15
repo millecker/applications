@@ -31,6 +31,7 @@ ant run-gpu-jemu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
 ant run-cpu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
 
 # Run Benchmark
-ant run-bench [-DbenchDebug='--debug']
+ant run-bench -DbenchTimeLimit='--time-limit 300s' \
+  -DbenchInstrument='--instrument macro' [-DbenchTrials='--trials 1']
 
 ###############################################################################

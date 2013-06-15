@@ -4,14 +4,14 @@
 	<property name="output.file" value="MatrixMultiplication" />
 	<property name="libjars.gpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}guava-12.0.jar" />
 	<property name="libjars.cpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}guava-12.0.jar" />
-	<property name="libjars.bench" value="${lib}${file.separator}caliper-1.0-beta-1-all.jar,${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}hadoop-core-1.3.0-SNAPSHOT.jar" />
+	<property name="libjars.bench" value="${lib}${file.separator}caliper-1.0-beta-1-all.jar,${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}hadoop-core-1.3.0-SNAPSHOT.jar,${lib}${file.separator}commons-logging-1.1.1.jar" />
 	<property name="rb-package.dir" value="at/illecker/hadoop/rootbeer/examples/matrixmultiplication" />
 	<property name="rb-kernel.class" value="MatrixMultiplicationKernel.class" />
 	<property name="gpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationGpu" />
 	<property name="cpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationCpu" />
 	<property name="bench.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark" />
 	<property name="program" value="hadoop" />
-	<property name="program.args" value="numRows numCols benchTimeLimit" />
+	<property name="program.args" value="numRows numCols benchTimeLimit benchInstrument benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>

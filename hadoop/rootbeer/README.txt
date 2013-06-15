@@ -31,6 +31,6 @@ ant run-gpu-jemu
 ant run-cpu
 
 # Run Benchmark
-ant run-bench [-DbenchTimeLimit='--time-limit 60s']
+ant run-bench
 
 ###############################################################################

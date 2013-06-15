@@ -10,11 +10,13 @@ import org.apache.mahout.common.AbstractJob;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
+import com.google.caliper.api.Macrobenchmark;
 import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-	@Param({ "5", "10", "20", "40", "45", "50", "55", })
+	@Param({ "5", "10" })
+	// , "20", "40", "45", "50", "55", })
 	// "80", "100", "500", "1000", "2000" })
 	private int n;
 
@@ -26,14 +28,20 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		// , HADOOP_GPU_TRANSPOSE_MAP_REDUCE
 	};
 
+	// private static final Log LOG =
+	// LogFactory.getLog(MatrixMultiplicationBenchmark.class);
 	private static final String OUTPUT_DIR = "output/hadoop/rootbeer/examples/matrixmultiplication/bench";
+
 	private Path OUTPUT_DIR_PATH;
 	private Path MATRIX_A_PATH;
 	private Path MATRIX_B_PATH;
 	private Path MATRIX_C_PATH;
+
 	private Configuration conf;
+
 	private DistributedRowMatrix matrixA;
 	private DistributedRowMatrix matrixB;
+	private boolean runLocally = false;
 
 	@Override
 	protected void setUp() throws Exception {
@@ -41,7 +49,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		String HADOOP_HOME = System.getenv("HADOOP_HOME");
 		String HADOOP_INSTALL = System.getenv("HADOOP_INSTALL");
 
-		if ((HADOOP_HOME != null) || (HADOOP_INSTALL != null)) {
+		if ((HADOOP_HOME != null) || (HADOOP_INSTALL != null) && (!runLocally)) {
 			System.out.println("Load Hadoop default configuration...");
 			String HADOOP = ((HADOOP_HOME != null) ? HADOOP_HOME
 					: HADOOP_INSTALL);
@@ -59,6 +67,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 			} catch (Exception e) {
 				// HDFS not reachable run Benchmark locally
 				conf = new Configuration();
+				runLocally = true;
 			}
 		}
 
@@ -91,29 +100,39 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		// System.out.println("Hey, I'm tearing up the joint.");
 	}
 
+	// Microbenchmark
 	public void timeCalculate(int reps) {
+		int sum = 0;
 		for (int rep = 0; rep < reps; rep++) {
-			int sum = 0;
-			switch (type) {
-			case JAVA:
-				sum = matrixMultiplyJava(sum);
-				break;
-			case HADOOP_CPU_TRANSPOSE_JAVA:
-				sum = matrixMultiplyHadoopCPUTransposeJava(sum);
-				break;
-			case HADOOP_CPU_TRANSPOSE_MAP_REDUCE:
-				sum = matrixMultiplyHadoopCPUTransposeMR(sum);
-				break;
-			/*
-			 * case HADOOP_GPU_TRANSPOSE_MAP_REDUCE: sum =
-			 * matrixMultiplyHadopGPUTransposeMR(sum); break;
-			 */
-			default:
-				break;
-			}
-			System.out.println(sum);
+			sum = doBenchmark(sum);
 		}
+		System.out.println(sum);
+	}
 
+	@Macrobenchmark
+	public void timeCalculate() {
+		doBenchmark(0);
+	}
+
+	public int doBenchmark(int sum) {
+		switch (type) {
+		case JAVA:
+			sum = matrixMultiplyJava(sum);
+			break;
+		case HADOOP_CPU_TRANSPOSE_JAVA:
+			sum = matrixMultiplyHadoopCPUTransposeJava(sum);
+			break;
+		case HADOOP_CPU_TRANSPOSE_MAP_REDUCE:
+			sum = matrixMultiplyHadoopCPUTransposeMR(sum);
+			break;
+		/*
+		 * case HADOOP_GPU_TRANSPOSE_MAP_REDUCE: sum =
+		 * matrixMultiplyHadopGPUTransposeMR(sum); break;
+		 */
+		default:
+			break;
+		}
+		return sum;
 	}
 
 	private class MatrixMultiplicationCPU extends AbstractJob {

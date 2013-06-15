@@ -15,7 +15,7 @@
 	<property name="build.dir" value="build/classes" />
 	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
 	<property name="rootbeer.java.arg.xmx" value="-Xmx4G" />
-	<property name="bench.java.arg.xmx" value="-Xmx4G" />
+	<property name="bench.java.arg.xmx" value="-Xmx4G -javaagent:${lib.dir}${file.separator}allocation-instrumenter-2.1.jar" />
 
 	<!-- ***** Custom settings for local build.xml ***** -->
 	<!-- <property name="output.file" value="" /> -->
@@ -283,7 +283,7 @@
 					<equals arg1="${@{program.arg}}" arg2="" />
 					<else>
 						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
-						<var name="java.program.main.args" value="${program.main.args} ${@{java.program.main.args}}" />
+						<var name="java.program.main.args" value="${java.program.main.args} ${@{program.arg}}" />
 					</else>
 				</if>
 			</sequential>
