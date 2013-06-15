@@ -14,16 +14,15 @@ import com.google.caliper.SimpleBenchmark;
 
 public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 
-	@Param({ "2", "4", })
-	// "5", "10", "20", "40", "60", "80", "100", "500", "1000", "2000" })
+	@Param({ "5", "10", "20", "40", "60", "80", "100", "500", "1000", "2000" })
 	private int n;
 
 	@Param
 	CalcType type;
 
 	public enum CalcType {
-		JAVA, HADOOP_CPU_TRANSPOSE_JAVA, HADOOP_CPU_TRANSPOSE_MAP_REDUCE // ,
-																			// HADOOP_GPU_TRANSPOSE_MAP_REDUCE
+		JAVA, HADOOP_CPU_TRANSPOSE_JAVA, HADOOP_CPU_TRANSPOSE_MAP_REDUCE
+		// , HADOOP_GPU_TRANSPOSE_MAP_REDUCE
 	};
 
 	private Path OUTPUT_DIR;
@@ -37,26 +36,21 @@ public class MatrixMultiplicationBenchmark extends SimpleBenchmark {
 	@Override
 	protected void setUp() throws Exception {
 		conf = new Configuration();
-
-		System.out.println("Load Hadoop default configuration.");
 		String HADOOP_HOME = System.getenv("HADOOP_HOME");
-		System.out.println("HADOOP_HOME: " + System.getenv("HADOOP_HOME"));
-		System.out
-				.println("HADOOP_INSTALL: " + System.getenv("HADOOP_INSTALL"));
+		String HADOOP_INSTALL = System.getenv("HADOOP_INSTALL");
 
-		if (HADOOP_HOME != null)
-			HADOOP_HOME = System.getenv("HADOOP_INSTALL");
+		if ((HADOOP_HOME != null) || (HADOOP_INSTALL != null)) {
+			System.out.println("Load Hadoop default configuration...");
+			String HADOOP = ((HADOOP_HOME != null) ? HADOOP_HOME
+					: HADOOP_INSTALL);
 
-		if (HADOOP_HOME != null) {
-			System.out.println("Load HADOOP config...");
-			conf.addResource(new Path(HADOOP_HOME, "src/core/core-default.xml"));
-			conf.addResource(new Path(HADOOP_HOME, "src/hdfs/hdfs-default.xml"));
-			conf.addResource(new Path(HADOOP_HOME,
-					"src/mapred/mapred-default.xml"));
-			conf.addResource(new Path(HADOOP_HOME, "conf/core-site.xml"));
-			conf.addResource(new Path(HADOOP_HOME, "conf/hdfs-site.xml"));
-			conf.addResource(new Path(HADOOP_HOME, "conf/mapred-site.xml"));
-			System.out.println("LOADED HADOOP config...");
+			System.out.println("HADOOP_HOME: " + HADOOP);
+			conf.addResource(new Path(HADOOP, "src/core/core-default.xml"));
+			conf.addResource(new Path(HADOOP, "src/hdfs/hdfs-default.xml"));
+			conf.addResource(new Path(HADOOP, "src/mapred/mapred-default.xml"));
+			conf.addResource(new Path(HADOOP, "conf/core-site.xml"));
+			conf.addResource(new Path(HADOOP, "conf/hdfs-site.xml"));
+			conf.addResource(new Path(HADOOP, "conf/mapred-site.xml"));
 		}
 
 		// Setup outputs

@@ -13,6 +13,11 @@ ant jar-gpu
 # Build CPU jar file
 ant jar-cpu
 
+# Build Benchmark jar file
+ant jar-bench
+
+###############################################################################
+
 # Submit GPU Task to Hadoop
 ant run-gpu
 
@@ -24,5 +29,8 @@ ant run-gpu-jemu
 
 # Submit CPU Task to Hadoop
 ant run-cpu
+
+# Run Benchmark
+ant run-bench [-DbenchDebug='--debug']
 
 ###############################################################################
