@@ -14,7 +14,8 @@
 	<property name="src.dir" value="src" />
 	<property name="build.dir" value="build/classes" />
 	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
-	<property name="java.arg.xmx" value="-Xmx4G" />
+	<property name="rootbeer.java.arg.xmx" value="-Xmx4G" />
+	<property name="bench.java.arg.xmx" value="-Xmx4G" />
 
 	<!-- ***** Custom settings for local build.xml ***** -->
 	<!-- <property name="output.file" value="" /> -->
@@ -106,6 +107,7 @@
 				<attribute name="Main-Class" value="${gpu.class}" />
 			</manifest>
 		</jar>
+		<echo>Main-Class: ${gpu.class}</echo>
 	</target>
 
 	<!-- ****************************************************************** -->
@@ -117,9 +119,9 @@
 	<!-- ****************************************************************** -->
 	<target name="jar-gpu" depends="compile">
 		<antcall target="-jar-rb" />
-		<echo>java ${java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
+		<echo>java ${rootbeer.java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
 		<exec executable="java">
-			<arg value="${java.arg.xmx}" />
+			<arg value="${rootbeer.java.arg.xmx}" />
 			<arg value="-jar" />
 			<arg value="${rootbeer}" />
 			<arg value="${output.file-rb-jar}" />
@@ -156,6 +158,7 @@
 				<attribute name="Main-Class" value="${cpu.class}" />
 			</manifest>
 		</jar>
+		<echo>Main-Class: ${cpu.class}</echo>
 		<echo>Including lib jars: ${libjars.cpu}</echo>
 		<for list="${libjars.cpu}" param="libjar">
 			<sequential>
@@ -209,8 +212,9 @@
 	<!-- Executing hama jar with {hama.main.args}                           -->
 	<!-- ****************************************************************** -->
 	<target name="-run-hama">
-		<var name="hama.main.args" value="" />
-		<for list="${program.args}" param="program.arg" delimiter=" ">
+		<var name="hama.program.args" value="" />
+		<property name="hama.args" value="" />
+		<for list="${hama.program.args}" param="program.arg" delimiter=" ">
 			<sequential>
 				<!-- if already defined; no effect -->
 				<property name="@{program.arg}" value="" />
@@ -219,16 +223,17 @@
 					<equals arg1="${@{program.arg}}" arg2="" />
 					<else>
 						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
-						<var name="hama.main.args" value="${hama.main.args} ${@{program.arg}}" />
+						<var name="hama.program.args" value="${hama.program.args} ${@{program.arg}}" />
 					</else>
 				</if>
 			</sequential>
 		</for>
-		<echo>hama jar ${hama.main.jar} ${hama.main.args}</echo>
+		<echo>hama ${hama.args} jar ${hama.main.jar} ${hama.program.args}</echo>
 		<exec executable="hama">
+			<arg value="${hama.args}" />
 			<arg value="jar" />
 			<arg value="${hama.main.jar}" />
-			<arg line="${hama.main.args}" />
+			<arg line="${hama.program.args}" />
 		</exec>
 	</target>
 
@@ -237,7 +242,8 @@
 	<!-- Executing hadoop jar with {hadoop.main.args}                       -->
 	<!-- ****************************************************************** -->
 	<target name="-run-hadoop">
-		<var name="hadoop.main.args" value="" />
+		<var name="hadoop.program.main.args" value="" />
+		<property name="hadoop.args" value="" />
 		<for list="${program.args}" param="program.arg" delimiter=" ">
 			<sequential>
 				<!-- if already defined; no effect -->
@@ -247,24 +253,27 @@
 					<equals arg1="${@{program.arg}}" arg2="" />
 					<else>
 						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
-						<var name="hadoop.main.args" value="${hadoop.main.args} ${@{program.arg}}" />
+						<var name="hadoop.program.main.args" value="${hadoop.program.main.args} ${@{program.arg}}" />
 					</else>
 				</if>
 			</sequential>
 		</for>
-		<echo>hadoop jar ${hadoop.main.jar} ${hadoop.main.args}</echo>
+		<echo>hadoop ${hadoop.args} jar ${hadoop.main.jar} ${hadoop.program.main.args}</echo>
 		<exec executable="hadoop">
+			<arg value="${hadoop.args}" />
 			<arg value="jar" />
 			<arg value="${hadoop.main.jar}" />
-			<arg line="${hadoop.main.args}" />
+			<arg line="${hadoop.program.main.args}" />
 		</exec>
 	</target>
+
 	<!-- ****************************************************************** -->
 	<!-- PRIVATE TARGET run-java                                            -->
 	<!-- Executing java jar with {java.main.args}                           -->
 	<!-- ****************************************************************** -->
 	<target name="-run-java">
-		<var name="java.main.args" value="" />
+		<var name="java.program.main.args" value="" />
+		<property name="java.args" value="" />
 		<for list="${program.args}" param="program.arg" delimiter=" ">
 			<sequential>
 				<!-- if already defined; no effect -->
@@ -274,16 +283,17 @@
 					<equals arg1="${@{program.arg}}" arg2="" />
 					<else>
 						<echo>Argument @{program.arg}: ${@{program.arg}}</echo>
-						<var name="java.main.args" value="${java.main.args} ${@{program.arg}}" />
+						<var name="java.program.main.args" value="${program.main.args} ${@{java.program.main.args}}" />
 					</else>
 				</if>
 			</sequential>
 		</for>
-		<echo>java -jar ${java.main.jar} ${java.main.args}</echo>
+		<echo>java ${java.args} -jar ${java.main.jar} ${java.program.main.args}</echo>
 		<exec executable="java">
+			<arg value="${java.args}" />
 			<arg value="-jar" />
 			<arg value="${java.main.jar}" />
-			<arg line="${java.main.args}" />
+			<arg line="${java.program.main.args}" />
 		</exec>
 	</target>
 
@@ -297,6 +307,7 @@
 			<then>
 				<antcall target="-run-hama">
 					<param name="hama.main.jar" value="${program.main.jar}" />
+					<param name="hama.args" value="${program.bin.args}" />
 				</antcall>
 			</then>
 			<elseif>
@@ -304,6 +315,7 @@
 				<then>
 					<antcall target="-run-hadoop">
 						<param name="hadoop.main.jar" value="${program.main.jar}" />
+						<param name="hadoop.args" value="${program.bin.args}" />
 					</antcall>
 				</then>
 			</elseif>
@@ -312,6 +324,7 @@
 				<then>
 					<antcall target="-run-java">
 						<param name="java.main.jar" value="${program.main.jar}" />
+						<param name="java.args" value="${program.bin.args}" />
 					</antcall>
 				</then>
 			</elseif>
@@ -347,6 +360,8 @@
 					<param name="rootbeer.arg" value="" />
 				</antcall>
 				<antcall target="-run-program">
+					<param name="program.bin" value="${program}" />
+					<param name="program.bin.args" value="" />
 					<param name="program.main.jar" value="${output.file-gpu-jar}" />
 				</antcall>
 			</else>
@@ -379,6 +394,8 @@
 					<param name="rootbeer.arg" value="-nemu" />
 				</antcall>
 				<antcall target="-run-program">
+					<param name="program.bin" value="${program}" />
+					<param name="program.bin.args" value="" />
 					<param name="program.main.jar" value="${output.file-gpu-jar}" />
 				</antcall>
 			</else>
@@ -412,6 +429,7 @@
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
+					<param name="program.bin.args" value="" />
 					<param name="program.main.jar" value="${output.file-gpu-jar}" />
 				</antcall>
 			</else>
@@ -443,6 +461,7 @@
 				<antcall target="jar-cpu" />
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
+					<param name="program.bin.args" value="" />
 					<param name="program.main.jar" value="${output.file-jar}" />
 				</antcall>
 			</else>
@@ -467,6 +486,7 @@
 				<antcall target="jar-bench" />
 				<antcall target="-run-program">
 					<param name="program.bin" value="java" />
+					<param name="program.bin.args" value="${bench.java.arg.xmx}" />
 					<param name="program.main.jar" value="${output.file-bench-jar}" />
 				</antcall>
 			</else>
