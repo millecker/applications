@@ -1,6 +1,8 @@
 #!/usr/bin/Rscript
 library(rjson)
 library(reshape2)
+library(sqldf)
+library(ggplot2)
 
 # Functions
 # List append
@@ -12,13 +14,13 @@ lappend <- function (lst, ...){
 args <- commandArgs(trailingOnly = TRUE)
 
 # Load result file
-#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-15T13:24:58Z.json"
 caliperJsonFile <- args[1]
+#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-16T08:18:14Z.json"
 
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
-  message <- paste("Json File was not found! ",caliperJsonFile)
+  message <- paste("Json File was not found!",caliperJsonFile)
   stop(message)
 }
 
@@ -28,7 +30,7 @@ measurementResults <-list()
 # Loop over all scenarios and build measurements
 for (scenarioIndex in 1:length(caliperResult)) {
   
-  scenarioTableRow <- data.frame(index=scenarioIndex)
+  scenarioTableRow <- data.frame(scenario=scenarioIndex)
   scenario <- caliperResult[[scenarioIndex]]
   #length(scenario)
   
@@ -77,6 +79,7 @@ for (scenarioIndex in 1:length(caliperResult)) {
   scenarioTableRow <- data.frame(scenarioTableRow,data.frame(MethodName=scenarioBenchmarkSpec$methodName))
   
   parameters <- scenarioBenchmarkSpec$parameters
+  allParameters <- NULL
   # Get Parameters of scenarioBenchmarkSpec
   for (parameterIndex in 1:length(parameters)) {
     
@@ -88,9 +91,16 @@ for (scenarioIndex in 1:length(caliperResult)) {
     parameter <- data.frame(parameterValue)
     colnames(parameter) <- parameterName
     
+    if (is.null(allParameters)) {
+      allParameters <- paste(parameterName,"=",parameterValue, sep="")
+    } else {
+      allParameters <- paste(allParameters,"\n",parameterName,"=",parameterValue, sep="")
+    }
+    
     scenarioTableRow <- data.frame(scenarioTableRow,parameter)
   }
-
+  scenarioTableRow <- data.frame(scenarioTableRow,data.frame(AllParameters=allParameters))
+  
   # Add scenarioTableRow to  scenarioTable
   if (is.null(scenarioTable)) {
     scenarioTable <- scenarioTableRow
@@ -111,6 +121,7 @@ for (scenarioIndex in 1:length(caliperResult)) {
     unit <- value$unit
   
     newMeasurementRow <- c(scenario=scenarioIndex,measurement=measurementIndex,magnitude=magnitude,unit=unit)
+    str(newMeasurementRow)
     measurementResults <- lappend(measurementResults, newMeasurementRow)
   }
 }
@@ -124,6 +135,16 @@ measurementTable.T <- t(measurementTable)
 # Set row names to index
 row.names(measurementTable.T) <- 1:nrow(measurementTable.T)
 measurementTable <- measurementTable.T
+measurementTable <- data.frame(measurementTable)
+
+# Convert Strings to Numeric
+measurementTable <- transform(measurementTable,scenario = as.numeric(as.character(measurementTable$scenario)))
+measurementTable <- transform(measurementTable,measurement = as.numeric(as.character(measurementTable$measurement)))
+measurementTable <- transform(measurementTable,magnitude = as.numeric(as.character(measurementTable$magnitude)))
+
+scenarioTable <- transform(scenarioTable,Measurements = as.numeric(as.character(scenarioTable$Measurements)))
+scenarioTable <- transform(scenarioTable,AvailableProcessors = as.numeric(as.character(scenarioTable$AvailableProcessors)))
+
 
 ## Cleanup
 rm(scenario)
@@ -140,6 +161,7 @@ rm(unit)
 rm(parameterIndex)
 rm(parameterName)
 rm(parameterValue)
+rm(allParameters)
 rm(parameter)
 rm(parameters)
 rm(parameters.T)
@@ -151,6 +173,15 @@ rm(scenarioInstrumentSpec)
 rm(scenarioProperties)
 rm(scenarioRun)
 
-scenarioTable
 
-measurementTable
+benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario", all.x=TRUE)
+#benchmarkTable <- sqldf('SELECT * FROM measurementTable JOIN scenarioTable USING(scenario)')
+
+benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
+benchmarkTableAvg
+#str(benchmarkTableAvg)
+
+#summary(benchmarkTable)
+
+#qplot(data=benchmarkTable,x=scenario,y=magnitude,main="Benchmark Results",geom="histogram")
+ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=scenario)) + geom_bar(stat="identity",color="black")
