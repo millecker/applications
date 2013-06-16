@@ -1,3 +1,4 @@
+#!/usr/bin/Rscript
 library(rjson)
 library(reshape2)
 
@@ -8,9 +9,18 @@ lappend <- function (lst, ...){
   return(lst)
 }
 
+args <- commandArgs(trailingOnly = TRUE)
+
 # Load result file
-caliperJsonFile <- ".caliper/results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-15T13:24:58Z.json"
+#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-15T13:24:58Z.json"
+caliperJsonFile <- args[1]
+
+caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
+if (is.null(caliperResult)) {
+  message <- paste("Json File was not found! ",caliperJsonFile)
+  stop(message)
+}
 
 scenarioTable <- NULL
 measurementResults <-list()
@@ -96,9 +106,9 @@ for (scenarioIndex in 1:length(caliperResult)) {
     measurements[[measurementIndex]]
     measurement <- measurements[[1]]
     
-    value <- measurement[['value']] 
-    magnitude <- value[['magnitude']]
-    unit <- value[['unit']]
+    value <- measurement$value
+    magnitude <- value$magnitude
+    unit <- value$unit
   
     newMeasurementRow <- c(scenario=scenarioIndex,measurement=measurementIndex,magnitude=magnitude,unit=unit)
     measurementResults <- lappend(measurementResults, newMeasurementRow)
@@ -124,9 +134,6 @@ rm(newMeasurementRow)
 rm(measurement)
 rm(measurements)
 rm(measurementTable.T)
-rm(measurementIndex)
-rm(measurementResults)
-rm(newMeasurementRow)
 rm(value)
 rm(magnitude)
 rm(unit)
