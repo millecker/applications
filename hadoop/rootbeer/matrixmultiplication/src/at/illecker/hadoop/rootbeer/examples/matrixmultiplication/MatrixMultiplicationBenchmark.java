@@ -15,16 +15,14 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-	@Param({ "5", "10" })
-	// , "20", "40", "45", "50", "55", })
-	// "80", "100", "500", "1000", "2000" })
+	@Param({ "10", "20", "40", "50", "60", "80", "100", "500", "1000", "2000" })
 	private int n;
 
 	@Param
 	CalcType type;
 
 	public enum CalcType {
-		JAVA, HADOOP_CPU_TRANSPOSE_JAVA, HADOOP_CPU_TRANSPOSE_MAP_REDUCE
+		JAVA, HADOOP_CPU, HADOOP_CPU_TRANSPOSE
 		// , HADOOP_GPU_TRANSPOSE_MAP_REDUCE
 	};
 
@@ -120,10 +118,10 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		case JAVA:
 			sum = matrixMultiplyJava(sum);
 			break;
-		case HADOOP_CPU_TRANSPOSE_JAVA:
+		case HADOOP_CPU:
 			sum = matrixMultiplyHadoopCPUTransposeJava(sum);
 			break;
-		case HADOOP_CPU_TRANSPOSE_MAP_REDUCE:
+		case HADOOP_CPU_TRANSPOSE:
 			sum = matrixMultiplyHadoopCPUTransposeMR(sum);
 			break;
 		/*
