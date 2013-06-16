@@ -1,7 +1,7 @@
 #!/usr/bin/Rscript
 library(rjson)
 library(reshape2)
-library(sqldf)
+suppressPackageStartupMessages(library(sqldf))
 library(ggplot2)
 
 # Functions
@@ -121,7 +121,6 @@ for (scenarioIndex in 1:length(caliperResult)) {
     unit <- value$unit
   
     newMeasurementRow <- c(scenario=scenarioIndex,measurement=measurementIndex,magnitude=magnitude,unit=unit)
-    str(newMeasurementRow)
     measurementResults <- lappend(measurementResults, newMeasurementRow)
   }
 }
@@ -180,8 +179,23 @@ benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario"
 benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
 benchmarkTableAvg
 #str(benchmarkTableAvg)
-
 #summary(benchmarkTable)
 
-#qplot(data=benchmarkTable,x=scenario,y=magnitude,main="Benchmark Results",geom="histogram")
-ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=scenario)) + geom_bar(stat="identity",color="black")
+title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
+               #".",benchmarkTable$MethodName[1],
+               " with ",benchmarkTable$Measurements[1],
+               " measurements ", sep="")
+xaxisDesc <- paste("Parameter", sep="")
+yaxisDesc <- paste("Time (",benchmarkTableAvg$unit[1],")", sep="")
+
+ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=scenario)) + 
+  geom_bar(stat="identity",color="black") +
+  xlab(xaxisDesc) +
+  ylab(yaxisDesc) +
+  ggtitle(title)
+
+outputfile <- paste(caliperJsonFile,".pdf", sep="")
+ggsave(file=outputfile, scale=3)
+
+message <- paste("Saved Benchmark plot in",outputfile)
+print(message)
