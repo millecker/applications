@@ -101,6 +101,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 	}
 
 	// Microbenchmark
+	// Uncomment Macro to use Micro
 	public void timeCalculate(int reps) {
 		int sum = 0;
 		for (int rep = 0; rep < reps; rep++) {

@@ -6,17 +6,19 @@ library(ggplot2)
 
 # Functions
 # List append
-lappend <- function (lst, ...){
+lappend <- function (lst, ...) {
   lst <- c(lst, list(...))
   return(lst)
 }
 
 args <- commandArgs(trailingOnly = TRUE)
+if (is.na(args[1])) {
+  stop("Argument CaliperResult JsonFile is missing! (~/.caliper/results)")
+}
 
 # Load result file
 caliperJsonFile <- args[1]
-#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-16T08:18:14Z.json"
-
+#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-16T17:30:23Z.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -113,8 +115,7 @@ for (scenarioIndex in 1:length(caliperResult)) {
   measurements <- scenario[5]$measurements
   for (measurementIndex in 1:length(measurements)) {
   
-    measurements[[measurementIndex]]
-    measurement <- measurements[[1]]
+    measurement <- measurements[[measurementIndex]]
     
     value <- measurement$value
     magnitude <- value$magnitude
@@ -176,11 +177,16 @@ rm(scenarioRun)
 benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario", all.x=TRUE)
 #benchmarkTable <- sqldf('SELECT * FROM measurementTable JOIN scenarioTable USING(scenario)')
 
+print("BenchmarkTable Execution Times")
+sqldf('SELECT scenario,magnitude,unit,AllParameters FROM benchmarkTable')
+
 benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
+print("BenchmarkTable Average Execution Time")
 benchmarkTableAvg
 #str(benchmarkTableAvg)
 #summary(benchmarkTable)
 
+# Generate Bar chart of average data
 title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
                #".",benchmarkTable$MethodName[1],
                " with ",benchmarkTable$Measurements[1],
@@ -188,14 +194,35 @@ title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
 xaxisDesc <- paste("Parameter", sep="")
 yaxisDesc <- paste("Time (",benchmarkTableAvg$unit[1],")", sep="")
 
-ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=scenario)) + 
+ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
   geom_bar(stat="identity",color="black") +
   xlab(xaxisDesc) +
   ylab(yaxisDesc) +
-  ggtitle(title)
+  ggtitle(title) +
+  theme(legend.position = "none")
 
-outputfile <- paste(caliperJsonFile,".pdf", sep="")
-ggsave(file=outputfile, scale=3)
+outputfile <- paste(caliperJsonFile,"_avg_barplot.pdf", sep="")
+ggsave(file=outputfile, scale=2)
 
-message <- paste("Saved Benchmark plot in",outputfile)
+message <- paste("Saved Benchmark Barplot in",outputfile)
 print(message)
+
+
+# Generate Box plot
+#benchmarkTable
+#str(benchmarkTable)
+ggplot(benchmarkTable, aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
+  geom_boxplot(outlier.colour = "red", outlier.size = 5) +
+  xlab(xaxisDesc) +
+  ylab(yaxisDesc) +
+  ggtitle(title) +
+  theme(legend.position = "none")
+
+outputfile <- paste(caliperJsonFile,"_boxplot.pdf", sep="")
+ggsave(file=outputfile, scale=2)
+
+message <- paste("Saved Benchmark Boxplot in",outputfile)
+print(message)
+
+# Delete temporary created plot file
+unlink("Rplots.pdf")
