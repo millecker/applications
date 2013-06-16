@@ -32,6 +32,9 @@ ant run-cpu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 300s' \
-  -DbenchInstrument='--instrument macro' [-DbenchTrials='--trials 1']
+  -DbenchInstrument='--instrument macro' \
+  -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
+  -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'
+  [-DbenchTrials='--trials 1']
 
 ###############################################################################
