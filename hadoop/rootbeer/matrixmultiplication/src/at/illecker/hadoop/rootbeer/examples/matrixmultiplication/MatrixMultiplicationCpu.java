@@ -141,6 +141,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		}
 
 		Configuration conf = new Configuration(getConf());
+		// conf.set("bsp.child.java.opts", "-Xmx4G");
+
 		int numRows = Integer.parseInt(getOption("numRows"));
 		int numCols = Integer.parseInt(getOption("numCols"));
 
@@ -158,32 +160,22 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		// Load DistributedRowMatrix a and b
 		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
 				OUTPUT_DIR, numRows, numCols);
+		a.setConf(conf);
 
 		DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
 				OUTPUT_DIR, numRows, numCols);
-
-		//conf.set("bsp.child.java.opts", "-Xmx4G");
-
-		a.setConf(conf);
 		b.setConf(conf);
 
-		// Transpose within a new MapReduce job
+		// MatrixMultiply all within a new MapReduce job
 		long startTime = System.currentTimeMillis();
-		DistributedRowMatrix c = a.times(b, MATRIX_C_PATH, true, true);
+		DistributedRowMatrix c = a.times(b, MATRIX_C_PATH);
 		System.out.println("Job Finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 
-		// Transpose without new MapReduce job
+		// MatrixMultiply in Java
 		startTime = System.currentTimeMillis();
-		DistributedRowMatrix d = a.times(b, MATRIX_D_PATH, true, false);
-		System.out.println("Job Finished in "
-				+ (System.currentTimeMillis() - startTime) / 1000.0
-				+ " seconds");
-
-		// Transpose and Multiply without new MapReduce job
-		startTime = System.currentTimeMillis();
-		DistributedRowMatrix e = a.times(b, MATRIX_D_PATH, false, false);
+		DistributedRowMatrix d = a.timesJava(b, MATRIX_D_PATH);
 		System.out.println("Job Finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
@@ -196,8 +188,6 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		c.printDistributedRowMatrix();
 		System.out.println("Matrix D:");
 		d.printDistributedRowMatrix();
-		System.out.println("Matrix E:");
-		e.printDistributedRowMatrix();
 
 		printOutput(conf);
 		return 0;

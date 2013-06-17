@@ -193,104 +193,124 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 * 
 	 * @param other
 	 *            a DistributedRowMatrix
-	 * @param submitMatrixMultiplyJob
-	 *            Multiply Matrix within a new MapReduce Job
-	 * @param submitTransposeJob
-	 *            Transpose Matrix within a new MapReduce Job
+	 * @param outPath
+	 *            path to write result to
 	 * @return a DistributedRowMatrix containing the product
 	 */
-	public DistributedRowMatrix times(DistributedRowMatrix other,
-			boolean submitMatrixMultiplyJob, boolean submitTransposeJob)
+	public DistributedRowMatrix times(DistributedRowMatrix other, Path outPath)
 			throws IOException {
-
-		return times(other, new Path(outputTmpBasePath.getParent(),
-				"productWith-" + (System.nanoTime() & 0xFF)),
-				submitMatrixMultiplyJob, submitTransposeJob);
+		return timesMapReduce(other, outPath, false);
 	}
 
 	/**
-	 * This implements matrix this.transpose().times(other)
+	 * This implements matrix this.transpose().times(other) using MapReduce
 	 * 
 	 * @param other
 	 *            a DistributedRowMatrix
 	 * @param outPath
 	 *            path to write result to
-	 * @param submitMatrixMultiplyJob
-	 *            Multiply Matrix within a new MapReduce Job
-	 * @param submitTransposeJob
-	 *            Transpose Matrix within a new MapReduce Job
+	 * @param useGPU
+	 *            use GPU or CPU (default: false, use CPU)
 	 * @return a DistributedRowMatrix containing the product
 	 */
-	public DistributedRowMatrix times(DistributedRowMatrix other, Path outPath,
-			boolean submitMatrixMultiplyJob, boolean submitTransposeJob)
-			throws IOException {
-		if (numRows != other.numRows()) {
-			throw new CardinalityException(numRows, other.numRows());
+	public DistributedRowMatrix timesMapReduce(DistributedRowMatrix other,
+			Path outPath, boolean useGPU) throws IOException {
+		// Check if cols of MatrixA = rows of MatrixB
+		// (l x m) * (m x n) = (l x n)
+		if (numCols != other.numRows()) {
+			throw new CardinalityException(numCols, other.numRows());
 		}
 
-		Configuration initialConf = getConf() == null ? new Configuration()
+		Configuration initialConf = (getConf() == null) ? new Configuration()
 				: getConf();
 
-		// Transpose Matrix
-		DistributedRowMatrix transposed;
-		if (submitTransposeJob) {
-			transposed = this.transpose();
+		// Transpose Matrix within a new MapReduce Job
+		DistributedRowMatrix transposed = this.transpose();
 
-		} else { // Transpose without new MapReduce Job
-
-			final double[][] transposedMatrix = new double[numCols][numRows];
-			Iterator<MatrixSlice> iterator = this.iterateAll();
-			int i = 0;
-			while (iterator.hasNext()) {
-				Vector rowVector = iterator.next().vector();
-				for (int j = 0; j < rowVector.size(); j++) {
-					transposedMatrix[j][i] = rowVector.getElement(j).get();
-				}
-				i++;
-			}
-			Path transposedPath = new Path(outputTmpBasePath.getParent(),
-					"transpose-" + (System.nanoTime() & 0xFF));
-			try {
-				writeDistributedRowMatrix(this.conf, transposedMatrix,
-						transposedPath);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			transposed = new DistributedRowMatrix(transposedPath,
-					outputTmpBasePath, numCols, numRows);
-			transposed.setConf(conf);
-		}
 		// Debug
-		System.out.println("DistributedRowMatrix.times transposed:");
+		System.out.println("DistributedRowMatrix transposed:");
 		transposed.printDistributedRowMatrix();
 
+		// Build MatrixMultiplication job configuration
+		Configuration conf = null;
+		if (!useGPU) {
+			conf = MatrixMultiplicationCpu.createMatrixMultiplicationCpuConf(
+					initialConf, transposed.rowPath, other.rowPath, outPath,
+					other.numCols);
+		} else { // use GPU
+			// TODO
+		}
+
 		// Multiply Matrix with transposed one
-		if (submitMatrixMultiplyJob) {
-			Configuration conf = MatrixMultiplicationCpu
-					.createMatrixMultiplicationCpuConf(initialConf,
-							transposed.rowPath, other.rowPath, outPath,
-							other.numCols);
+		JobClient.runJob(new JobConf(conf));
 
-			JobClient.runJob(new JobConf(conf));
+		// Read resulting Matrix from HDFS
+		DistributedRowMatrix out = new DistributedRowMatrix(outPath,
+				outputTmpPath, numCols, other.numCols());
+		out.setConf(conf);
 
-		} else { // MatrixMultiply without new MapReduce Job
+		return out;
+	}
 
-			final double[][] matrixA = this.toDoubleArray();
-			final double[][] matrixB = other.toDoubleArray();
-			final double[][] matrixC = new double[this.numRows][other.numCols];
+	/**
+	 * This implements matrix this.transpose().times(other) in Java without
+	 * using MapReduce
+	 * 
+	 * @param other
+	 *            a DistributedRowMatrix
+	 * @param outPath
+	 *            path to write result to
+	 * @return a DistributedRowMatrix containing the product
+	 */
+	public DistributedRowMatrix timesJava(DistributedRowMatrix other,
+			Path outPath) throws IOException {
+		// Check if cols of MatrixA = rows of MatrixB
+		// (l x m) * (m x n) = (l x n)
+		if (numCols != other.numRows()) {
+			throw new CardinalityException(numCols, other.numRows());
+		}
 
-			int m = this.numRows;
-			int n = this.numCols;
-			int p = other.numCols;
-			for (int k = 0; k < n; k++) {
-				for (int i = 0; i < m; i++) {
-					for (int j = 0; j < p; j++) {
-						matrixC[i][j] = matrixC[i][j] + matrixA[i][k]
-								* matrixB[k][j];
-					}
+		// Transpose Matrix without submitting new Job
+		final double[][] transposedMatrixA = new double[numCols][numRows];
+		Iterator<MatrixSlice> iterator = this.iterateAll();
+		int rows = 0;
+		while (iterator.hasNext()) {
+			Vector rowVector = iterator.next().vector();
+			for (int cols = 0; cols < rowVector.size(); cols++) {
+				transposedMatrixA[cols][rows] = rowVector.getElement(cols)
+						.get();
+			}
+			rows++;
+		}
+
+		// Debug
+		System.out.println("DistributedRowMatrix transposed:");
+		printMatrix(transposedMatrixA, numCols, numRows);
+
+		// Multiply Matrix with transposed one without new MapReduce Job
+		final double[][] matrixB = other.toDoubleArray();
+		final double[][] matrixC = new double[this.numRows][other.numCols];
+
+		int m = this.numRows;
+		int n = this.numCols;
+		int p = other.numCols;
+		for (int k = 0; k < n; k++) {
+			for (int i = 0; i < m; i++) {
+				for (int j = 0; j < p; j++) {
+					matrixC[i][j] = matrixC[i][j] + transposedMatrixA[i][k]
+							* matrixB[k][j];
 				}
 			}
 		}
+
+		// Save resulting Matrix to HDFS
+		try {
+			writeDistributedRowMatrix(this.conf, matrixC, outPath);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		// Read resulting Matrix from HDFS
 		DistributedRowMatrix out = new DistributedRowMatrix(outPath,
 				outputTmpPath, numCols, other.numCols());
 		out.setConf(conf);
@@ -507,6 +527,16 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	public static void printMatrix(double[][] matrix, int rows, int columns) {
+		System.out.println();
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				System.out.print(matrix[i][j] + " ");
+			}
+			System.out.println();
 		}
 	}
 

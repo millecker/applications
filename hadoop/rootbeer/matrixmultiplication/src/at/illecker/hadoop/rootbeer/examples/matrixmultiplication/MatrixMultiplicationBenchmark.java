@@ -22,8 +22,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 	CalcType type;
 
 	public enum CalcType {
-		JAVA, HADOOP_CPU, HADOOP_CPU_TRANSPOSE
-		// , HADOOP_GPU_TRANSPOSE_MAP_REDUCE
+		JAVA, HADOOP_CPU // , HADOOP_GPU
 	};
 
 	// private static final Log LOG =
@@ -48,11 +47,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		String HADOOP_INSTALL = System.getenv("HADOOP_INSTALL");
 
 		if ((HADOOP_HOME != null) || (HADOOP_INSTALL != null) && (!runLocally)) {
-			System.out.println("Load Hadoop default configuration...");
 			String HADOOP = ((HADOOP_HOME != null) ? HADOOP_HOME
 					: HADOOP_INSTALL);
 
-			System.out.println("HADOOP_HOME: " + HADOOP);
 			conf.addResource(new Path(HADOOP, "src/core/core-default.xml"));
 			conf.addResource(new Path(HADOOP, "src/hdfs/hdfs-default.xml"));
 			conf.addResource(new Path(HADOOP, "src/mapred/mapred-default.xml"));
@@ -60,7 +57,10 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 			conf.addResource(new Path(HADOOP, "conf/hdfs-site.xml"));
 			conf.addResource(new Path(HADOOP, "conf/mapred-site.xml"));
 
+			System.out.println("Loaded Hadoop configuration from " + HADOOP);
+
 			try {
+				// Connect to HDFS Filesystem
 				FileSystem.get(conf);
 			} catch (Exception e) {
 				// HDFS not reachable run Benchmark locally
@@ -78,6 +78,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		MATRIX_B_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixB.seq");
 		MATRIX_C_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixC.seq");
 
+		System.out.println("Benchmark " + n + " x " + n + "+ matrix");
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
@@ -95,7 +96,11 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
 	@Override
 	protected void tearDown() throws Exception {
-		// System.out.println("Hey, I'm tearing up the joint.");
+		// Cleanup
+		FileSystem fs = FileSystem.get(conf);
+		fs.delete(MATRIX_A_PATH, true);
+		fs.delete(MATRIX_B_PATH, true);
+		fs.delete(MATRIX_C_PATH, true);
 	}
 
 	// Microbenchmark
@@ -119,80 +124,67 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 			sum = matrixMultiplyJava(sum);
 			break;
 		case HADOOP_CPU:
-			sum = matrixMultiplyHadoopCPUTransposeJava(sum);
+			sum = matrixMultiplyHadoopCPU(sum);
 			break;
-		case HADOOP_CPU_TRANSPOSE:
-			sum = matrixMultiplyHadoopCPUTransposeMR(sum);
-			break;
-		/*
-		 * case HADOOP_GPU_TRANSPOSE_MAP_REDUCE: sum =
-		 * matrixMultiplyHadopGPUTransposeMR(sum); break;
-		 */
+		// case HADOOP_GPU:
+		// sum = matrixMultiplyHadoopGPU(sum);
+		// break;
 		default:
 			break;
 		}
 		return sum;
 	}
 
-	private class MatrixMultiplicationCPU extends AbstractJob {
-		private boolean submitMatrixMultiplyJob;
-		private boolean submitTransposeJob;
+	private class MatrixMultiplication extends AbstractJob {
+		private boolean javaOnly;
+		private boolean useGPU;
 
-		public MatrixMultiplicationCPU(boolean submitMatrixMultiplyJob,
-				boolean submitTransposeJob) {
-			this.submitMatrixMultiplyJob = submitMatrixMultiplyJob;
-			this.submitTransposeJob = submitTransposeJob;
+		public MatrixMultiplication(boolean javaOnly, boolean useGPU) {
+			this.javaOnly = javaOnly;
+			this.useGPU = useGPU;
 		}
 
 		@Override
 		public int run(String[] arg0) throws Exception {
-			DistributedRowMatrix resultMatrixHadoopCPU = matrixA.times(matrixB,
-					new Path(MATRIX_C_PATH
-							+ ((submitMatrixMultiplyJob) ? "_matrixMultiplyMR"
-									: "_transposeJava")
-							+ ((submitTransposeJob) ? "_transposeMR"
-									: "_transposeJava")),
-					submitMatrixMultiplyJob, submitTransposeJob);
 
-			return resultMatrixHadoopCPU.numRows();
+			DistributedRowMatrix resultMatrix = null;
+			if (javaOnly) {
+				resultMatrix = matrixA.timesJava(matrixB, MATRIX_C_PATH);
+			} else {
+				resultMatrix = matrixA.timesMapReduce(matrixB, MATRIX_C_PATH,
+						useGPU);
+			}
+
+			return resultMatrix.numRows();
 		}
 	}
 
 	private int matrixMultiplyJava(int sum) {
 		try {
-			sum += ToolRunner.run(new MatrixMultiplicationCPU(false, false),
-					null);
+			sum += ToolRunner.run(new MatrixMultiplication(true, false), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return sum;
 	}
 
-	private int matrixMultiplyHadoopCPUTransposeJava(int sum) {
+	private int matrixMultiplyHadoopCPU(int sum) {
 		try {
-			sum += ToolRunner.run(new MatrixMultiplicationCPU(true, false),
-					null);
+			sum += ToolRunner.run(new MatrixMultiplication(false, false), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return sum;
 	}
 
-	private int matrixMultiplyHadoopCPUTransposeMR(int sum) {
+	private int matrixMultiplyHadoopGPU(int sum) {
 		try {
-			sum += ToolRunner
-					.run(new MatrixMultiplicationCPU(true, true), null);
+			sum += ToolRunner.run(new MatrixMultiplication(false, true), null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return sum;
 	}
-
-	/*
-	 * private int matrixMultiplyHadopGPUTransposeMR(int sum) {
-	 * 
-	 * return 0; }
-	 */
 
 	public static void main(String[] args) {
 		CaliperMain.main(MatrixMultiplicationBenchmark.class, args);
