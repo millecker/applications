@@ -180,16 +180,16 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 
-		System.out.println("Matrix A:");
-		a.printDistributedRowMatrix();
-		System.out.println("Matrix B:");
-		b.printDistributedRowMatrix();
-		System.out.println("Matrix C:");
-		c.printDistributedRowMatrix();
-		System.out.println("Matrix D:");
-		d.printDistributedRowMatrix();
+		//System.out.println("Matrix A:");
+		//a.printDistributedRowMatrix();
+		//System.out.println("Matrix B:");
+		//b.printDistributedRowMatrix();
+		//System.out.println("Matrix C:");
+		//c.printDistributedRowMatrix();
+		//System.out.println("Matrix D:");
+		//d.printDistributedRowMatrix();
 
-		printOutput(conf);
+		//printOutput(conf);
 		return 0;
 	}
 
@@ -243,12 +243,12 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			// Logging
 			for (int i = 0; i < v.size(); i++) {
 				Vector vector = ((VectorWritable) v.get(i)).get();
-				logMapper.writeChars("map,input,key=" + index + ",value="
-						+ vector.toString() + "\n");
+				//logMapper.writeChars("map,input,key=" + index + ",value="
+				//		+ vector.toString() + "\n");
 			}
 
 			boolean firstIsOutFrag = ((VectorWritable) v.get(0)).get().size() == outCardinality;
-			logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
+			//logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
 
 			Vector outFrag = firstIsOutFrag ? ((VectorWritable) v.get(0)).get()
 					: ((VectorWritable) v.get(1)).get();
@@ -256,8 +256,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			Vector multiplier = firstIsOutFrag ? ((VectorWritable) v.get(1))
 					.get() : ((VectorWritable) v.get(0)).get();
 
-			logMapper.writeChars("map,outFrag=" + outFrag + "\n");
-			logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+			//logMapper.writeChars("map,outFrag=" + outFrag + "\n");
+			//logMapper.writeChars("map,multiplier=" + multiplier + "\n");
 
 			VectorWritable outVector = new VectorWritable();
 			for (Vector.Element e : outFrag.nonZeroes()) {
@@ -265,10 +265,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 				outVector.set(multiplier.times(e.get()));
 
 				out.collect(row, outVector);
-				logMapper.writeChars("map,collect,key=" + index + ",value="
-						+ outVector.get().toString() + "\n");
+				//logMapper.writeChars("map,collect,key=" + index + ",value="
+				//		+ outVector.get().toString() + "\n");
 			}
-			logMapper.flush();
+			//logMapper.flush();
 		}
 	}
 

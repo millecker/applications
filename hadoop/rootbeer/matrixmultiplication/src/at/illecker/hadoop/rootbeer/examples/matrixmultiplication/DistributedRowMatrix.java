@@ -228,8 +228,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		DistributedRowMatrix transposed = this.transpose();
 
 		// Debug
-		System.out.println("DistributedRowMatrix transposed:");
-		transposed.printDistributedRowMatrix();
+		//System.out.println("DistributedRowMatrix transposed:");
+		//transposed.printDistributedRowMatrix();
 
 		// Build MatrixMultiplication job configuration
 		Configuration conf = null;
