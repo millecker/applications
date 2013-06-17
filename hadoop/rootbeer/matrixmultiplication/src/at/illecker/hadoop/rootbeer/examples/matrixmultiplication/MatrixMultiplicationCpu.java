@@ -169,14 +169,14 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		// MatrixMultiply all within a new MapReduce job
 		long startTime = System.currentTimeMillis();
 		DistributedRowMatrix c = a.times(b, MATRIX_C_PATH);
-		System.out.println("Job Finished in "
+		System.out.println("MatrixMultiply using Hadoop finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 
 		// MatrixMultiply in Java
 		startTime = System.currentTimeMillis();
 		DistributedRowMatrix d = a.timesJava(b, MATRIX_D_PATH);
-		System.out.println("Job Finished in "
+		System.out.println("MatrixMultiply using Java finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 

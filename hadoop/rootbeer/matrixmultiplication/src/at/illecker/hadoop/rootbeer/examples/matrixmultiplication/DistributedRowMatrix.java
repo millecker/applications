@@ -270,24 +270,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 			throw new CardinalityException(numCols, other.numRows());
 		}
 
-		// Transpose Matrix without submitting new Job
-		final double[][] transposedMatrixA = new double[numCols][numRows];
-		Iterator<MatrixSlice> iterator = this.iterateAll();
-		int rows = 0;
-		while (iterator.hasNext()) {
-			Vector rowVector = iterator.next().vector();
-			for (int cols = 0; cols < rowVector.size(); cols++) {
-				transposedMatrixA[cols][rows] = rowVector.getElement(cols)
-						.get();
-			}
-			rows++;
-		}
-
-		// Debug
-		System.out.println("DistributedRowMatrix transposed:");
-		printMatrix(transposedMatrixA, numCols, numRows);
-
 		// Multiply Matrix with transposed one without new MapReduce Job
+		final double[][] matrixA = this.toDoubleArray();
 		final double[][] matrixB = other.toDoubleArray();
 		final double[][] matrixC = new double[this.numRows][other.numCols];
 
@@ -297,7 +281,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		for (int k = 0; k < n; k++) {
 			for (int i = 0; i < m; i++) {
 				for (int j = 0; j < p; j++) {
-					matrixC[i][j] = matrixC[i][j] + transposedMatrixA[i][k]
+					matrixC[i][j] = matrixC[i][j] + matrixA[i][k]
 							* matrixB[k][j];
 				}
 			}
