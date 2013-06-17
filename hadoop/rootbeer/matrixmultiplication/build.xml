@@ -11,7 +11,8 @@
 	<property name="cpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationCpu" />
 	<property name="bench.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark" />
 	<property name="program" value="hadoop" />
-	<property name="program.args" value="numRows numCols benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="numRows numCols benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>
