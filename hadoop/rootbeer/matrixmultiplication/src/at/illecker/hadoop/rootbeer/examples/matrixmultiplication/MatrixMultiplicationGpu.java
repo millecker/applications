@@ -161,14 +161,13 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 		b.setConf(conf);
 
 		long startTime = System.currentTimeMillis();
+		a.timesMapReduce(b, TMP_OUTPUT, true);
 
-		a.times(b, TMP_OUTPUT, true, true);
-
-		printOutput(conf);
 		System.out.println("Job Finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 
+		printOutput(conf);
 		return 0;
 	}
 
