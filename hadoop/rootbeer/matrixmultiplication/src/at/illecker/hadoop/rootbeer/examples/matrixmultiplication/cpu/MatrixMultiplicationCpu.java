@@ -255,19 +255,20 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 				}
 			}
 
-			// outCardinality is resulting column size
+			Vector firstVector = ((VectorWritable) v.get(0)).get();
+			Vector secondVector = ((VectorWritable) v.get(1)).get();
+
+			// outCardinality is resulting column size n
 			// (l x m) * (m x n) = (l x n)
-			boolean firstIsOutFrag = ((VectorWritable) v.get(0)).get().size() == outCardinality;
+			boolean firstIsOutFrag = secondVector.size() == outCardinality;
 
 			// outFrag is Matrix which has the resulting column cardinality
 			// (matrixB)
-			Vector outFrag = firstIsOutFrag ? ((VectorWritable) v.get(0)).get()
-					: ((VectorWritable) v.get(1)).get();
+			Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
 
 			// multiplier is Matrix which has the resulting row count
 			// (transposed matrixA)
-			Vector multiplier = firstIsOutFrag ? ((VectorWritable) v.get(1))
-					.get() : ((VectorWritable) v.get(0)).get();
+			Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
 
 			if (isDebuggingEnabled) {
 				logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag
