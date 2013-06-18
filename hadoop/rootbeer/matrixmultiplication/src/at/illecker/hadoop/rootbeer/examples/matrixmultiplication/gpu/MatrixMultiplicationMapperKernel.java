@@ -33,6 +33,6 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 		// Dummy constructor invocation
 		// to keep Kernel constructor in
 		// rootbeer transformation
-		// new MatrixMultiplicationMapperKernel(0, new double[] { 0 }, 0);
+		new MatrixMultiplicationMapperKernel(null, new double[] { 0 });
 	}
 }
