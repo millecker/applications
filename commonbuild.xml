@@ -200,6 +200,8 @@
 			</manifest>
 		</jar>
 		<echo>Main-Class: ${bench.class}</echo>
+		<echo>Delete ${output.file-gpu-jar}</echo>
+		<delete file="${output.file-gpu-jar}" />
 		<!-- Setup libjar arguments -->
 		<echo>Including lib jars: ${libjars.bench}</echo>
 		<var name="libjar.args" value="" />
