@@ -22,7 +22,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 	CalcType type;
 
 	public enum CalcType {
-		JAVA, HADOOP_CPU, HADOOP_GPU
+		//JAVA, 
+		HADOOP_CPU, 
+		HADOOP_GPU
 	};
 
 	// private static final Log LOG =
@@ -78,7 +80,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		MATRIX_B_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixB.seq");
 		MATRIX_C_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixC.seq");
 
-		System.out.println("Benchmark " + n + " x " + n + "+ matrix");
+		System.out.println("Benchmark " + n + " x " + n + " matrix");
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
@@ -120,9 +122,11 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
 	public int doBenchmark(int sum) {
 		switch (type) {
+		/*
 		case JAVA:
 			sum = matrixMultiplyJava(sum);
 			break;
+		 */
 		case HADOOP_CPU:
 			sum = matrixMultiplyHadoopCPU(sum);
 			break;

@@ -104,7 +104,7 @@
 			<zipfileset dir="${build.dir}" excludes="${rb-package.dir}${file.separator}${rb-kernel.class}" />
 			<zipgroupfileset dir="." includes="${output.file-rb-gpu-jar}" />
 			<!-- include .rootbeer folder for cudalibs -->
-			<zipfileset dir="${user.home}${file.separator}${rootbeer.home}" prefix="${rootbeer.home}"/>
+			<zipfileset dir="${user.home}${file.separator}${rootbeer.home}" prefix="${rootbeer.home}" />
 			<manifest>
 				<attribute name="Main-Class" value="${gpu.class}" />
 			</manifest>
@@ -134,19 +134,26 @@
 		<delete file="${output.file-rb-jar}" />
 		<antcall target="-jar-gpu-combine" />
 		<delete file="${output.file-rb-gpu-jar}" />
-		<echo>Including lib jars: ${libjars.gpu}</echo>
-		<for list="${libjars.gpu}" param="libjar">
-			<sequential>
-				<echo>jar uf ${output.file-jar} -C ${root} @{libjar}</echo>
-				<exec executable="jar">
-					<arg value="uf" />
-					<arg value="${output.file-jar}" />
-					<arg value="-C" />
-					<arg value="${root}" />
-					<arg value="@{libjar}" />
-				</exec>
-			</sequential>
-		</for>
+		<!-- Default: include libraries, if was not set before-->
+		<property name="jar-gpu.include.libs" value="true" />
+		<if>
+			<equals arg1="${jar-gpu.include.libs}" arg2="true" />
+			<then>
+				<echo>Including lib jars: ${libjars.gpu}</echo>
+				<for list="${libjars.gpu}" param="libjar">
+					<sequential>
+						<echo>jar uf ${output.file-jar} -C ${root} @{libjar}</echo>
+						<exec executable="jar">
+							<arg value="uf" />
+							<arg value="${output.file-jar}" />
+							<arg value="-C" />
+							<arg value="${root}" />
+							<arg value="@{libjar}" />
+						</exec>
+					</sequential>
+				</for>
+			</then>
+		</if>
 		<echo>Rename ${output.file-jar} to ${output.file-gpu-jar}</echo>
 		<move file="${output.file-jar}" tofile="${output.file-gpu-jar}" />
 	</target>
@@ -182,7 +189,12 @@
 	<!-- Generate jar file and pack dependent libs                          -->
 	<!-- ****************************************************************** -->
 	<target name="jar-bench" depends="compile">
-		<jar destfile="${output.file-bench-tmp-jar}" basedir="${build.dir}">
+		<antcall target="jar-gpu">
+			<param name="rootbeer.arg" value="" />
+			<param name="jar-gpu.include.libs" value="false" />
+		</antcall>
+		<jar destfile="${output.file-bench-tmp-jar}">
+			<zipgroupfileset dir="." includes="${output.file-gpu-jar}" />
 			<manifest>
 				<attribute name="Main-Class" value="${bench.class}" />
 			</manifest>
@@ -196,9 +208,10 @@
 				<var name="libjar.args" value="${libjar.args}-libjar ${root}${file.separator}@{libjar} " />
 			</sequential>
 		</for>
-		<!-- Pack libraries -->
-		<echo>java -jar ${lib.dir}/pack.jar -mainjar ${output.file-bench-tmp-jar} ${libjar.args} -destjar ${output.file-bench-jar}</echo>
+		<!-- Pack additional libraries to libjars.gpu -->
+		<echo>java -Xmx4G -jar ${lib.dir}/pack.jar -mainjar ${output.file-bench-tmp-jar} ${libjar.args} -destjar ${output.file-bench-jar}</echo>
 		<exec executable="java">
+			<arg value="-Xmx4G" />
 			<arg value="-jar" />
 			<arg value="${lib.dir}/pack.jar" />
 			<arg value="-mainjar" />
@@ -270,6 +283,7 @@
 				<antcall target="clean" />
 				<antcall target="jar-gpu">
 					<param name="rootbeer.arg" value="" />
+					<param name="jar-gpu.include.libs" value="true" />
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
@@ -304,6 +318,7 @@
 				<antcall target="clean" />
 				<antcall target="jar-gpu">
 					<param name="rootbeer.arg" value="-nemu" />
+					<param name="jar-gpu.include.libs" value="true" />
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
@@ -338,6 +353,7 @@
 				<antcall target="clean" />
 				<antcall target="jar-gpu">
 					<param name="rootbeer.arg" value="-jemu" />
+					<param name="jar-gpu.include.libs" value="true" />
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
