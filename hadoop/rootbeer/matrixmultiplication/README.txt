@@ -19,20 +19,28 @@ ant jar-bench
 ###############################################################################
 
 # Submit GPU Task to Hadoop
-ant run-gpu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+ant run-gpu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
+  -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
   [-Ddebug='--debug true']
 
 # Submit GPU native emulated Task to Hadoop
-ant run-gpu-nemu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+ant run-gpu-nemu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
+  -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100' 
   [-Ddebug='--debug true']
 
 # Submit GPU Java emulated Task to Hadoop
-ant run-gpu-jemu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+ant run-gpu-jemu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
+  -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
   [-Ddebug='--debug true']
 
 # Submit CPU Task to Hadoop
-ant run-cpu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+ant run-cpu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
+  -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
   [-Ddebug='--debug true']
+  
+  ant run-cpu -DnumRowsA='--numRowsA 5' -DnumColsA='--numColsA 4' \
+  -DnumRowsB='--numRowsB 4' -DnumColsB='--numColsB 3'  \
+  -Ddebug='--debug true'
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 300s' \

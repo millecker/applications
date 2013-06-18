@@ -7,12 +7,12 @@
 	<property name="libjars.bench" value="${lib}${file.separator}caliper-1.0-beta-1-all.jar,${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}hadoop-core-1.3.0-SNAPSHOT.jar,${lib}${file.separator}commons-logging-1.1.1.jar" />
 	<property name="rb-package.dir" value="at/illecker/hadoop/rootbeer/examples/matrixmultiplication" />
 	<property name="rb-kernel.class" value="MatrixMultiplicationMapperKernel.class" />
-	<property name="gpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationGpu" />
-	<property name="cpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationCpu" />
+	<property name="gpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationGpu" />
+	<property name="cpu.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu" />
 	<property name="bench.class" value="at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark" />
 	<property name="program" value="hadoop" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numRows numCols debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="application.args" value="numRowsA numColsA numRowsB numColsB debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>

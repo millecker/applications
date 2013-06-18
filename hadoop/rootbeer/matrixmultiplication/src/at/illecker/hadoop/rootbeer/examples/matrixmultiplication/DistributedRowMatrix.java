@@ -48,6 +48,9 @@ import org.apache.mahout.math.hadoop.MatrixColumnMeansJob;
 import org.apache.mahout.math.hadoop.TimesSquaredJob;
 import org.apache.mahout.math.hadoop.TransposeJob;
 
+import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
+import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationGpu;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 
@@ -228,8 +231,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		DistributedRowMatrix transposed = this.transpose();
 
 		// Debug
-		//System.out.println("DistributedRowMatrix transposed:");
-		//transposed.printDistributedRowMatrix();
+		// System.out.println("DistributedRowMatrix transposed:");
+		// transposed.printDistributedRowMatrix();
 
 		// Build MatrixMultiplication job configuration
 		Configuration conf = null;
