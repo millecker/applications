@@ -37,10 +37,6 @@ ant run-gpu-jemu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
 ant run-cpu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
   -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
   [-Ddebug='--debug true']
-  
-  ant run-cpu -DnumRowsA='--numRowsA 5' -DnumColsA='--numColsA 4' \
-  -DnumRowsB='--numRowsB 4' -DnumColsB='--numColsB 3'  \
-  -Ddebug='--debug true'
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 300s' \

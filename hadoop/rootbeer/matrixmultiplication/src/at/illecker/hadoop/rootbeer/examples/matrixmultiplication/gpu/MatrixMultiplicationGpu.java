@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hadoop.rootbeer.examples.matrixmultiplication;
+package at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +48,7 @@ import org.apache.hadoop.mapred.join.CompositeInputFormat;
 import org.apache.hadoop.mapred.join.TupleWritable;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
+import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
 import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.SequentialAccessSparseVector;
@@ -55,6 +56,8 @@ import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.function.Functions;
 
+import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
+import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
@@ -131,25 +134,16 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 	@Override
 	public int run(String[] strings) throws Exception {
-		// addOption("numRowsA", "nra",
-		// "Number of rows of the first input matrix", true);
-		// addOption("numColsA", "nca",
-		// "Number of columns of the first input matrix", true);
+		addOption("numRowsA", "nra",
+				"Number of rows of the first input matrix", true);
+		addOption("numColsA", "nca",
+				"Number of columns of the first input matrix", true);
 
-		// addOption("numRowsB", "nrb",
-		// "Number of rows of the second input matrix", true);
-		// addOption("numColsB", "ncb",
-		// "Number of columns of the second input matrix", true);
+		addOption("numRowsB", "nrb",
+				"Number of rows of the second input matrix", true);
+		addOption("numColsB", "ncb",
+				"Number of columns of the second input matrix", true);
 
-		// addOption("inputPathA", "ia", "Path to the first input matrix",
-		// true);
-		// addOption("inputPathB", "ib", "Path to the second input matrix",
-		// true);
-
-		// addOption("outputPath", "op", "Path to the output matrix", false);
-
-		addOption("numRows", "nr", "Number of rows of matrix", true);
-		addOption("numCols", "nc", "Number of columns of matrix", true);
 		addOption("debug", "db", "Enable debugging (true|false)", false);
 
 		Map<String, List<String>> argMap = parseArguments(strings);
@@ -157,32 +151,40 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			return -1;
 		}
 
-		int numRows = Integer.parseInt(getOption("numRows"));
-		int numCols = Integer.parseInt(getOption("numCols"));
-		boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
+		int numRowsA = Integer.parseInt(getOption("numRowsA"));
+		int numColsA = Integer.parseInt(getOption("numColsA"));
+		int numRowsB = Integer.parseInt(getOption("numRowsB"));
+		int numColsB = Integer.parseInt(getOption("numColsB"));
 
-		LOG.info("numRows: " + numRows);
-		LOG.info("numCols: " + numCols);
+		boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
+		LOG.info("numRowsA: " + numRowsA);
+		LOG.info("numColsA: " + numColsA);
+		LOG.info("numRowsB: " + numRowsB);
+		LOG.info("numColsB: " + numColsB);
 		LOG.info("isDebugging: " + isDebugging);
 		LOG.info("outputPath: " + OUTPUT_DIR);
+
+		if (numColsA != numRowsB) {
+			throw new CardinalityException(numColsA, numRowsB);
+		}
 
 		Configuration conf = new Configuration(getConf());
 		conf.setBoolean(DEBUG, isDebugging);
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
-		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRows,
-				numCols, new Random(42L), MATRIX_A_PATH);
-		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRows,
-				numCols, new Random(1337L), MATRIX_B_PATH);
+		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
+				numColsA, new Random(42L), MATRIX_A_PATH);
+		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
+				numColsB, new Random(1337L), MATRIX_B_PATH);
 
 		// Load DistributedRowMatrix a and b
 		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
-				OUTPUT_DIR, numRows, numCols);
+				OUTPUT_DIR, numRowsA, numColsA);
 		a.setConf(conf);
 
 		DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
-				OUTPUT_DIR, numRows, numCols);
+				OUTPUT_DIR, numRowsB, numColsB);
 		b.setConf(conf);
 
 		// MatrixMultiply all within a new MapReduce job
@@ -288,35 +290,45 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 				}
 			}
 
+			// outCardinality is resulting column size
+			// (l x m) * (m x n) = (l x n)
 			boolean firstIsOutFrag = ((VectorWritable) v.get(0)).get().size() == outCardinality;
-			if (isDebuggingEnabled)
-				logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag
-						+ "\n");
 
+			// outFrag is Matrix which has the resulting column cardinality
+			// (matrixB)
 			Vector outFrag = firstIsOutFrag ? ((VectorWritable) v.get(0)).get()
 					: ((VectorWritable) v.get(1)).get();
 
+			// multiplier is Matrix which has the resulting row count
+			// (transposed matrixA)
 			Vector multiplier = firstIsOutFrag ? ((VectorWritable) v.get(1))
 					.get() : ((VectorWritable) v.get(0)).get();
 
 			if (isDebuggingEnabled) {
+				logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag
+						+ "\n");
 				logMapper.writeChars("map,outFrag=" + outFrag + "\n");
 				logMapper.writeChars("map,multiplier=" + multiplier + "\n");
 			}
 
-			// multiplier to double[]
-			double[] multiplierArray = new double[multiplier.size()];
+			// outFrag to double[]
+			double[] outFragArray = new double[outFrag.size()];
 			int i = 0;
-			for (Vector.Element e : multiplier.all()) {
-				multiplierArray[i] = e.get();
+			for (Vector.Element e : outFrag.all()) {
+				outFragArray[i] = e.get();
 				i++;
 			}
 
-			// Add Scalar Multiplication (Vector x Element) Kernel
-			for (Vector.Element e : outFrag.nonZeroes()) {
-				kernels.add(new MatrixMultiplicationMapperKernel(e.index(),
-						multiplierArray, e.get()));
+			// multiplier to double[]
+			i = 0;
+			Multiplier[] multiplierArray = new Multiplier[multiplier.size()];
+			for (Vector.Element e : multiplier.all()) {
+				multiplierArray[i] = new Multiplier(e.index(), e.get());
+				i++;
 			}
+
+			kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
+					outFragArray));
 
 			if (isDebuggingEnabled) {
 				logMapper.writeChars("map,GPUKernels=" + kernels.size() + "\n");
@@ -359,15 +371,16 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 			// Submit result of GPU kernels
 			for (Kernel kernel : kernels) {
-				MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
-				out.collect(
-						new IntWritable(mapperKernel.row),
-						new VectorWritable(new DenseVector(mapperKernel.result)));
 
-				if (isDebuggingEnabled) {
-					logMapper.writeChars("map,collect,key=" + mapperKernel.row
-							+ ",value=" + Arrays.toString(mapperKernel.result)
-							+ "\n");
+				for (Result result : ((MatrixMultiplicationMapperKernel) kernel).results) {
+					out.collect(new IntWritable(result.row),
+							new VectorWritable(new DenseVector(result.values)));
+
+					if (isDebuggingEnabled) {
+						logMapper.writeChars("map,collect,key=" + result.row
+								+ ",values=" + Arrays.toString(result.values)
+								+ "\n");
+					}
 				}
 			}
 
