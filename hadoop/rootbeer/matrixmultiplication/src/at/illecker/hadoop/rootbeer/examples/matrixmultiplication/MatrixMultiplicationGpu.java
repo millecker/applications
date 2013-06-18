@@ -16,8 +16,10 @@
  */
 package at.illecker.hadoop.rootbeer.examples.matrixmultiplication;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -241,6 +243,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
 			isDebuggingEnabled = conf.getBoolean(DEBUG, false);
 
+			// Set user.home to jars dir for .rootbeer folder
+			// which includes CUDA lib
+			System.setProperty("user.home", new Path(conf.getJobLocalDir())
+					.getParent().toString() + File.separator + "jars");
+
 			// Init logging
 			if (isDebuggingEnabled) {
 				try {
@@ -250,7 +257,10 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 							+ "/Mapper_"
 							+ conf.get("mapred.job.id") + ".log"));
 
-					logMapper.writeChars("map,NumMapTasks="
+					logMapper.writeChars("map,configure,user.home="
+							+ System.getProperty("user.home") + "\n");
+
+					logMapper.writeChars("map,configure,NumMapTasks="
 							+ conf.getNumMapTasks() + "\n");
 
 					logMapper.writeChars("map,configure,outCardinality="
@@ -355,10 +365,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 						new VectorWritable(new DenseVector(mapperKernel.result)));
 
 				if (isDebuggingEnabled) {
-					logMapper
-							.writeChars("map,collect,key=" + mapperKernel.row
-									+ ",value="
-									+ mapperKernel.result.toString() + "\n");
+					logMapper.writeChars("map,collect,key=" + mapperKernel.row
+							+ ",value=" + Arrays.toString(mapperKernel.result)
+							+ "\n");
 				}
 			}
 

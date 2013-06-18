@@ -14,6 +14,7 @@
 	<property name="src.dir" value="src" />
 	<property name="build.dir" value="build/classes" />
 	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
+	<property name="rootbeer.home" value=".rootbeer" />
 	<property name="rootbeer.java.arg.xmx" value="-Xmx4G" />
 	<property name="bench.java.arg.xmx" value="-Xmx4G -javaagent:${lib.dir}${file.separator}allocation-instrumenter-2.1.jar" />
 
@@ -102,11 +103,14 @@
 		<jar destfile="${output.file-jar}">
 			<zipfileset dir="${build.dir}" excludes="${rb-package.dir}${file.separator}${rb-kernel.class}" />
 			<zipgroupfileset dir="." includes="${output.file-rb-gpu-jar}" />
+			<!-- include .rootbeer folder for cudalibs -->
+			<zipfileset dir="${user.home}${file.separator}${rootbeer.home}" prefix="${rootbeer.home}"/>
 			<manifest>
 				<attribute name="Main-Class" value="${gpu.class}" />
 			</manifest>
 		</jar>
 		<echo>Main-Class: ${gpu.class}</echo>
+		<echo>Included rootbeer folder: ${user.home}${file.separator}${rootbeer.home}</echo>
 	</target>
 
 	<!-- ****************************************************************** -->
@@ -210,12 +214,12 @@
 	<!-- PRIVATE TARGET -run-program                                        -->
 	<!-- Execute program ${program} using {application.main.jar}            -->
 	<!-- ****************************************************************** -->
-	<target name="-run-program">		
+	<target name="-run-program">
 		<!-- Build applications Arguments -->
-		<var name="application.args.available" value="" />		
+		<var name="application.args.available" value="" />
 		<!-- set empty if its not available -->
 		<property name="${application.args}" value="" />
-		
+
 		<for list="${application.args}" param="application.arg" delimiter=" ">
 			<sequential>
 				<!-- set empty if its not available -->
@@ -233,7 +237,7 @@
 		<!-- Program Arguments -->
 		<!-- set empty if its not available -->
 		<property name="${program.bin.args}" value="" />
-		
+
 		<echo>${program.bin} ${program.bin.args} ${application.main.jar} ${application.args.available}</echo>
 		<exec executable="${program.bin}">
 			<arg line="${program.bin.args}" />
