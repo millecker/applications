@@ -4,7 +4,7 @@ public class Multiplier {
 
 	public int index;
 	public double value;
-	
+
 	public Multiplier(int index, double value) {
 		this.index = index;
 		this.value = value;
@@ -12,7 +12,24 @@ public class Multiplier {
 
 	@Override
 	public String toString() {
-		return "Multiplier [" + index + "," + value + "]";
+		StringBuilder ret = new StringBuilder();
+
+		ret.append("  Index: ");
+		ret.append(index);
+		ret.append("\n");
+
+		ret.append("  Value: ");
+		ret.append(value);
+		ret.append("\n");
+
+		return ret.toString();
+
 	}
 
+	public static void main(String[] args) {
+		// Dummy constructor invocation
+		// to keep constructor in
+		// rootbeer transformation
+		new Multiplier(0, 0);
+	}
 }

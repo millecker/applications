@@ -1,13 +1,11 @@
 package at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu;
 
-
 public class Result {
 
 	public int row;
 	public double values[];
 
 	public Result(int row, double[] values) {
-		super();
 		this.row = row;
 		this.values = values;
 	}
@@ -22,11 +20,17 @@ public class Result {
 
 		ret.append("  Values: ");
 		for (int i = 0; i < values.length; i++) {
-			ret.append(values[i]+" ");
+			ret.append(values[i] + " ");
 		}
 		ret.append("\n");
 
 		return ret.toString();
 	}
 
+	public static void main(String[] args) {
+		// Dummy constructor invocation
+		// to keep constructor in
+		// rootbeer transformation
+		new Result(0, null);
+	}
 }
