@@ -110,9 +110,6 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		conf.setOutputKeyClass(IntWritable.class);
 		conf.setOutputValueClass(VectorWritable.class);
 
-		// Inscrease client heap size for GPU execution
-		conf.set("mapred.child.java.opts", "-Xmx4G");
-
 		return conf;
 	}
 

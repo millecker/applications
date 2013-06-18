@@ -22,7 +22,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 	CalcType type;
 
 	public enum CalcType {
-		JAVA, HADOOP_CPU // , HADOOP_GPU
+		JAVA, HADOOP_CPU, HADOOP_GPU
 	};
 
 	// private static final Log LOG =
@@ -126,9 +126,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		case HADOOP_CPU:
 			sum = matrixMultiplyHadoopCPU(sum);
 			break;
-		// case HADOOP_GPU:
-		// sum = matrixMultiplyHadoopGPU(sum);
-		// break;
+		case HADOOP_GPU:
+			sum = matrixMultiplyHadoopGPU(sum);
+			break;
 		default:
 			break;
 		}
