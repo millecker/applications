@@ -319,22 +319,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 				outFragArray[i] = e.get();
 				i++;
 			}
-			logMapper.writeChars("map,outFragArray=" + outFragArray.length
-					+ "\n");
-			// multiplier to double[]
-			i = 0;
-			double[] multiplierArray = new double[multiplier.size()];
-			int[] multiplierIndex = new int[multiplier.size()];
-			for (Vector.Element e : multiplier.nonZeroes()) {
-				multiplierArray[i] = e.get();
-				multiplierIndex[i] = e.index();
-				i++;
-			}
-			logMapper.writeChars("map,multiplierArray="
-					+ multiplierArray.length + "\n");
 
-			kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
-					multiplierIndex, outFragArray));
+			for (Vector.Element e : multiplier.nonZeroes()) {
+				kernels.add(new MatrixMultiplicationMapperKernel(outFragArray,
+						e.get(), e.index()));
+			}
 
 			if (isDebuggingEnabled) {
 				logMapper.writeChars("map,GPUKernels=" + kernels.size() + "\n");
@@ -378,20 +367,17 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			// Submit result of GPU kernels
 			for (Kernel kernel : kernels) {
 				MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
-				for (int i = 0; i < mapperKernel.resultCount; i++) {
-					out.collect(new IntWritable(mapperKernel.resultsRow[i]),
-							new VectorWritable(new DenseVector(
-									mapperKernel.results[i])));
+				out.collect(
+						new IntWritable(mapperKernel.row),
+						new VectorWritable(new DenseVector(mapperKernel.result)));
 
-					if (isDebuggingEnabled) {
-						logMapper.writeChars("map,collect,key="
-								+ mapperKernel.resultsRow[i] + ",values="
-								+ Arrays.toString(mapperKernel.results[i])
-								+ "\n");
-					}
+				if (isDebuggingEnabled) {
+					logMapper.writeChars("map,collect,key=" + mapperKernel.row
+							+ ",values=" + Arrays.toString(mapperKernel.result)
+							+ "\n");
 				}
-			}
 
+			}
 		}
 	}
 

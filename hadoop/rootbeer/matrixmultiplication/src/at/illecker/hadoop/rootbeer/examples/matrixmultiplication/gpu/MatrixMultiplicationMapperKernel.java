@@ -4,37 +4,23 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 
 public class MatrixMultiplicationMapperKernel implements Kernel {
 
-	private double[] multiplier;
-	private int[] multiplierIndex;
 	private double[] vector;
-	public double[][] results;
-	public int[] resultsRow;
-	public int resultCount;
+	private double multiplier;
+	public double[] result;
+	public int row;
 
-	public MatrixMultiplicationMapperKernel(double[] multiplier,
-			int[] multiplierIndex, double[] vector) {
-		this.multiplier = multiplier;
-		this.multiplierIndex = multiplierIndex;
+	public MatrixMultiplicationMapperKernel(double[] vector, double multiplier,
+			int row) {
 		this.vector = vector;
-		this.results = new double[multiplier.length][vector.length];
+		this.multiplier = multiplier;
+		this.row = row;
+		this.result = new double[vector.length];
 	}
 
+	// Scalar Multiplication (Vector x Element)
 	public void gpuMethod() {
-
-		for (int i = 0; i < multiplier.length; i++) {
-
-			if (this.multiplier[i] != 0) {
-
-				// Scalar Multiplication (Vector x Element)
-				double[] newVector = new double[vector.length];
-				for (int j = 0; j < vector.length; j++) {
-					newVector[j] = this.vector[i] * this.multiplier[i];
-				}
-
-				this.resultsRow[i] = multiplierIndex[i];
-				this.results[i] = newVector;
-				resultCount++;
-			}
+		for (int i = 0; i < vector.length; i++) {
+			this.result[i] = this.vector[i] * this.multiplier;
 		}
 	}
 
@@ -42,6 +28,6 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 		// Dummy constructor invocation
 		// to keep Kernel constructor in
 		// rootbeer transformation
-		new MatrixMultiplicationMapperKernel(null, null, null);
+		new MatrixMultiplicationMapperKernel(null, 0, 0);
 	}
 }
