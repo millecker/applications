@@ -19,16 +19,20 @@ ant jar-bench
 ###############################################################################
 
 # Submit GPU Task to Hadoop
-ant run-gpu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
+ant run-gpu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+  [-Ddebug='--debug true']
 
 # Submit GPU native emulated Task to Hadoop
-ant run-gpu-nemu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
+ant run-gpu-nemu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+  [-Ddebug='--debug true']
 
 # Submit GPU Java emulated Task to Hadoop
-ant run-gpu-jemu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
+ant run-gpu-jemu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+  [-Ddebug='--debug true']
 
 # Submit CPU Task to Hadoop
-ant run-cpu -DnumRows='--numRows 100' -DnumCols='--numCols 100'
+ant run-cpu -DnumRows='--numRows 100' -DnumCols='--numCols 100' 
+  [-Ddebug='--debug true']
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 300s' \

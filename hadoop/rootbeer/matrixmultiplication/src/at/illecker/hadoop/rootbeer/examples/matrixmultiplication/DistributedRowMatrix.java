@@ -238,7 +238,9 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 					initialConf, transposed.rowPath, other.rowPath, outPath,
 					other.numCols);
 		} else { // use GPU
-			// TODO
+			conf = MatrixMultiplicationGpu.createMatrixMultiplicationGpuConf(
+					initialConf, transposed.rowPath, other.rowPath, outPath,
+					other.numCols);
 		}
 
 		// Multiply Matrix with transposed one

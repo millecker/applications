@@ -64,6 +64,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			.getLog(MatrixMultiplicationCpu.class);
 
 	private static final String OUT_CARD = "output.vector.cardinality";
+	private static final String DEBUG = "matrixmultiplication.cpu.debug";
+
 	private static final Path OUTPUT_DIR = new Path(
 			"output/hadoop/rootbeer/examples/matrixmultiplication/CPU-"
 					+ System.currentTimeMillis());
@@ -73,8 +75,6 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			"input/hadoop/rootbeer/examples/MatrixB.seq");
 	private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
 			+ "/MatrixC.seq");
-	private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
-			+ "/MatrixD.seq");
 
 	public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
 			Path bPath, Path outPath, int outCardinality) {
@@ -88,12 +88,15 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			int outCardinality) {
 
 		JobConf conf = new JobConf(initialConf, MatrixMultiplicationCpu.class);
+		conf.setJobName("MatrixMultiplicationCPU: " + aPath + " x " + bPath
+				+ " = " + outPath);
+
+		conf.setInt(OUT_CARD, outCardinality);
 
 		conf.setInputFormat(CompositeInputFormat.class);
 		conf.set("mapred.join.expr", CompositeInputFormat.compose("inner",
 				SequenceFileInputFormat.class, aPath, bPath));
 
-		conf.setInt(OUT_CARD, outCardinality);
 		conf.setOutputFormat(SequenceFileOutputFormat.class);
 		FileOutputFormat.setOutputPath(conf, outPath);
 
@@ -106,6 +109,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		conf.setOutputKeyClass(IntWritable.class);
 		conf.setOutputValueClass(VectorWritable.class);
+
+		// Inscrease client heap size for GPU execution
+		conf.set("mapred.child.java.opts", "-Xmx4G");
+
 		return conf;
 	}
 
@@ -132,23 +139,26 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		// addOption("outputPath", "op", "Path to the output matrix", false);
 
-		addOption("numRows", "nr", "Number of rows of input matrix", true);
-		addOption("numCols", "nc", "Number of columns of input matrix", true);
+		addOption("numRows", "nr", "Number of rows of matrix", true);
+		addOption("numCols", "nc", "Number of columns of matrix", true);
+		addOption("debug", "db", "Enable debugging (true|false)", false);
 
 		Map<String, List<String>> argMap = parseArguments(strings);
 		if (argMap == null) {
 			return -1;
 		}
 
-		Configuration conf = new Configuration(getConf());
-		// conf.set("bsp.child.java.opts", "-Xmx4G");
-
 		int numRows = Integer.parseInt(getOption("numRows"));
 		int numCols = Integer.parseInt(getOption("numCols"));
+		boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
 
 		LOG.info("numRows: " + numRows);
 		LOG.info("numCols: " + numCols);
+		LOG.info("isDebugging: " + isDebugging);
 		LOG.info("outputPath: " + OUTPUT_DIR);
+
+		Configuration conf = new Configuration(getConf());
+		conf.setBoolean(DEBUG, isDebugging);
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
@@ -169,27 +179,20 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 		// MatrixMultiply all within a new MapReduce job
 		long startTime = System.currentTimeMillis();
 		DistributedRowMatrix c = a.times(b, MATRIX_C_PATH);
-		System.out.println("MatrixMultiply using Hadoop finished in "
+		System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
 
-		// MatrixMultiply in Java
-		startTime = System.currentTimeMillis();
-		DistributedRowMatrix d = a.timesJava(b, MATRIX_D_PATH);
-		System.out.println("MatrixMultiply using Java finished in "
-				+ (System.currentTimeMillis() - startTime) / 1000.0
-				+ " seconds");
+		if (isDebugging) {
+			System.out.println("Matrix A:");
+			a.printDistributedRowMatrix();
+			System.out.println("Matrix B:");
+			b.printDistributedRowMatrix();
+			System.out.println("Matrix C:");
+			c.printDistributedRowMatrix();
 
-		//System.out.println("Matrix A:");
-		//a.printDistributedRowMatrix();
-		//System.out.println("Matrix B:");
-		//b.printDistributedRowMatrix();
-		//System.out.println("Matrix C:");
-		//c.printDistributedRowMatrix();
-		//System.out.println("Matrix D:");
-		//d.printDistributedRowMatrix();
-
-		//printOutput(conf);
+			printOutput(conf);
+		}
 		return 0;
 	}
 
@@ -214,24 +217,30 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		private int outCardinality;
 		private final IntWritable row = new IntWritable();
+
+		private boolean isDebuggingEnabled;
 		private FSDataOutputStream logMapper;
 
 		@Override
 		public void configure(JobConf conf) {
 
 			outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
+			isDebuggingEnabled = conf.getBoolean(DEBUG, false);
 
 			// Init logging
-			try {
-				FileSystem fs = FileSystem.get(conf);
-				logMapper = fs.create(new Path(FileOutputFormat.getOutputPath(
-						conf).getParent()
-						+ "/Mapper_" + conf.get("mapred.job.id") + ".log"));
+			if (isDebuggingEnabled) {
+				try {
+					FileSystem fs = FileSystem.get(conf);
+					logMapper = fs.create(new Path(FileOutputFormat
+							.getOutputPath(conf).getParent()
+							+ "/Mapper_"
+							+ conf.get("mapred.job.id") + ".log"));
 
-				logMapper.writeChars("map,configure,outCardinality="
-						+ outCardinality + "\n");
-			} catch (IOException e) {
-				e.printStackTrace();
+					logMapper.writeChars("map,configure,outCardinality="
+							+ outCardinality + "\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -241,14 +250,18 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 				Reporter reporter) throws IOException {
 
 			// Logging
-			for (int i = 0; i < v.size(); i++) {
-				Vector vector = ((VectorWritable) v.get(i)).get();
-				//logMapper.writeChars("map,input,key=" + index + ",value="
-				//		+ vector.toString() + "\n");
+			if (isDebuggingEnabled) {
+				for (int i = 0; i < v.size(); i++) {
+					Vector vector = ((VectorWritable) v.get(i)).get();
+					logMapper.writeChars("map,input,key=" + index + ",value="
+							+ vector.toString() + "\n");
+				}
 			}
 
 			boolean firstIsOutFrag = ((VectorWritable) v.get(0)).get().size() == outCardinality;
-			//logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
+			if (isDebuggingEnabled)
+				logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag
+						+ "\n");
 
 			Vector outFrag = firstIsOutFrag ? ((VectorWritable) v.get(0)).get()
 					: ((VectorWritable) v.get(1)).get();
@@ -256,8 +269,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 			Vector multiplier = firstIsOutFrag ? ((VectorWritable) v.get(1))
 					.get() : ((VectorWritable) v.get(0)).get();
 
-			//logMapper.writeChars("map,outFrag=" + outFrag + "\n");
-			//logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+			if (isDebuggingEnabled) {
+				logMapper.writeChars("map,outFrag=" + outFrag + "\n");
+				logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+			}
 
 			VectorWritable outVector = new VectorWritable();
 			for (Vector.Element e : outFrag.nonZeroes()) {
@@ -265,10 +280,15 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 				outVector.set(multiplier.times(e.get()));
 
 				out.collect(row, outVector);
-				//logMapper.writeChars("map,collect,key=" + index + ",value="
-				//		+ outVector.get().toString() + "\n");
+
+				if (isDebuggingEnabled) {
+					logMapper.writeChars("map,collect,key=" + index + ",value="
+							+ outVector.get().toString() + "\n");
+				}
 			}
-			//logMapper.flush();
+			if (isDebuggingEnabled) {
+				logMapper.flush();
+			}
 		}
 	}
 
