@@ -321,7 +321,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			Stopwatch watch = new Stopwatch();
 			watch.start();
 			Rootbeer rootbeer = new Rootbeer();
-			rootbeer.s
 			// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
 			rootbeer.runAll(kernels);
 			watch.stop();
