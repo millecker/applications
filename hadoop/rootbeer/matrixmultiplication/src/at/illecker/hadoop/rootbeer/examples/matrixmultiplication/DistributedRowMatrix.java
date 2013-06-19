@@ -45,6 +45,7 @@ import org.apache.mahout.math.Vector.Element;
 import org.apache.mahout.math.VectorIterable;
 import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.hadoop.MatrixColumnMeansJob;
+import org.apache.mahout.math.hadoop.MatrixMultiplicationJob;
 import org.apache.mahout.math.hadoop.TimesSquaredJob;
 import org.apache.mahout.math.hadoop.TransposeJob;
 
@@ -202,11 +203,40 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 */
 	public DistributedRowMatrix times(DistributedRowMatrix other, Path outPath)
 			throws IOException {
-		return timesMapReduce(other, outPath, false);
+		if (numRows != other.numRows()) {
+			throw new CardinalityException(numRows, other.numRows());
+		}
+
+		Configuration initialConf = getConf() == null ? new Configuration()
+				: getConf();
+		Configuration conf = MatrixMultiplicationJob
+				.createMatrixMultiplyJobConf(initialConf, rowPath,
+						other.rowPath, outPath, other.numCols);
+		JobClient.runJob(new JobConf(conf));
+		DistributedRowMatrix out = new DistributedRowMatrix(outPath,
+				outputTmpPath, numCols, other.numCols());
+		out.setConf(conf);
+		return out;
 	}
 
 	/**
-	 * This implements matrix this.transpose().times(other) using MapReduce
+	 * This implements matrix multiplication A * B using MapReduce tasks on CPU
+	 * 
+	 * @param other
+	 *            a DistributedRowMatrix
+	 * @param outPath
+	 *            path to write result to
+	 * 
+	 * @return a DistributedRowMatrix containing the product
+	 */
+	public DistributedRowMatrix multiply(DistributedRowMatrix other,
+			Path outPath) throws IOException {
+		return multiplyMapReduce(other, outPath, false);
+	}
+
+	/**
+	 * This implements matrix multiplication A * B using MapReduce tasks on CPU
+	 * or GPU
 	 * 
 	 * @param other
 	 *            a DistributedRowMatrix
@@ -216,7 +246,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 *            use GPU or CPU (default: false, use CPU)
 	 * @return a DistributedRowMatrix containing the product
 	 */
-	public DistributedRowMatrix timesMapReduce(DistributedRowMatrix other,
+	public DistributedRowMatrix multiplyMapReduce(DistributedRowMatrix other,
 			Path outPath, boolean useGPU) throws IOException {
 		// Check if cols of MatrixA = rows of MatrixB
 		// (l x m) * (m x n) = (l x n)
@@ -258,16 +288,17 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	}
 
 	/**
-	 * This implements matrix this.transpose().times(other) in Java without
-	 * using MapReduce
+	 * This implements matrix multiplication A * B in Java without using
+	 * MapReduce tasks
 	 * 
 	 * @param other
 	 *            a DistributedRowMatrix
 	 * @param outPath
 	 *            path to write result to
+	 * 
 	 * @return a DistributedRowMatrix containing the product
 	 */
-	public DistributedRowMatrix timesJava(DistributedRowMatrix other,
+	public DistributedRowMatrix multiplyJava(DistributedRowMatrix other,
 			Path outPath) throws IOException {
 		// Check if cols of MatrixA = rows of MatrixB
 		// (l x m) * (m x n) = (l x n)

@@ -186,7 +186,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		// MatrixMultiply all within a new MapReduce job
 		long startTime = System.currentTimeMillis();
-		DistributedRowMatrix c = a.timesMapReduce(b, MATRIX_C_PATH, true);
+		DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, true);
 		System.out.println("MatrixMultiplicationGpu using Hadoop finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");

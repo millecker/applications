@@ -22,9 +22,8 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 	CalcType type;
 
 	public enum CalcType {
-		//JAVA, 
-		HADOOP_CPU, 
-		HADOOP_GPU
+		// JAVA,
+		HADOOP_CPU, HADOOP_GPU
 	};
 
 	// private static final Log LOG =
@@ -123,9 +122,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 	public int doBenchmark(int sum) {
 		switch (type) {
 		/*
-		case JAVA:
-			sum = matrixMultiplyJava(sum);
-			break;
+		 * case JAVA: sum = matrixMultiplyJava(sum); break;
 		 */
 		case HADOOP_CPU:
 			sum = matrixMultiplyHadoopCPU(sum);
@@ -153,10 +150,10 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
 			DistributedRowMatrix resultMatrix = null;
 			if (javaOnly) {
-				resultMatrix = matrixA.timesJava(matrixB, MATRIX_C_PATH);
+				resultMatrix = matrixA.multiplyJava(matrixB, MATRIX_C_PATH);
 			} else {
-				resultMatrix = matrixA.timesMapReduce(matrixB, MATRIX_C_PATH,
-						useGPU);
+				resultMatrix = matrixA.multiplyMapReduce(matrixB,
+						MATRIX_C_PATH, useGPU);
 			}
 
 			return resultMatrix.numRows();
