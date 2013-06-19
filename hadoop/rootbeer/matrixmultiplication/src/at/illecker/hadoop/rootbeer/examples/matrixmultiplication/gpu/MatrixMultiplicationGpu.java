@@ -50,11 +50,8 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.RandomAccessSparseVector;
-import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
-import org.apache.mahout.math.function.Functions;
 
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
@@ -385,23 +382,132 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			implements
 			Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
 
+		private boolean isDebuggingEnabled;
+		private FSDataOutputStream logReducer;
+
+		private List<Kernel> kernels = new ArrayList<Kernel>();
+
+		// New Hadoop API would provide a context object to write results
+		// Mapper.cleanup(Context)
+		// To submit data in the close method we need a
+		// reference to OutputCollector;
+		OutputCollector<IntWritable, VectorWritable> out;
+
+		@Override
+		public void configure(JobConf conf) {
+
+			isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+
+			// Set user.home to jars dir for .rootbeer folder
+			// which includes CUDA lib
+			System.setProperty("user.home", new Path(conf.getJobLocalDir())
+					.getParent().toString() + File.separator + "jars");
+
+			// Init logging
+			if (isDebuggingEnabled) {
+				try {
+					FileSystem fs = FileSystem.get(conf);
+					logReducer = fs.create(new Path(FileOutputFormat
+							.getOutputPath(conf).getParent()
+							+ "/Reducer_"
+							+ conf.get("mapred.job.id") + ".log"));
+
+					logReducer.writeChars("reduce,configure,user.home="
+							+ System.getProperty("user.home") + "\n");
+
+					logReducer.writeChars("reduce,configure,NumMapTasks="
+							+ conf.getNumMapTasks() + "\n");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
 		@Override
 		public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
 				OutputCollector<IntWritable, VectorWritable> out,
 				Reporter reporter) throws IOException {
 
+			this.out = out;
+
 			if (!it.hasNext()) {
 				return;
 			}
 
-			Vector accumulator = new RandomAccessSparseVector(it.next().get());
+			// Accumulate rows
+			List<double[]> vectors = new ArrayList<double[]>();
 			while (it.hasNext()) {
-				Vector row = it.next().get();
-				accumulator.assign(row, Functions.PLUS);
+				Vector vector = it.next().get();
+				double[] vectorArr = new double[vector.size()];
+				int i = 0;
+				for (Vector.Element e : vector.all()) {
+					vectorArr[i] = e.get();
+					i++;
+				}
+				vectors.add(vectorArr);
 			}
 
-			out.collect(rowNum, new VectorWritable(
-					new SequentialAccessSparseVector(accumulator)));
+			// vector to double[]
+			double[][] vectorArrays = new double[vectors.size()][vectors.get(0).length];
+			for (int i = 0; i < vectors.size(); i++) {
+				vectorArrays[i] = vectors.get(i);
+			}
+
+			kernels.add(new MatrixMultiplicationReducerKernel(vectorArrays,
+					rowNum.get()));
+		}
+
+		@Override
+		public void close() throws IOException {
+
+			// After last input key/value run GPU kernels
+			Stopwatch watch = new Stopwatch();
+			watch.start();
+			Rootbeer rootbeer = new Rootbeer();
+			// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
+			rootbeer.runAll(kernels);
+			watch.stop();
+
+			if (isDebuggingEnabled) {
+				logReducer.writeChars("reduce,close,KernelCount="
+						+ kernels.size() + ",GPUTime="
+						+ watch.elapsedTimeMillis() + "ms\n");
+				List<StatsRow> stats = rootbeer.getStats();
+				for (StatsRow row : stats) {
+					logReducer.writeChars("  StatsRow:\n");
+					logReducer.writeChars("    init time: " + row.getInitTime()
+							+ "\n");
+					logReducer.writeChars("    serial time: "
+							+ row.getSerializationTime() + "\n");
+					logReducer.writeChars("    exec time: "
+							+ row.getExecutionTime() + "\n");
+					logReducer.writeChars("    deserial time: "
+							+ row.getDeserializationTime() + "\n");
+					logReducer.writeChars("    num blocks: "
+							+ row.getNumBlocks() + "\n");
+					logReducer.writeChars("    num threads: "
+							+ row.getNumThreads() + "\n");
+				}
+				logReducer.flush();
+			}
+
+			// Submit result of GPU kernels
+			for (Kernel kernel : kernels) {
+				MatrixMultiplicationReducerKernel reducerKernel = (MatrixMultiplicationReducerKernel) kernel;
+				out.collect(new IntWritable(reducerKernel.row),
+						new VectorWritable(
+								new DenseVector(reducerKernel.result)));
+
+				// out.collect(rowNum, new VectorWritable(
+				// new SequentialAccessSparseVector(accumulator)));
+
+				if (isDebuggingEnabled) {
+					logReducer.writeChars("reduce,collect,key="
+							+ reducerKernel.row + ",values="
+							+ Arrays.toString(reducerKernel.result) + "\n");
+				}
+
+			}
 		}
 	}
 }
