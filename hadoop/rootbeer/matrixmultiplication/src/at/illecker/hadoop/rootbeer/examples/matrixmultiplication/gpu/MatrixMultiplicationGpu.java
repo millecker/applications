@@ -50,8 +50,11 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
+import org.apache.mahout.math.RandomAccessSparseVector;
+import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
+import org.apache.mahout.math.function.Functions;
 
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
@@ -110,7 +113,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 		FileOutputFormat.setOutputPath(conf, outPath);
 
 		conf.setMapperClass(MatrixMultiplyGpuMapper.class);
-		conf.setCombinerClass(MatrixMultiplicationGpuReducer.class);
 		conf.setReducerClass(MatrixMultiplicationGpuReducer.class);
 
 		conf.setMapOutputKeyClass(IntWritable.class);
@@ -317,9 +319,19 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 				i++;
 			}
 
+			// One map task consists of multiple kernels within one block
+			// Each kernel computes a scalar multiplication and
+			// a master kernel accumulates the results
+
 			for (Vector.Element e : multiplier.nonZeroes()) {
-				kernels.add(new MatrixMultiplicationMapperKernel(outFragArray,
-						e.get(), e.index()));
+				if (kernels.isEmpty()) {
+					kernels.add(new MatrixMultiplicationMapperKernel(true,
+							outFragArray, e.get(), e.index(), multiplier.size()));
+				} else {
+					kernels.add(new MatrixMultiplicationMapperKernel(false,
+							outFragArray, e.get(), e.index(), multiplier.size()));
+				}
+
 			}
 
 			if (isDebuggingEnabled) {
@@ -335,7 +347,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			Stopwatch watch = new Stopwatch();
 			watch.start();
 			Rootbeer rootbeer = new Rootbeer();
-			// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
+			// Set block size to amount of kernels (cols of Matrix A)
+			// grid size = 1, sync only possible between threads within a block
+			rootbeer.setThreadConfig(kernels.size(), 1);
 			rootbeer.runAll(kernels);
 			watch.stop();
 
@@ -364,6 +378,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			// Submit result of GPU kernels
 			for (Kernel kernel : kernels) {
 				MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
+
+				if (mapperKernel.result == null) {
+					continue;
+				}
+
 				out.collect(
 						new IntWritable(mapperKernel.row),
 						new VectorWritable(new DenseVector(mapperKernel.result)));
@@ -384,14 +403,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		private boolean isDebuggingEnabled;
 		private FSDataOutputStream logReducer;
-
-		private List<Kernel> kernels = new ArrayList<Kernel>();
-
-		// New Hadoop API would provide a context object to write results
-		// Mapper.cleanup(Context)
-		// To submit data in the close method we need a
-		// reference to OutputCollector;
-		OutputCollector<IntWritable, VectorWritable> out;
 
 		@Override
 		public void configure(JobConf conf) {
@@ -428,85 +439,16 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 				OutputCollector<IntWritable, VectorWritable> out,
 				Reporter reporter) throws IOException {
 
-			this.out = out;
+			// Reducer is Identity function
 
 			if (!it.hasNext()) {
 				return;
 			}
 
-			// Accumulate rows
-			List<double[]> vectors = new ArrayList<double[]>();
 			while (it.hasNext()) {
-				Vector vector = it.next().get();
-				double[] vectorArr = new double[vector.size()];
-				int i = 0;
-				for (Vector.Element e : vector.all()) {
-					vectorArr[i] = e.get();
-					i++;
-				}
-				vectors.add(vectorArr);
-			}
-
-			// vector to double[]
-			double[][] vectorArrays = new double[vectors.size()][vectors.get(0).length];
-			for (int i = 0; i < vectors.size(); i++) {
-				vectorArrays[i] = vectors.get(i);
-			}
-
-			kernels.add(new MatrixMultiplicationReducerKernel(vectorArrays,
-					rowNum.get()));
-		}
-
-		@Override
-		public void close() throws IOException {
-
-			// After last input key/value run GPU kernels
-			Stopwatch watch = new Stopwatch();
-			watch.start();
-			Rootbeer rootbeer = new Rootbeer();
-			// rootbeer.setThreadConfig(m_blockSize, m_gridSize);
-			rootbeer.runAll(kernels);
-			watch.stop();
-
-			if (isDebuggingEnabled) {
-				logReducer.writeChars("reduce,close,KernelCount="
-						+ kernels.size() + ",GPUTime="
-						+ watch.elapsedTimeMillis() + "ms\n");
-				List<StatsRow> stats = rootbeer.getStats();
-				for (StatsRow row : stats) {
-					logReducer.writeChars("  StatsRow:\n");
-					logReducer.writeChars("    init time: " + row.getInitTime()
-							+ "\n");
-					logReducer.writeChars("    serial time: "
-							+ row.getSerializationTime() + "\n");
-					logReducer.writeChars("    exec time: "
-							+ row.getExecutionTime() + "\n");
-					logReducer.writeChars("    deserial time: "
-							+ row.getDeserializationTime() + "\n");
-					logReducer.writeChars("    num blocks: "
-							+ row.getNumBlocks() + "\n");
-					logReducer.writeChars("    num threads: "
-							+ row.getNumThreads() + "\n");
-				}
-				logReducer.flush();
-			}
-
-			// Submit result of GPU kernels
-			for (Kernel kernel : kernels) {
-				MatrixMultiplicationReducerKernel reducerKernel = (MatrixMultiplicationReducerKernel) kernel;
-				out.collect(new IntWritable(reducerKernel.row),
-						new VectorWritable(
-								new DenseVector(reducerKernel.result)));
-
-				// out.collect(rowNum, new VectorWritable(
-				// new SequentialAccessSparseVector(accumulator)));
-
-				if (isDebuggingEnabled) {
-					logReducer.writeChars("reduce,collect,key="
-							+ reducerKernel.row + ",values="
-							+ Arrays.toString(reducerKernel.result) + "\n");
-				}
-
+				Vector row = it.next().get();
+				out.collect(rowNum, new VectorWritable(
+						new SequentialAccessSparseVector(row)));
 			}
 		}
 	}

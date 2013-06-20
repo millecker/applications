@@ -12,10 +12,7 @@ B <- matrix(c(2.0,1.0,6.0,5.0,7.0,8.0,9.0,5.0,2.0,1.0,5.0,8.0,7.0,4.0,4.0,9.0),
 
 A.Transposed <- t(A)
 print("n=4 Transposed:")
-A
 A.Transposed
-
-B
 
 C <- A %*% B
 print("n=4 Result:")
