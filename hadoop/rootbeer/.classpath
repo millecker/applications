@@ -4,10 +4,10 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/hadoop-core-1.3.0-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/rootbeer-1.0.47.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-cli-2.0-mahout.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/guava-12.0.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/mahout-core-0.8-SNAPSHOT-job.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/caliper-1.0-beta-1-all.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/rootbeer-master-trunk.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

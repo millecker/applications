@@ -53,7 +53,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 		}
 
 		// Sync all kernels, scalar multiplication has finished
-		RootbeerGpu.synchthreads();
+		RootbeerGpu.syncthreads();
 
 		// Masterkernels accumilates all vectors to result
 		if (isFirstKernel) {

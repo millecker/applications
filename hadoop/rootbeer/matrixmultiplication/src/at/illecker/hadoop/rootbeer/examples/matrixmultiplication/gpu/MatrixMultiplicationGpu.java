@@ -349,7 +349,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			Rootbeer rootbeer = new Rootbeer();
 			// Set block size to amount of kernels (cols of Matrix A)
 			// grid size = 1, sync only possible between threads within a block
-			rootbeer.setThreadConfig(kernels.size(), 1);
+			rootbeer.setThreadConfig(kernels.size(), 1, 0);
 			rootbeer.runAll(kernels);
 			watch.stop();
 

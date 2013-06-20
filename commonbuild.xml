@@ -110,9 +110,10 @@
 			<sequential>
 				<math result="i" operand1="${i}" operation="+" operand2="1" datatype="int" />
 				<echo>Rootbeer Class: ${build.dir}${file.separator}${rootbeer.package.dir}${file.separator}@{rootbeer.class}</echo>
-				<jar destfile="${output.file-rb-jar}_tmp${i}.jar">
+				<!-- use zip instead of jar, because rootbeer has problems with META-INF/MANIFEST.MF -->
+				<zip destfile="${output.file-rb-jar}_tmp${i}.jar">
 					<zipfileset dir="${build.dir}${file.separator}${rootbeer.package.dir}" includes="@{rootbeer.class}" fullpath="${rootbeer.package.dir}${file.separator}@{rootbeer.class}" />
-				</jar>
+				</zip>
 				<if>
 					<equals arg1="${i}" arg2="1" />
 					<else>
