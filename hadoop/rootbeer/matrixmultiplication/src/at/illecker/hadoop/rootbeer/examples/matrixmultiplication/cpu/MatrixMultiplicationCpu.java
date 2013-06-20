@@ -161,10 +161,11 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
+		// Matrix A is stored transposed
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-				numColsA, new Random(42L), MATRIX_A_PATH);
+				numColsA, new Random(42L), MATRIX_A_PATH, true);
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-				numColsB, new Random(1337L), MATRIX_B_PATH);
+				numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
 		// Load DistributedRowMatrix a and b
 		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
@@ -177,7 +178,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
 		// MatrixMultiply all within a new MapReduce job
 		long startTime = System.currentTimeMillis();
-		DistributedRowMatrix c = a.multiply(b, MATRIX_C_PATH);
+		DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, false,
+				true);
 		System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");

@@ -83,9 +83,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-				new Random(42L), MATRIX_A_PATH);
+				new Random(), MATRIX_A_PATH, true);
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-				new Random(1337L), MATRIX_B_PATH);
+				new Random(), MATRIX_B_PATH, true);
 
 		// Load DistributedRowMatrix a and b
 		matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR_PATH, n, n);
@@ -153,7 +153,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 				resultMatrix = matrixA.multiplyJava(matrixB, MATRIX_C_PATH);
 			} else {
 				resultMatrix = matrixA.multiplyMapReduce(matrixB,
-						MATRIX_C_PATH, useGPU);
+						MATRIX_C_PATH, useGPU, false);
 			}
 
 			return resultMatrix.numRows();

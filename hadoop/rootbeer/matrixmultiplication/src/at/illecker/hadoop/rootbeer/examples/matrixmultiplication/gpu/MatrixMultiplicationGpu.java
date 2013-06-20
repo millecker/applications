@@ -50,11 +50,9 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
-import org.apache.mahout.math.function.Functions;
 
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
@@ -172,10 +170,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		// Create random DistributedRowMatrix
 		// use constant seeds to get reproducable results
+		// Matrix A is stored transposed
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-				numColsA, new Random(42L), MATRIX_A_PATH);
+				numColsA, new Random(42L), MATRIX_A_PATH, true);
 		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-				numColsB, new Random(1337L), MATRIX_B_PATH);
+				numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
 		// Load DistributedRowMatrix a and b
 		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
@@ -188,7 +187,8 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
 		// MatrixMultiply all within a new MapReduce job
 		long startTime = System.currentTimeMillis();
-		DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, true);
+		DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, true,
+				true);
 		System.out.println("MatrixMultiplicationGpu using Hadoop finished in "
 				+ (System.currentTimeMillis() - startTime) / 1000.0
 				+ " seconds");
@@ -387,9 +387,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 						+ mapperKernel.setShareIndex + ",setShareValue="
 						+ mapperKernel.setShareValue + ",getShareIndex="
 						+ mapperKernel.getShareIndex + ",getShareValue="
-						+ mapperKernel.getShareValue+"\n");
+						+ mapperKernel.getShareValue + "\n");
 				logMapper.writeChars("\n");
-				
+
 				if (mapperKernel.result == null) {
 					continue;
 				}

@@ -231,7 +231,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 */
 	public DistributedRowMatrix multiply(DistributedRowMatrix other,
 			Path outPath) throws IOException {
-		return multiplyMapReduce(other, outPath, false);
+		return multiplyMapReduce(other, outPath, false, false);
 	}
 
 	/**
@@ -247,7 +247,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	 * @return a DistributedRowMatrix containing the product
 	 */
 	public DistributedRowMatrix multiplyMapReduce(DistributedRowMatrix other,
-			Path outPath, boolean useGPU) throws IOException {
+			Path outPath, boolean useGPU, boolean isMatrixATransposed)
+			throws IOException {
 		// Check if cols of MatrixA = rows of MatrixB
 		// (l x m) * (m x n) = (l x n)
 		if (numCols != other.numRows()) {
@@ -258,8 +259,10 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 				: getConf();
 
 		// Transpose Matrix within a new MapReduce Job
-		DistributedRowMatrix transposed = this.transpose();
-
+		DistributedRowMatrix transposed = this;
+		if (!isMatrixATransposed) {
+			transposed = transposed.transpose();
+		}
 		// Debug
 		// System.out.println("DistributedRowMatrix transposed:");
 		// transposed.printDistributedRowMatrix();
@@ -325,7 +328,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 
 		// Save resulting Matrix to HDFS
 		try {
-			writeDistributedRowMatrix(this.conf, matrixC, outPath);
+			writeDistributedRowMatrix(this.conf, matrixC, this.numRows,
+					other.numCols, outPath, false);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -510,7 +514,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	}
 
 	public static void createRandomDistributedRowMatrix(Configuration conf,
-			int rows, int columns, Random rand, Path path) throws Exception {
+			int rows, int columns, Random rand, Path path,
+			boolean saveTransposed) throws Exception {
 
 		final double[][] matrix = new double[rows][columns];
 		for (int i = 0; i < rows; i++) {
@@ -520,17 +525,30 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 			}
 		}
 
-		writeDistributedRowMatrix(conf, matrix, path);
+		writeDistributedRowMatrix(conf, matrix, rows, columns, path,
+				saveTransposed);
 	}
 
 	public static void writeDistributedRowMatrix(Configuration conf,
-			final double[][] matrix, Path path) throws Exception {
+			final double[][] matrix, int rows, int columns, Path path,
+			boolean saveTransposed) throws Exception {
 
 		SequenceFile.Writer writer = null;
 		try {
 			FileSystem fs = FileSystem.get(conf);
 			writer = new SequenceFile.Writer(fs, conf, path, IntWritable.class,
 					VectorWritable.class);
+
+			if (saveTransposed) { // Transpose Matrix before saving
+				// transpose in-place
+				for (int i = 0; i < rows; i++) {
+					for (int j = i + 1; j < columns; j++) {
+						double temp = matrix[i][j];
+						matrix[i][j] = matrix[j][i];
+						matrix[j][i] = temp;
+					}
+				}
+			}
 
 			for (int i = 0; i < matrix.length; i++) {
 				DenseVector rowVector = new DenseVector(matrix[i]);
