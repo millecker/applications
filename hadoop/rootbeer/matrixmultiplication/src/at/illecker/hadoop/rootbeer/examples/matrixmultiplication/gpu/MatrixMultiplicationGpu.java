@@ -231,6 +231,8 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 		private FSDataOutputStream logMapper;
 
 		private List<Kernel> kernels = new ArrayList<Kernel>();
+		int blockSize = 0;
+		int gridSize = 0;
 
 		// New Hadoop API would provide a context object to write results
 		// Mapper.cleanup(Context)
@@ -319,17 +321,19 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 				i++;
 			}
 
+			blockSize = multiplier.size();
+			gridSize++;
+
 			// One map task consists of multiple kernels within one block
 			// Each kernel computes a scalar multiplication and
 			// a master kernel accumulates the results
-
 			for (Vector.Element e : multiplier.nonZeroes()) {
 				if (kernels.isEmpty()) {
 					kernels.add(new MatrixMultiplicationMapperKernel(true,
-							outFragArray, e.get(), e.index(), multiplier.size()));
+							outFragArray, e.get(), e.index()));
 				} else {
 					kernels.add(new MatrixMultiplicationMapperKernel(false,
-							outFragArray, e.get(), e.index(), multiplier.size()));
+							outFragArray, e.get(), e.index()));
 				}
 
 			}
@@ -347,15 +351,20 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			Stopwatch watch = new Stopwatch();
 			watch.start();
 			Rootbeer rootbeer = new Rootbeer();
-			// Set block size to amount of kernels (cols of Matrix A)
-			// grid size = 1, sync only possible between threads within a block
-			rootbeer.setThreadConfig(kernels.size(), 1, 0);
+			// blockSize = rows of MatrixA (multiplier)
+			// gridSize = cols of Matrix B (for each row a scalar multiplication
+			// has to be made)
+			// sync only possible between threads within a block?
+			rootbeer.setThreadConfig(blockSize, gridSize, kernels.size());
 			rootbeer.runAll(kernels);
 			watch.stop();
 
 			if (isDebuggingEnabled) {
 				logMapper.writeChars("map,close,KernelCount=" + kernels.size()
 						+ ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
+				logMapper.writeChars("map,close,blockSize=" + blockSize
+						+ ",gridSize=" + gridSize + "\n");
+
 				List<StatsRow> stats = rootbeer.getStats();
 				for (StatsRow row : stats) {
 					logMapper.writeChars("  StatsRow:\n");
@@ -380,28 +389,23 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 				MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
 
 				logMapper.writeChars("map,kernel," + "multiplier="
-						+ mapperKernel.multiplier + ",blockSize="
-						+ mapperKernel.blockSize + ",block_idxx="
-						+ mapperKernel.block_idxx + ",thread_idxx="
-						+ mapperKernel.thread_idxx + ",setShareIndex="
-						+ mapperKernel.setShareIndex + ",setShareValue="
-						+ mapperKernel.setShareValue + ",getShareIndex="
-						+ mapperKernel.getShareIndex + ",getShareValue="
-						+ mapperKernel.getShareValue + "\n");
-				logMapper.writeChars("\n");
+						+ mapperKernel.multiplier + ",block_idxx="
+						+ mapperKernel.block_idxx + ",blockSize="
+						+ mapperKernel.blockSize + ",thread_idxx="
+						+ mapperKernel.thread_idxx + ",index="
+						+ mapperKernel.index + "\n");
 
-				if (mapperKernel.result == null) {
-					continue;
-				}
+				if (mapperKernel.result != null) {
 
-				out.collect(
-						new IntWritable(mapperKernel.row),
-						new VectorWritable(new DenseVector(mapperKernel.result)));
+					out.collect(new IntWritable(mapperKernel.row),
+							new VectorWritable(new DenseVector(
+									mapperKernel.result)));
 
-				if (isDebuggingEnabled) {
-					logMapper.writeChars("map,collect,key=" + mapperKernel.row
-							+ ",values=" + Arrays.toString(mapperKernel.result)
-							+ "\n");
+					if (isDebuggingEnabled) {
+						logMapper.writeChars("map,collect,key="
+								+ mapperKernel.row + ",values="
+								+ Arrays.toString(mapperKernel.result) + "\n");
+					}
 				}
 
 			}
