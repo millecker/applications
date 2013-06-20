@@ -77,6 +77,20 @@
 	</target>
 
 	<!-- ****************************************************************** -->
+	<!-- TARGET CLEAN ROOTBEER                                              -->
+	<!-- ****************************************************************** -->
+	<target name="clean-rb">
+		<echo>${user.home}</echo>
+		<delete dir="${user.home}/.soot/" />
+		<mkdir dir="${user.home}/.rootbeer_config/" />
+		<copy todir="${user.home}/.rootbeer_config/" file="${user.home}/.rootbeer/config" />
+		<delete dir="${user.home}/.rootbeer/" />
+		<mkdir dir="${user.home}/.rootbeer/" />
+		<copy todir="${user.home}/.rootbeer/" file="${user.home}/.rootbeer_config/config" />
+		<delete dir="${user.home}/.rootbeer_config/" />
+	</target>
+
+	<!-- ****************************************************************** -->
 	<!-- TARGET COMPILE                                                     -->
 	<!-- ****************************************************************** -->
 	<target name="compile">
@@ -186,7 +200,7 @@
 			</else>
 		</if>
 		<echo>java ${rootbeer.java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
-		<exec executable="java">
+		<exec executable="java" failonerror="true" resultproperty="return.code">
 			<arg value="${rootbeer.java.arg.xmx}" />
 			<arg value="-jar" />
 			<arg value="${rootbeer}" />
@@ -194,6 +208,11 @@
 			<arg value="${output.file-rb-gpu-jar}" />
 			<arg value="${rootbeer.arg}" />
 		</exec>
+		<fail>
+			<condition>
+				<equals arg1="-1" arg2="${return.code}" />
+			</condition>
+		</fail>
 		<delete file="${output.file-rb-jar}" />
 		<antcall target="-jar-gpu-combine" />
 		<delete file="${output.file-rb-gpu-jar}" />
