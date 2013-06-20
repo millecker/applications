@@ -111,11 +111,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 		FileOutputFormat.setOutputPath(conf, outPath);
 
 		conf.setMapperClass(MatrixMultiplyGpuMapper.class);
-		conf.setReducerClass(MatrixMultiplicationGpuReducer.class);
-
 		conf.setMapOutputKeyClass(IntWritable.class);
 		conf.setMapOutputValueClass(VectorWritable.class);
-
+		
+		conf.setNumReduceTasks(0);
+		
 		conf.setOutputKeyClass(IntWritable.class);
 		conf.setOutputValueClass(VectorWritable.class);
 
@@ -328,14 +328,8 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 			// Each kernel computes a scalar multiplication and
 			// a master kernel accumulates the results
 			for (Vector.Element e : multiplier.nonZeroes()) {
-				if (kernels.isEmpty()) {
-					kernels.add(new MatrixMultiplicationMapperKernel(true,
-							outFragArray, e.get(), e.index()));
-				} else {
-					kernels.add(new MatrixMultiplicationMapperKernel(false,
-							outFragArray, e.get(), e.index()));
-				}
-
+				kernels.add(new MatrixMultiplicationMapperKernel(outFragArray,
+						e.get(), e.index()));
 			}
 
 			if (isDebuggingEnabled) {
@@ -393,7 +387,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 						+ mapperKernel.block_idxx + ",blockSize="
 						+ mapperKernel.blockSize + ",thread_idxx="
 						+ mapperKernel.thread_idxx + ",index="
-						+ mapperKernel.index + "\n");
+						+ mapperKernel.index + ",setShareIndex="
+						+ mapperKernel.setShareIndex + ",setShareValue="
+						+ mapperKernel.setShareValue + ",getShareIndex="
+						+ mapperKernel.getShareIndex + ",getShareValue="
+						+ mapperKernel.getShareValue + "\n");
 
 				if (mapperKernel.result != null) {
 
