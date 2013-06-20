@@ -284,7 +284,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 
 		// Read resulting Matrix from HDFS
 		DistributedRowMatrix out = new DistributedRowMatrix(outPath,
-				outputTmpPath, numCols, other.numCols());
+				outputTmpPath, this.numRows, other.numCols());
 		out.setConf(conf);
 
 		return out;
@@ -530,7 +530,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 	}
 
 	public static void writeDistributedRowMatrix(Configuration conf,
-			final double[][] matrix, int rows, int columns, Path path,
+			double[][] matrix, int rows, int columns, Path path,
 			boolean saveTransposed) throws Exception {
 
 		SequenceFile.Writer writer = null;
@@ -540,14 +540,13 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 					VectorWritable.class);
 
 			if (saveTransposed) { // Transpose Matrix before saving
-				// transpose in-place
+				double[][] transposed = new double[columns][rows];
 				for (int i = 0; i < rows; i++) {
-					for (int j = i + 1; j < columns; j++) {
-						double temp = matrix[i][j];
-						matrix[i][j] = matrix[j][i];
-						matrix[j][i] = temp;
+					for (int j = 0; j < columns; j++) {
+						transposed[j][i] = matrix[i][j];
 					}
 				}
+				matrix = transposed;
 			}
 
 			for (int i = 0; i < matrix.length; i++) {
