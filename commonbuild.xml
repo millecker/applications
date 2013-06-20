@@ -15,6 +15,7 @@
 	<property name="build.dir" value="build/classes" />
 	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
 	<property name="rootbeer.home" value=".rootbeer" />
+	<property name="rootbeer.args" value="" />
 	<property name="rootbeer.java.arg.xmx" value="-Xmx4G" />
 	<property name="bench.java.arg.xmx" value="-Xmx4G -javaagent:${lib.dir}${file.separator}allocation-instrumenter-2.1.jar" />
 
@@ -207,7 +208,7 @@
 			<arg value="${rootbeer}" />
 			<arg value="${output.file-rb-jar}" />
 			<arg value="${output.file-rb-gpu-jar}" />
-			<arg value="${rootbeer.arg}" />
+			<arg line="${rootbeer.arg}" />
 		</exec>
 		<fail>
 			<condition>
@@ -273,7 +274,7 @@
 	<!-- ****************************************************************** -->
 	<target name="jar-bench" depends="compile">
 		<antcall target="jar-gpu">
-			<param name="rootbeer.arg" value="" />
+			<param name="rootbeer.arg" value="${rootbeer.args}" />
 			<param name="jar-gpu.include.libs" value="false" />
 		</antcall>
 		<jar destfile="${output.file-bench-tmp-jar}">
@@ -367,7 +368,7 @@
 				<echo>Run with ${program}</echo>
 				<antcall target="clean" />
 				<antcall target="jar-gpu">
-					<param name="rootbeer.arg" value="" />
+					<param name="rootbeer.arg" value="${rootbeer.args}" />
 					<param name="jar-gpu.include.libs" value="true" />
 				</antcall>
 				<antcall target="-run-program">
@@ -402,7 +403,7 @@
 				<echo>Run with ${program}</echo>
 				<antcall target="clean" />
 				<antcall target="jar-gpu">
-					<param name="rootbeer.arg" value="-nemu" />
+					<param name="rootbeer.arg" value="-nemu ${rootbeer.args}" />
 					<param name="jar-gpu.include.libs" value="true" />
 				</antcall>
 				<antcall target="-run-program">
@@ -437,7 +438,7 @@
 				<echo>Run with ${program}</echo>
 				<antcall target="clean" />
 				<antcall target="jar-gpu">
-					<param name="rootbeer.arg" value="-jemu" />
+					<param name="rootbeer.arg" value="-jemu ${rootbeer.args}" />
 					<param name="jar-gpu.include.libs" value="true" />
 				</antcall>
 				<antcall target="-run-program">
