@@ -388,10 +388,10 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 						+ mapperKernel.blockSize + ",thread_idxx="
 						+ mapperKernel.thread_idxx + ",index="
 						+ mapperKernel.index + ",setShareIndex="
-						+ mapperKernel.setShareIndex + ",setShareValue="
-						+ mapperKernel.setShareValue + ",getShareIndex="
-						+ mapperKernel.getShareIndex + ",getShareValue="
-						+ mapperKernel.getShareValue + "\n");
+						+ Arrays.toString(mapperKernel.setShareIndex) + ",setShareValue="
+						+ Arrays.toString(mapperKernel.setShareValue) + ",getShareIndex="
+						+ Arrays.toString(mapperKernel.getShareIndex) + ",getShareValue="
+						+ Arrays.toString(mapperKernel.getShareValue) + "\n");
 
 				if (mapperKernel.result != null) {
 

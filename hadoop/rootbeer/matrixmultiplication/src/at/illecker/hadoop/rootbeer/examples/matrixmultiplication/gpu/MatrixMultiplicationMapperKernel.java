@@ -13,11 +13,11 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 	public int blockSize;
 	public int index;
 
-	public int setShareIndex;
-	public double setShareValue;
+	public int[] setShareIndex;
+	public double[] setShareValue;
 
-	public int getShareIndex;
-	public double getShareValue;
+	public int[] getShareIndex;
+	public double[] getShareValue;
 
 	public double[] result;
 	public int row;
@@ -43,11 +43,13 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 		// Set row information
 		// RootbeerGpu.setSharedInteger(index, row);
 
+		setShareIndex = new int[vector.length];
+		setShareValue = new double[vector.length];
 		// Every kernels does a scalar Multiplication (Vector x Element)
 		for (int i = 0; i < vector.length; i++) {
-			setShareIndex = vector.length * index + i;
-			setShareValue = this.vector[i] * this.multiplier;
-			RootbeerGpu.setSharedDouble(setShareIndex, setShareValue);
+			setShareIndex[i] = vector.length * index + i;
+			setShareValue[i] = this.vector[i] * this.multiplier;
+			RootbeerGpu.setSharedDouble(setShareIndex[i], setShareValue[i]);
 		}
 
 		// Sync all kernels, scalar multiplication has finished
@@ -61,10 +63,12 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 				result[i] = 0;
 			}
 
+			getShareIndex = new int[blockSize * vector.length];
+			getShareValue = new double[blockSize * vector.length];
 			for (int i = 0; i < blockSize * vector.length; i++) {
-				getShareIndex = block_idxx * blockSize * vector.length + i;
-				getShareValue = RootbeerGpu.getSharedDouble(getShareIndex);
-				result[i % vector.length] += getShareValue;
+				getShareIndex[i] = block_idxx * blockSize * vector.length + i;
+				getShareValue[i] = RootbeerGpu.getSharedDouble(getShareIndex[i]);
+				result[i % vector.length] += getShareValue[i];
 			}
 		}
 
