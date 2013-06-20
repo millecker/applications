@@ -40,16 +40,6 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
 		index = block_idxx * blockSize + thread_idxx;
 
-		// Masterkernels copies data to share memory
-		// if (isFirstKernel) {
-		// for (int i = 0; i < vector.length; i++) {
-		// RootbeerGpu.setSharedDouble(i*block_idxx, vector[i]);
-		// }
-		// }
-
-		// Sync all kernels, data is in shared memory
-		// RootbeerGpu.synchthreads();
-
 		// Set row information
 		// RootbeerGpu.setSharedInteger(index, row);
 
@@ -63,7 +53,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 		// Sync all kernels, scalar multiplication has finished
 		RootbeerGpu.syncthreads();
 
-		// First kernel of each block accumilates vectors within the block
+		// First kernel of each block accumulates vectors within the block
 		if (thread_idxx == 0) {
 
 			this.result = new double[vector.length];
@@ -71,11 +61,10 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 				result[i] = 0;
 			}
 
-			for (int i = block_idxx * blockSize; i < blockSize * vector.length; i++) {
-				getShareIndex = i;
+			for (int i = 0; i < blockSize * vector.length; i++) {
+				getShareIndex = block_idxx * blockSize * vector.length + i;
 				getShareValue = RootbeerGpu.getSharedDouble(getShareIndex);
 				result[i % vector.length] += getShareValue;
-				break;
 			}
 		}
 
