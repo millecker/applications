@@ -7,8 +7,8 @@
 	<!-- ***** Custom settings for local build.xml ***** -->
 	<!--
 	<property name="root" value="../../.." />
-	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	-->
+	<property name="rootbeer.version" value="rootbeer-master-trunk.jar" />
 	<property name="lib" value="lib" />
 	<property name="lib.dir" value="${root}${file.separator}${lib}" />
 	<property name="src.dir" value="src" />

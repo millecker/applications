@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package at.illecker.hama.rootbeer.examples.piestimator;
 
 import java.io.IOException;
@@ -47,13 +63,31 @@ public class PiEstimatorGpuBSP extends
 			"output/hama/rootbeer/examples/piestimator/GPU-"
 					+ System.currentTimeMillis());
 	private static final long kernelCount = 4;
-	private static final long iterations = 10000;
+	private static final long iterations = 1000;
 	// Long.MAX = 9223372036854775807
 
 	private String m_masterTask;
 	private int m_kernelCount;
 	private long m_iterations;
 	private List<Kernel> kernels = new ArrayList<Kernel>();
+
+	@Override
+	public void setup(
+			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException {
+
+		this.m_kernelCount = Integer.parseInt(peer.getConfiguration().get(
+				"piestimator.kernelCount"));
+		this.m_iterations = Long.parseLong(peer.getConfiguration().get(
+				"piestimator.iterations"));
+		
+		// Choose one as a master
+		this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+
+		for (int i = 0; i < m_kernelCount; i++) {
+			kernels.add(new PiEstimatorKernel(m_iterations));
+		}
+	}
 
 	@Override
 	public void bsp(
@@ -73,22 +107,23 @@ public class PiEstimatorGpuBSP extends
 		FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
 				.getOutputPath(job), peer.getTaskId() + ".log"));
 
-		outStream.writeUTF("BSP=PiEstimatorGpuBSP,KernelCount=" + m_kernelCount
-				+ ",Iterations=" + m_iterations + ",GPUTime="
+		outStream.writeChars("BSP=PiEstimatorGpuBSP,KernelCount="
+				+ m_kernelCount + ",Iterations=" + m_iterations + ",GPUTime="
 				+ watch.elapsedTimeMillis() + "ms\n");
 		List<StatsRow> stats = rootbeer.getStats();
 		for (StatsRow row : stats) {
-			outStream.writeUTF("  StatsRow:\n");
-			outStream.writeUTF("    init time: " + row.getInitTime() + "\n");
-			outStream.writeUTF("    serial time: " + row.getSerializationTime()
+			outStream.writeChars("  StatsRow:\n");
+			outStream.writeChars("    init time: " + row.getInitTime() + "\n");
+			outStream.writeChars("    serial time: "
+					+ row.getSerializationTime() + "\n");
+			outStream.writeChars("    exec time: " + row.getExecutionTime()
 					+ "\n");
-			outStream.writeUTF("    exec time: " + row.getExecutionTime()
-					+ "\n");
-			outStream.writeUTF("    deserial time: "
+			outStream.writeChars("    deserial time: "
 					+ row.getDeserializationTime() + "\n");
-			outStream.writeUTF("    num blocks: " + row.getNumBlocks() + "\n");
 			outStream
-					.writeUTF("    num threads: " + row.getNumThreads() + "\n");
+					.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
+			outStream.writeChars("    num threads: " + row.getNumThreads()
+					+ "\n");
 		}
 		outStream.close();
 
@@ -98,23 +133,6 @@ public class PiEstimatorGpuBSP extends
 					((PiEstimatorKernel) kernels.get(i)).result));
 		}
 		peer.sync();
-	}
-
-	@Override
-	public void setup(
-			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-			throws IOException {
-
-		this.m_kernelCount = Integer.parseInt(peer.getConfiguration().get(
-				"piestimator.kernelCount"));
-		this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-				"piestimator.iterations"));
-		// Choose one as a master
-		this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-
-		for (int i = 0; i < m_kernelCount; i++) {
-			kernels.add(new PiEstimatorKernel(m_iterations));
-		}
 	}
 
 	@Override
