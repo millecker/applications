@@ -23,14 +23,14 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
   public double[] vector;
   public double multiplier;
+  public double[] result;
+  public int row;
+
   public int block_idxx;
   public int thread_idxx;
   public int blockSize;
   public int gridSize;
   public int globalThreadIndex;
-
-  public double[] result;
-  public int row;
 
   // debug values
   public int[] setShareIndex;
@@ -55,12 +55,11 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
     globalThreadIndex = block_idxx * blockSize + thread_idxx;
 
-    // Shared memory is shared between threads in a block
-    // multiplied consists all multiplications within a blocks
+    // sharedBlockResults consists all multiplications within a block
     int blockElements = blockSize * vector.length;
     double[] sharedBlockResults = new double[blockElements];
 
-    // debug variables
+    // debugging variables
     setShareIndex = new int[vector.length];
     setShareValue = new double[blockElements];
 
@@ -74,22 +73,20 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
       RootbeerGpu.setSharedDouble(index, sharedBlockResults[index]);
 
-      // debug values
+      // debugging variables
       setShareIndex[i] = index;
       setShareValue[index] = sharedBlockResults[index];
     }
 
-    // Sync all kernels, wait for scalar multiplication
+    // Sync all kernels, wait for scalar multiplication to end
     RootbeerGpu.syncthreads();
 
     // First kernel of each block accumulates vectors within the block
     if (thread_idxx == 0) {
 
       this.result = new double[vector.length];
-      for (int i = 0; i < vector.length; i++) {
-        result[i] = 0;
-      }
 
+      // debugging variables
       getShareIndex = new int[blockElements];
       getShareValue = new double[blockElements];
 
@@ -99,7 +96,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
         sharedBlockResults[index] = RootbeerGpu.getSharedDouble(index);
 
-        // debug values
+        // debugging variables
         getShareIndex[i] = index;
         getShareValue[index] = sharedBlockResults[index];
 

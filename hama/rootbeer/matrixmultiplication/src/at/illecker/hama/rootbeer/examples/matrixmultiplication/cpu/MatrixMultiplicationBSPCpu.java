@@ -166,6 +166,7 @@ public class MatrixMultiplicationBSPCpu
         logger.flush();
       }
     }
+    peer.sync();
   }
 
   @Override
