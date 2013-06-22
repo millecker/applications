@@ -24,137 +24,136 @@ import de.jungblut.math.sparse.SparseDoubleVector;
  */
 public final class VectorWritable implements WritableComparable<VectorWritable> {
 
-	private DoubleVector vector;
+  private DoubleVector vector;
 
-	public VectorWritable() {
-		super();
-	}
+  public VectorWritable() {
+    super();
+  }
 
-	public VectorWritable(VectorWritable v) {
-		this.vector = v.getVector();
-	}
+  public VectorWritable(VectorWritable v) {
+    this.vector = v.getVector();
+  }
 
-	public VectorWritable(DoubleVector v) {
-		this.vector = v;
-	}
+  public VectorWritable(DoubleVector v) {
+    this.vector = v;
+  }
 
-	@Override
-	public final void write(DataOutput out) throws IOException {
-		writeVector(this.vector, out);
-	}
+  @Override
+  public final void write(DataOutput out) throws IOException {
+    writeVector(this.vector, out);
+  }
 
-	@Override
-	public final void readFields(DataInput in) throws IOException {
-		this.vector = readVector(in);
-	}
+  @Override
+  public final void readFields(DataInput in) throws IOException {
+    this.vector = readVector(in);
+  }
 
-	@Override
-	public final int compareTo(VectorWritable o) {
-		return compareVector(this, o);
-	}
+  @Override
+  public final int compareTo(VectorWritable o) {
+    return compareVector(this, o);
+  }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((vector == null) ? 0 : vector.hashCode());
-		return result;
-	}
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((vector == null) ? 0 : vector.hashCode());
+    return result;
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		VectorWritable other = (VectorWritable) obj;
-		if (vector == null) {
-			if (other.vector != null)
-				return false;
-		} else if (!vector.equals(other.vector))
-			return false;
-		return true;
-	}
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    VectorWritable other = (VectorWritable) obj;
+    if (vector == null) {
+      if (other.vector != null)
+        return false;
+    } else if (!vector.equals(other.vector))
+      return false;
+    return true;
+  }
 
-	/**
-	 * @return the embedded vector
-	 */
-	public DoubleVector getVector() {
-		return vector;
-	}
+  /**
+   * @return the embedded vector
+   */
+  public DoubleVector getVector() {
+    return vector;
+  }
 
-	@Override
-	public String toString() {
-		//Replaced return vector.toString();
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < vector.getDimension(); i++)
-		  sb.append( ((i==0)?"":", ")+vector.get(i));
-			
-		return sb.toString();
-	}
+  @Override
+  public String toString() {
+    // Replaced return vector.toString();
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < vector.getDimension(); i++)
+      sb.append(((i == 0) ? "" : ", ") + vector.get(i));
 
-	public static void writeVector(DoubleVector vector, DataOutput out)
-			throws IOException {
-		out.writeBoolean(vector.isSparse());
-		out.writeInt(vector.getLength());
-		if (vector.isSparse()) {
-			out.writeInt(vector.getDimension());
-			Iterator<DoubleVectorElement> iterateNonZero = vector
-					.iterateNonZero();
-			while (iterateNonZero.hasNext()) {
-				DoubleVectorElement next = iterateNonZero.next();
-				out.writeInt(next.getIndex());
-				out.writeDouble(next.getValue());
-			}
-		} else {
-			for (int i = 0; i < vector.getDimension(); i++) {
-				out.writeDouble(vector.get(i));
-			}
-		}
-		if (vector.isNamed() && vector.getName() != null) {
-			out.writeBoolean(true);
-			out.writeUTF(vector.getName());
-		} else {
-			out.writeBoolean(false);
-		}
-	}
+    return sb.toString();
+  }
 
-	public static DoubleVector readVector(DataInput in) throws IOException {
-		boolean sparse = in.readBoolean();
-		int length = in.readInt();
-		DoubleVector vector = null;
-		if (sparse) {
-			int dim = in.readInt();
-			vector = new SparseDoubleVector(dim);
-			for (int i = 0; i < length; i++) {
-				int index = in.readInt();
-				double value = in.readDouble();
-				vector.set(index, value);
-			}
-		} else {
-			vector = new DenseDoubleVector(length);
-			for (int i = 0; i < length; i++) {
-				vector.set(i, in.readDouble());
-			}
-		}
-		if (in.readBoolean()) {
-			vector = new NamedDoubleVector(in.readUTF(), vector);
-		}
-		return vector;
-	}
+  public static void writeVector(DoubleVector vector, DataOutput out)
+      throws IOException {
+    out.writeBoolean(vector.isSparse());
+    out.writeInt(vector.getLength());
+    if (vector.isSparse()) {
+      out.writeInt(vector.getDimension());
+      Iterator<DoubleVectorElement> iterateNonZero = vector.iterateNonZero();
+      while (iterateNonZero.hasNext()) {
+        DoubleVectorElement next = iterateNonZero.next();
+        out.writeInt(next.getIndex());
+        out.writeDouble(next.getValue());
+      }
+    } else {
+      for (int i = 0; i < vector.getDimension(); i++) {
+        out.writeDouble(vector.get(i));
+      }
+    }
+    if (vector.isNamed() && vector.getName() != null) {
+      out.writeBoolean(true);
+      out.writeUTF(vector.getName());
+    } else {
+      out.writeBoolean(false);
+    }
+  }
 
-	public static int compareVector(VectorWritable a, VectorWritable o) {
-		return compareVector(a.getVector(), o.getVector());
-	}
+  public static DoubleVector readVector(DataInput in) throws IOException {
+    boolean sparse = in.readBoolean();
+    int length = in.readInt();
+    DoubleVector vector = null;
+    if (sparse) {
+      int dim = in.readInt();
+      vector = new SparseDoubleVector(dim);
+      for (int i = 0; i < length; i++) {
+        int index = in.readInt();
+        double value = in.readDouble();
+        vector.set(index, value);
+      }
+    } else {
+      vector = new DenseDoubleVector(length);
+      for (int i = 0; i < length; i++) {
+        vector.set(i, in.readDouble());
+      }
+    }
+    if (in.readBoolean()) {
+      vector = new NamedDoubleVector(in.readUTF(), vector);
+    }
+    return vector;
+  }
 
-	public static int compareVector(DoubleVector a, DoubleVector o) {
-		DoubleVector subtract = a.subtract(o);
-		return (int) subtract.sum();
-	}
+  public static int compareVector(VectorWritable a, VectorWritable o) {
+    return compareVector(a.getVector(), o.getVector());
+  }
 
-	public static VectorWritable wrap(DoubleVector a) {
-		return new VectorWritable(a);
-	}
+  public static int compareVector(DoubleVector a, DoubleVector o) {
+    DoubleVector subtract = a.subtract(o);
+    return (int) subtract.sum();
+  }
+
+  public static VectorWritable wrap(DoubleVector a) {
+    return new VectorWritable(a);
+  }
 }

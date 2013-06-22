@@ -21,97 +21,97 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class MatrixMultiplicationMapperKernel implements Kernel {
 
-	public double[] vector;
-	public double multiplier;
-	public int block_idxx;
-	public int thread_idxx;
-	public int blockSize;
-	public int gridSize;
-	public int globalThreadIndex;
-	public double[] result;
-	public int row;
+  public double[] vector;
+  public double multiplier;
+  public int block_idxx;
+  public int thread_idxx;
+  public int blockSize;
+  public int gridSize;
+  public int globalThreadIndex;
 
-	// debug values
-	public int[] setShareIndex;
-	public double[] setShareValue;
-	public int[] getShareIndex;
-	public double[] getShareValue;
+  public double[] result;
+  public int row;
 
-	public MatrixMultiplicationMapperKernel(double[] vector, double multiplier,
-			int row) {
-		this.vector = vector;
-		this.multiplier = multiplier;
-		this.row = row;
-		result = null;
-	}
+  // debug values
+  public int[] setShareIndex;
+  public double[] setShareValue;
+  public int[] getShareIndex;
+  public double[] getShareValue;
 
-	public void gpuMethod() {
+  public MatrixMultiplicationMapperKernel(double[] vector, double multiplier,
+      int row) {
+    this.vector = vector;
+    this.multiplier = multiplier;
+    this.row = row;
+  }
 
-		blockSize = RootbeerGpu.getBlockDimx();
-		gridSize = RootbeerGpu.getGridDimx();
+  public void gpuMethod() {
 
-		block_idxx = RootbeerGpu.getBlockIdxx();
-		thread_idxx = RootbeerGpu.getThreadIdxx();
+    blockSize = RootbeerGpu.getBlockDimx();
+    gridSize = RootbeerGpu.getGridDimx();
 
-		globalThreadIndex = block_idxx * blockSize + thread_idxx;
+    block_idxx = RootbeerGpu.getBlockIdxx();
+    thread_idxx = RootbeerGpu.getThreadIdxx();
 
-		// Shared memory is shared between threads in a block
-		// multiplied consists all multiplications within a blocks
-		int blockElements = blockSize * vector.length;
-		double[] sharedBlockResults = new double[blockElements];
+    globalThreadIndex = block_idxx * blockSize + thread_idxx;
 
-		// debug variables
-		setShareIndex = new int[vector.length];
-		setShareValue = new double[blockElements];
+    // Shared memory is shared between threads in a block
+    // multiplied consists all multiplications within a blocks
+    int blockElements = blockSize * vector.length;
+    double[] sharedBlockResults = new double[blockElements];
 
-		// Every kernels within a block does a scalar Multiplication 
-		// (Vector x Element)
-		for (int i = 0; i < vector.length; i++) {
+    // debug variables
+    setShareIndex = new int[vector.length];
+    setShareValue = new double[blockElements];
 
-			int index = (vector.length * globalThreadIndex + i) % blockElements;
+    // Every kernels within a block does a scalar Multiplication
+    // (Vector x Element)
+    for (int i = 0; i < vector.length; i++) {
 
-			sharedBlockResults[index] = this.vector[i] * this.multiplier;
+      int index = (vector.length * globalThreadIndex + i) % blockElements;
 
-			RootbeerGpu.setSharedDouble(index, sharedBlockResults[index]);
+      sharedBlockResults[index] = this.vector[i] * this.multiplier;
 
-			// debug values
-			setShareIndex[i] = index;
-			setShareValue[index] = sharedBlockResults[index];
-		}
+      RootbeerGpu.setSharedDouble(index, sharedBlockResults[index]);
 
-		// Sync all kernels, wait for scalar multiplication
-		RootbeerGpu.syncthreads();
+      // debug values
+      setShareIndex[i] = index;
+      setShareValue[index] = sharedBlockResults[index];
+    }
 
-		// First kernel of each block accumulates vectors within the block
-		if (thread_idxx == 0) {
+    // Sync all kernels, wait for scalar multiplication
+    RootbeerGpu.syncthreads();
 
-			this.result = new double[vector.length];
-			for (int i = 0; i < vector.length; i++) {
-				result[i] = 0;
-			}
+    // First kernel of each block accumulates vectors within the block
+    if (thread_idxx == 0) {
 
-			getShareIndex = new int[blockElements];
-			getShareValue = new double[blockElements];
+      this.result = new double[vector.length];
+      for (int i = 0; i < vector.length; i++) {
+        result[i] = 0;
+      }
 
-			for (int i = 0; i < blockElements; i++) {
+      getShareIndex = new int[blockElements];
+      getShareValue = new double[blockElements];
 
-				int index = (block_idxx * blockElements + i) % blockElements;
+      for (int i = 0; i < blockElements; i++) {
 
-				sharedBlockResults[index] = RootbeerGpu.getSharedDouble(index);
+        int index = (block_idxx * blockElements + i) % blockElements;
 
-				// debug values
-				getShareIndex[i] = index;
-				getShareValue[index] = sharedBlockResults[index];
+        sharedBlockResults[index] = RootbeerGpu.getSharedDouble(index);
 
-				result[i % vector.length] += sharedBlockResults[index];
-			}
-		}
-	}
+        // debug values
+        getShareIndex[i] = index;
+        getShareValue[index] = sharedBlockResults[index];
 
-	public static void main(String[] args) {
-		// Dummy constructor invocation
-		// to keep Kernel constructor in
-		// rootbeer transformation
-		new MatrixMultiplicationMapperKernel(null, 0, 0);
-	}
+        result[i % vector.length] += sharedBlockResults[index];
+      }
+    }
+  }
+
+  public static void main(String[] args) {
+    // Dummy constructor invocation
+    // to keep kernel constructor in
+    // rootbeer transformation
+    new MatrixMultiplicationMapperKernel(null, 0, 0);
+  }
 }

@@ -63,262 +63,257 @@ import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowM
 
 public class MatrixMultiplicationCpu extends AbstractJob {
 
-	private static final Log LOG = LogFactory
-			.getLog(MatrixMultiplicationCpu.class);
+  private static final Log LOG = LogFactory
+      .getLog(MatrixMultiplicationCpu.class);
 
-	private static final String OUT_CARD = "output.vector.cardinality";
-	private static final String DEBUG = "matrixmultiplication.cpu.debug";
+  private static final String OUT_CARD = "output.vector.cardinality";
+  private static final String DEBUG = "matrixmultiplication.cpu.debug";
 
-	private static final Path OUTPUT_DIR = new Path(
-			"output/hadoop/rootbeer/examples/matrixmultiplication/CPU-"
-					+ System.currentTimeMillis());
-	private static final Path MATRIX_A_PATH = new Path(
-			"input/hadoop/rootbeer/examples/MatrixA.seq");
-	private static final Path MATRIX_B_PATH = new Path(
-			"input/hadoop/rootbeer/examples/MatrixB.seq");
-	private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
-			+ "/MatrixC.seq");
+  private static final Path OUTPUT_DIR = new Path(
+      "output/hadoop/rootbeer/examples/matrixmultiplication/CPU-"
+          + System.currentTimeMillis());
+  private static final Path MATRIX_A_PATH = new Path(
+      "input/hadoop/rootbeer/examples/MatrixA.seq");
+  private static final Path MATRIX_B_PATH = new Path(
+      "input/hadoop/rootbeer/examples/MatrixB.seq");
+  private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
+      + "/MatrixC.seq");
 
-	public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
-			Path bPath, Path outPath, int outCardinality) {
+  public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
+      Path bPath, Path outPath, int outCardinality) {
 
-		return createMatrixMultiplicationCpuConf(new Configuration(), aPath,
-				bPath, outPath, outCardinality);
-	}
+    return createMatrixMultiplicationCpuConf(new Configuration(), aPath, bPath,
+        outPath, outCardinality);
+  }
 
-	public static Configuration createMatrixMultiplicationCpuConf(
-			Configuration initialConf, Path aPath, Path bPath, Path outPath,
-			int outCardinality) {
+  public static Configuration createMatrixMultiplicationCpuConf(
+      Configuration initialConf, Path aPath, Path bPath, Path outPath,
+      int outCardinality) {
 
-		JobConf conf = new JobConf(initialConf, MatrixMultiplicationCpu.class);
-		conf.setJobName("MatrixMultiplicationCPU: " + aPath + " x " + bPath
-				+ " = " + outPath);
+    JobConf conf = new JobConf(initialConf, MatrixMultiplicationCpu.class);
+    conf.setJobName("MatrixMultiplicationCPU: " + aPath + " x " + bPath + " = "
+        + outPath);
 
-		conf.setInt(OUT_CARD, outCardinality);
+    conf.setInt(OUT_CARD, outCardinality);
 
-		conf.setInputFormat(CompositeInputFormat.class);
-		conf.set("mapred.join.expr", CompositeInputFormat.compose("inner",
-				SequenceFileInputFormat.class, aPath, bPath));
+    conf.setInputFormat(CompositeInputFormat.class);
+    conf.set("mapred.join.expr", CompositeInputFormat.compose("inner",
+        SequenceFileInputFormat.class, aPath, bPath));
 
-		conf.setOutputFormat(SequenceFileOutputFormat.class);
-		FileOutputFormat.setOutputPath(conf, outPath);
+    conf.setOutputFormat(SequenceFileOutputFormat.class);
+    FileOutputFormat.setOutputPath(conf, outPath);
 
-		conf.setMapperClass(MatrixMultiplyCpuMapper.class);
-		conf.setCombinerClass(MatrixMultiplicationCpuReducer.class);
-		conf.setReducerClass(MatrixMultiplicationCpuReducer.class);
+    conf.setMapperClass(MatrixMultiplyCpuMapper.class);
+    conf.setCombinerClass(MatrixMultiplicationCpuReducer.class);
+    conf.setReducerClass(MatrixMultiplicationCpuReducer.class);
 
-		conf.setMapOutputKeyClass(IntWritable.class);
-		conf.setMapOutputValueClass(VectorWritable.class);
+    conf.setMapOutputKeyClass(IntWritable.class);
+    conf.setMapOutputValueClass(VectorWritable.class);
 
-		conf.setOutputKeyClass(IntWritable.class);
-		conf.setOutputValueClass(VectorWritable.class);
+    conf.setOutputKeyClass(IntWritable.class);
+    conf.setOutputValueClass(VectorWritable.class);
 
-		return conf;
-	}
+    return conf;
+  }
 
-	public static void main(String[] args) throws Exception {
-		ToolRunner.run(new MatrixMultiplicationCpu(), args);
-	}
+  public static void main(String[] args) throws Exception {
+    ToolRunner.run(new MatrixMultiplicationCpu(), args);
+  }
 
-	@Override
-	public int run(String[] strings) throws Exception {
-		addOption("numRowsA", "nra",
-				"Number of rows of the first input matrix", true);
-		addOption("numColsA", "nca",
-				"Number of columns of the first input matrix", true);
+  @Override
+  public int run(String[] strings) throws Exception {
+    addOption("numRowsA", "nra", "Number of rows of the first input matrix",
+        true);
+    addOption("numColsA", "nca", "Number of columns of the first input matrix",
+        true);
 
-		addOption("numRowsB", "nrb",
-				"Number of rows of the second input matrix", true);
-		addOption("numColsB", "ncb",
-				"Number of columns of the second input matrix", true);
+    addOption("numRowsB", "nrb", "Number of rows of the second input matrix",
+        true);
+    addOption("numColsB", "ncb",
+        "Number of columns of the second input matrix", true);
 
-		addOption("debug", "db", "Enable debugging (true|false)", false);
+    addOption("debug", "db", "Enable debugging (true|false)", false);
 
-		Map<String, List<String>> argMap = parseArguments(strings);
-		if (argMap == null) {
-			return -1;
-		}
+    Map<String, List<String>> argMap = parseArguments(strings);
+    if (argMap == null) {
+      return -1;
+    }
 
-		int numRowsA = Integer.parseInt(getOption("numRowsA"));
-		int numColsA = Integer.parseInt(getOption("numColsA"));
-		int numRowsB = Integer.parseInt(getOption("numRowsB"));
-		int numColsB = Integer.parseInt(getOption("numColsB"));
+    int numRowsA = Integer.parseInt(getOption("numRowsA"));
+    int numColsA = Integer.parseInt(getOption("numColsA"));
+    int numRowsB = Integer.parseInt(getOption("numRowsB"));
+    int numColsB = Integer.parseInt(getOption("numColsB"));
 
-		boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
-		LOG.info("numRowsA: " + numRowsA);
-		LOG.info("numColsA: " + numColsA);
-		LOG.info("numRowsB: " + numRowsB);
-		LOG.info("numColsB: " + numColsB);
-		LOG.info("isDebugging: " + isDebugging);
-		LOG.info("outputPath: " + OUTPUT_DIR);
+    boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
+    LOG.info("numRowsA: " + numRowsA);
+    LOG.info("numColsA: " + numColsA);
+    LOG.info("numRowsB: " + numRowsB);
+    LOG.info("numColsB: " + numColsB);
+    LOG.info("isDebugging: " + isDebugging);
+    LOG.info("outputPath: " + OUTPUT_DIR);
 
-		if (numColsA != numRowsB) {
-			throw new CardinalityException(numColsA, numRowsB);
-		}
+    if (numColsA != numRowsB) {
+      throw new CardinalityException(numColsA, numRowsB);
+    }
 
-		Configuration conf = new Configuration(getConf());
-		conf.setBoolean(DEBUG, isDebugging);
+    Configuration conf = new Configuration(getConf());
+    conf.setBoolean(DEBUG, isDebugging);
 
-		// Create random DistributedRowMatrix
-		// use constant seeds to get reproducable results
-		// Matrix A is stored transposed
-		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-				numColsA, new Random(42L), MATRIX_A_PATH, true);
-		DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-				numColsB, new Random(1337L), MATRIX_B_PATH, false);
+    // Create random DistributedRowMatrix
+    // use constant seeds to get reproducable results
+    // Matrix A is stored transposed
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
+        numColsA, new Random(42L), MATRIX_A_PATH, true);
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
+        numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
-		// Load DistributedRowMatrix a and b
-		DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
-				OUTPUT_DIR, numRowsA, numColsA);
-		a.setConf(conf);
+    // Load DistributedRowMatrix a and b
+    DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
+        OUTPUT_DIR, numRowsA, numColsA);
+    a.setConf(conf);
 
-		DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
-				OUTPUT_DIR, numRowsB, numColsB);
-		b.setConf(conf);
+    DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
+        OUTPUT_DIR, numRowsB, numColsB);
+    b.setConf(conf);
 
-		// MatrixMultiply all within a new MapReduce job
-		long startTime = System.currentTimeMillis();
-		DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, false,
-				true);
-		System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
-				+ (System.currentTimeMillis() - startTime) / 1000.0
-				+ " seconds");
+    // MatrixMultiply all within a new MapReduce job
+    long startTime = System.currentTimeMillis();
+    DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, false, true);
+    System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
+        + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
-		if (isDebugging) {
-			System.out.println("Matrix A:");
-			a.printDistributedRowMatrix();
-			System.out.println("Matrix B:");
-			b.printDistributedRowMatrix();
-			System.out.println("Matrix C:");
-			c.printDistributedRowMatrix();
+    if (isDebugging) {
+      System.out.println("Matrix A:");
+      a.printDistributedRowMatrix();
+      System.out.println("Matrix B:");
+      b.printDistributedRowMatrix();
+      System.out.println("Matrix C:");
+      c.printDistributedRowMatrix();
 
-			printOutput(conf);
-		}
-		return 0;
-	}
+      printOutput(conf);
+    }
+    return 0;
+  }
 
-	static void printOutput(Configuration conf) throws IOException {
-		FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
-		FileStatus[] files = fs.listStatus(OUTPUT_DIR);
-		for (int i = 0; i < files.length; i++) {
-			if (files[i].getLen() > 0) {
-				System.out.println("File " + files[i].getPath());
-				if (files[i].getPath().getName().endsWith(".log")) {
-					FSDataInputStream in = fs.open(files[i].getPath());
-					IOUtils.copyBytes(in, System.out, conf, false);
-					in.close();
-				}
-			}
-		}
-		// fs.delete(FileOutputFormat.getOutputPath(job), true);
-	}
+  static void printOutput(Configuration conf) throws IOException {
+    FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
+    FileStatus[] files = fs.listStatus(OUTPUT_DIR);
+    for (int i = 0; i < files.length; i++) {
+      if (files[i].getLen() > 0) {
+        System.out.println("File " + files[i].getPath());
+        if (files[i].getPath().getName().endsWith(".log")) {
+          FSDataInputStream in = fs.open(files[i].getPath());
+          IOUtils.copyBytes(in, System.out, conf, false);
+          in.close();
+        }
+      }
+    }
+    // fs.delete(FileOutputFormat.getOutputPath(job), true);
+  }
 
-	public static class MatrixMultiplyCpuMapper extends MapReduceBase implements
-			Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
+  public static class MatrixMultiplyCpuMapper extends MapReduceBase implements
+      Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
 
-		private int outCardinality;
-		private boolean isDebuggingEnabled;
-		private FSDataOutputStream logMapper;
+    private int outCardinality;
+    private boolean isDebuggingEnabled;
+    private FSDataOutputStream logMapper;
 
-		@Override
-		public void configure(JobConf conf) {
+    @Override
+    public void configure(JobConf conf) {
 
-			outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
-			isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+      outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
+      isDebuggingEnabled = conf.getBoolean(DEBUG, false);
 
-			// Init logging
-			if (isDebuggingEnabled) {
-				try {
-					FileSystem fs = FileSystem.get(conf);
-					logMapper = fs.create(new Path(FileOutputFormat
-							.getOutputPath(conf).getParent()
-							+ "/Mapper_"
-							+ conf.get("mapred.job.id") + ".log"));
+      // Init logging
+      if (isDebuggingEnabled) {
+        try {
+          FileSystem fs = FileSystem.get(conf);
+          logMapper = fs.create(new Path(FileOutputFormat.getOutputPath(conf)
+              .getParent() + "/Mapper_" + conf.get("mapred.job.id") + ".log"));
 
-					logMapper.writeChars("map,configure,outCardinality="
-							+ outCardinality + "\n");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+          logMapper.writeChars("map,configure,outCardinality=" + outCardinality
+              + "\n");
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
 
-		@Override
-		public void map(IntWritable index, TupleWritable v,
-				OutputCollector<IntWritable, VectorWritable> out,
-				Reporter reporter) throws IOException {
+    @Override
+    public void map(IntWritable index, TupleWritable v,
+        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
+        throws IOException {
 
-			// Logging
-			if (isDebuggingEnabled) {
-				for (int i = 0; i < v.size(); i++) {
-					Vector vector = ((VectorWritable) v.get(i)).get();
-					logMapper.writeChars("map,input,key=" + index + ",value="
-							+ vector.toString() + "\n");
-				}
-			}
+      // Logging
+      if (isDebuggingEnabled) {
+        for (int i = 0; i < v.size(); i++) {
+          Vector vector = ((VectorWritable) v.get(i)).get();
+          logMapper.writeChars("map,input,key=" + index + ",value="
+              + vector.toString() + "\n");
+        }
+      }
 
-			Vector firstVector = ((VectorWritable) v.get(0)).get();
-			Vector secondVector = ((VectorWritable) v.get(1)).get();
+      Vector firstVector = ((VectorWritable) v.get(0)).get();
+      Vector secondVector = ((VectorWritable) v.get(1)).get();
 
-			// outCardinality is resulting column size n
-			// (l x m) * (m x n) = (l x n)
-			boolean firstIsOutFrag = secondVector.size() == outCardinality;
+      // outCardinality is resulting column size n
+      // (l x m) * (m x n) = (l x n)
+      boolean firstIsOutFrag = secondVector.size() == outCardinality;
 
-			// outFrag is Matrix which has the resulting column cardinality
-			// (matrixB)
-			Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
+      // outFrag is Matrix which has the resulting column cardinality
+      // (matrixB)
+      Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
 
-			// multiplier is Matrix which has the resulting row count
-			// (transposed matrixA)
-			Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
+      // multiplier is Matrix which has the resulting row count
+      // (transposed matrixA)
+      Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
 
-			if (isDebuggingEnabled) {
-				logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag
-						+ "\n");
-				logMapper.writeChars("map,outFrag=" + outFrag + "\n");
-				logMapper.writeChars("map,multiplier=" + multiplier + "\n");
-			}
+      if (isDebuggingEnabled) {
+        logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
+        logMapper.writeChars("map,outFrag=" + outFrag + "\n");
+        logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+      }
 
-			for (Vector.Element e : multiplier.nonZeroes()) {
+      for (Vector.Element e : multiplier.nonZeroes()) {
 
-				VectorWritable outVector = new VectorWritable();
-				// Scalar Multiplication (Vector x Element)
-				outVector.set(outFrag.times(e.get()));
+        VectorWritable outVector = new VectorWritable();
+        // Scalar Multiplication (Vector x Element)
+        outVector.set(outFrag.times(e.get()));
 
-				out.collect(new IntWritable(e.index()), outVector);
+        out.collect(new IntWritable(e.index()), outVector);
 
-				if (isDebuggingEnabled) {
-					logMapper.writeChars("map,collect,key=" + e.index()
-							+ ",value=" + outVector.get().toString() + "\n");
-				}
-			}
-			if (isDebuggingEnabled) {
-				logMapper.flush();
-			}
-		}
-	}
+        if (isDebuggingEnabled) {
+          logMapper.writeChars("map,collect,key=" + e.index() + ",value="
+              + outVector.get().toString() + "\n");
+        }
+      }
+      if (isDebuggingEnabled) {
+        logMapper.flush();
+      }
+    }
+  }
 
-	public static class MatrixMultiplicationCpuReducer extends MapReduceBase
-			implements
-			Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
+  public static class MatrixMultiplicationCpuReducer extends MapReduceBase
+      implements
+      Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
 
-		@Override
-		public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
-				OutputCollector<IntWritable, VectorWritable> out,
-				Reporter reporter) throws IOException {
+    @Override
+    public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
+        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
+        throws IOException {
 
-			if (!it.hasNext()) {
-				return;
-			}
+      if (!it.hasNext()) {
+        return;
+      }
 
-			Vector accumulator = new RandomAccessSparseVector(it.next().get());
-			while (it.hasNext()) {
-				Vector row = it.next().get();
-				accumulator.assign(row, Functions.PLUS);
-			}
+      Vector accumulator = new RandomAccessSparseVector(it.next().get());
+      while (it.hasNext()) {
+        Vector row = it.next().get();
+        accumulator.assign(row, Functions.PLUS);
+      }
 
-			out.collect(rowNum, new VectorWritable(
-					new SequentialAccessSparseVector(accumulator)));
-		}
-	}
+      out.collect(rowNum, new VectorWritable(new SequentialAccessSparseVector(
+          accumulator)));
+    }
+  }
 }

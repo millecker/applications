@@ -89,14 +89,14 @@ public class StrassenMatrixMultiplication {
 
     int nHalf = n / 2;
 
-    double[][] a = copy(nHalf, inputA, 0, 0); //A00
-    double[][] b = copy(nHalf, inputA, 0, nHalf); //A01
-    double[][] c = copy(nHalf, inputA, nHalf, 0); //A10
-    double[][] d = copy(nHalf, inputA, nHalf, nHalf); //A11
-    double[][] e = copy(nHalf, inputB, 0, 0); //B00
-    double[][] f = copy(nHalf, inputB, 0, nHalf); //B01
-    double[][] g = copy(nHalf, inputB, nHalf, 0); //B10
-    double[][] h = copy(nHalf, inputB, nHalf, nHalf); //B11
+    double[][] a = copy(nHalf, inputA, 0, 0); // A00
+    double[][] b = copy(nHalf, inputA, 0, nHalf); // A01
+    double[][] c = copy(nHalf, inputA, nHalf, 0); // A10
+    double[][] d = copy(nHalf, inputA, nHalf, nHalf); // A11
+    double[][] e = copy(nHalf, inputB, 0, 0); // B00
+    double[][] f = copy(nHalf, inputB, 0, nHalf); // B01
+    double[][] g = copy(nHalf, inputB, nHalf, 0); // B10
+    double[][] h = copy(nHalf, inputB, nHalf, nHalf); // B11
 
     // HAMA recursive tasks can be outsourced to grooms
     double[][] P1, P2, P3, P4, P5, P6, P7;

@@ -20,21 +20,21 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 
 public class HelloRootbeerKernel implements Kernel {
 
-	private long m_iterations;
-	public double result = 0;
+  private long m_iterations;
+  public double result = 0;
 
-	public HelloRootbeerKernel(long iterations) {
-		m_iterations = iterations;
-	}
+  public HelloRootbeerKernel(long iterations) {
+    m_iterations = iterations;
+  }
 
-	public void gpuMethod() {
-		result = m_iterations;
-	}
+  public void gpuMethod() {
+    result = m_iterations;
+  }
 
-	public static void main(String[] args) {
-		// Dummy constructor invocation
-		// to keep kernel constructor in
-		// rootbeer transformation
-		new HelloRootbeerKernel(1);
-	}
+  public static void main(String[] args) {
+    // Dummy constructor invocation
+    // to keep kernel constructor in
+    // rootbeer transformation
+    new HelloRootbeerKernel(1);
+  }
 }
