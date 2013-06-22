@@ -10,13 +10,19 @@ ant clean
 # Build GPU jar file
 ant jar-gpu
 
+# Build CPU jar file
+ant jar-cpu
+
 # Submit GPU Task to Hama
-ant run-gpu [-DNumBspTask=3 -DKernelCount=100 -DIterations=10000]
+ant run-gpu [-DnumBspTask=3 -DnumRowsA=4 -DnumColsA=4 -DnumRowsB=4 -DnumColsB=4 -Ddebug=true]
 
 # Submit GPU native emulated Task to Hama
-ant run-gpu-nemu [-DNumBspTask=3 -DKernelCount=1 -DIterations=10000]
+ant run-gpu-nemu [-DnumBspTask=3 -DnumRowsA=4 -DnumColsA=4 -DnumRowsB=4 -DnumColsB=4 -Ddebug=true]
 
 # Submit GPU Java emulated Task to Hama
-ant run-gpu-jemu [-DNumBspTask=3 -DKernelCount=1 -DIterations=10000]
+ant run-gpu-jemu [-DnumBspTask=3 -DnumRowsA=4 -DnumColsA=4 -DnumRowsB=4 -DnumColsB=4 -Ddebug=true]
+
+# Submit CPU Task to Hama
+ant run-cpu [-DnumBspTask=3 -DnumRowsA=4 -DnumColsA=4 -DnumRowsB=4 -DnumColsB=4 -Ddebug=true]
 
 ###############################################################################

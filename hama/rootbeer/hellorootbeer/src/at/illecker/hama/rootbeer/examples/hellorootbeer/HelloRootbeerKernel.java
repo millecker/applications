@@ -35,6 +35,6 @@ public class HelloRootbeerKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new HelloRootbeerKernel(1);
+    new HelloRootbeerKernel(0);
   }
 }

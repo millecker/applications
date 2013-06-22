@@ -42,6 +42,6 @@ public class PiEstimatorKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new PiEstimatorKernel(1);
+    new PiEstimatorKernel(0);
   }
 }

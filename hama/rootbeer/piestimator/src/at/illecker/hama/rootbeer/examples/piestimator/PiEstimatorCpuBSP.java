@@ -188,9 +188,9 @@ public class PiEstimatorCpuBSP extends
         job.set("piestimator.iterations", args[2]);
       } else {
         System.out.println("Wrong argument size!");
-        System.out.println("    Argument1=NumBspTask");
-        System.out.println("    Argument2=hellorootbeer.kernelCount");
-        System.out.println("    Argument2=hellorootbeer.iterations");
+        System.out.println("    Argument1=numBspTask");
+        System.out.println("    Argument2=kernelCount");
+        System.out.println("    Argument3=iterations");
         return;
       }
     } else {

@@ -14,15 +14,15 @@ ant jar-gpu
 ant jar-cpu
 
 # Submit GPU Task to Hama
-ant run-gpu [-DNumBspTask=3 -DKernelCount=100 -DIterations=1000]
+ant run-gpu [-DnumBspTask=3 -DkernelCount=100 -Diterations=1000]
 
 # Submit GPU native emulated Task to Hama
-ant run-gpu-nemu [-DNumBspTask=3 -DKernelCount=1 -DIterations=1000]
+ant run-gpu-nemu [-DnumBspTask=3 -DkernelCount=1 -Diterations=1000]
 
 # Submit GPU Java emulated Task to Hama
-ant run-gpu-jemu [-DNumBspTask=3 -DKernelCount=1 -DIterations=1000]
+ant run-gpu-jemu [-DnumBspTask=3 -DkernelCount=1 -Diterations=1000]
 
 # Submit CPU Task to Hama
-ant run-cpu [-DNumBspTask=3 -DKernelCount=1 -DIterations=1000]
+ant run-cpu [-DnumBspTask=3 -DkernelCount=1 -Diterations=1000]
 
 ###############################################################################
