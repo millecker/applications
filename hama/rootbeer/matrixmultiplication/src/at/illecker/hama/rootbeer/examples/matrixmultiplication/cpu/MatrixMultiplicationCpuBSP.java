@@ -30,29 +30,28 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.MapReduceBase;
-import org.apache.hadoop.mapred.Mapper;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
-import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.SequenceFileInputFormat;
-import org.apache.hadoop.mapred.SequenceFileOutputFormat;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.join.CompositeInputFormat;
 import org.apache.hadoop.mapred.join.TupleWritable;
-import org.apache.hadoop.util.ToolRunner;
-import org.apache.mahout.common.AbstractJob;
-import org.apache.mahout.math.CardinalityException;
-import org.apache.mahout.math.RandomAccessSparseVector;
-import org.apache.mahout.math.SequentialAccessSparseVector;
-import org.apache.mahout.math.Vector;
+import org.apache.hama.HamaConfiguration;
+import org.apache.hama.bsp.BSP;
+import org.apache.hama.bsp.BSPJob;
+import org.apache.hama.bsp.BSPJobClient;
+import org.apache.hama.bsp.BSPPeer;
+import org.apache.hama.bsp.ClusterStatus;
+import org.apache.hama.bsp.FileOutputFormat;
+import org.apache.hama.bsp.NullInputFormat;
+import org.apache.hama.bsp.SequenceFileInputFormat;
+import org.apache.hama.bsp.SequenceFileOutputFormat;
+import org.apache.hama.bsp.TextOutputFormat;
+import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.VectorWritable;
-import org.apache.mahout.math.function.Functions;
 
-import at.illecker.hama.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
+import at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorCpuBSP;
 
 /**
  * @author MatrixMultiplication based on Mahout https://github.com/apache/mahout
@@ -61,7 +60,9 @@ import at.illecker.hama.rootbeer.examples.matrixmultiplication.DistributedRowMat
  * 
  */
 
-public class MatrixMultiplicationCpuBSP extends AbstractJob {
+public class MatrixMultiplicationCpuBSP
+		extends
+		BSP<IntWritable, TupleWritable, IntWritable, VectorWritable, NullWritable> {
 
 	private static final Log LOG = LogFactory
 			.getLog(MatrixMultiplicationCpuBSP.class);
@@ -80,50 +81,95 @@ public class MatrixMultiplicationCpuBSP extends AbstractJob {
 	private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
 			+ "/MatrixC.seq");
 
-	public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
-			Path bPath, Path outPath, int outCardinality) {
+	@Override
+	public void setup(
+			BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, NullWritable> peer)
+			throws IOException {
 
-		return createMatrixMultiplicationCpuConf(new Configuration(), aPath,
-				bPath, outPath, outCardinality);
-	}
-
-	public static Configuration createMatrixMultiplicationCpuConf(
-			Configuration initialConf, Path aPath, Path bPath, Path outPath,
-			int outCardinality) {
-
-		JobConf conf = new JobConf(initialConf,
-				MatrixMultiplicationCpuBSP.class);
-		conf.setJobName("MatrixMultiplicationCPU: " + aPath + " x " + bPath
-				+ " = " + outPath);
-
-		conf.setInt(OUT_CARD, outCardinality);
-
-		conf.setInputFormat(CompositeInputFormat.class);
-		conf.set("mapred.join.expr", CompositeInputFormat.compose("inner",
-				SequenceFileInputFormat.class, aPath, bPath));
-
-		conf.setOutputFormat(SequenceFileOutputFormat.class);
-		FileOutputFormat.setOutputPath(conf, outPath);
-
-		conf.setMapperClass(MatrixMultiplyCpuMapper.class);
-		conf.setCombinerClass(MatrixMultiplicationCpuReducer.class);
-		conf.setReducerClass(MatrixMultiplicationCpuReducer.class);
-
-		conf.setMapOutputKeyClass(IntWritable.class);
-		conf.setMapOutputValueClass(VectorWritable.class);
-
-		conf.setOutputKeyClass(IntWritable.class);
-		conf.setOutputValueClass(VectorWritable.class);
-
-		return conf;
-	}
-
-	public static void main(String[] args) throws Exception {
-		ToolRunner.run(new MatrixMultiplicationCpuBSP(), args);
 	}
 
 	@Override
-	public int run(String[] strings) throws Exception {
+	public void bsp(
+			BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, NullWritable> peer)
+			throws IOException, SyncException, InterruptedException {
+
+	}
+
+	@Override
+	public void cleanup(
+			BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, NullWritable> peer)
+			throws IOException {
+
+	}
+
+	static void printOutput(Configuration conf) throws IOException {
+		FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
+		FileStatus[] files = fs.listStatus(OUTPUT_DIR);
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].getLen() > 0) {
+				System.out.println("File " + files[i].getPath());
+				if (files[i].getPath().getName().endsWith(".log")) {
+					FSDataInputStream in = fs.open(files[i].getPath());
+					IOUtils.copyBytes(in, System.out, conf, false);
+					in.close();
+				}
+			}
+		}
+		// fs.delete(FileOutputFormat.getOutputPath(job), true);
+	}
+
+	public static void main(String[] args) throws InterruptedException,
+			IOException, ClassNotFoundException {
+		// BSP job configuration
+		HamaConfiguration conf = new HamaConfiguration();
+
+		BSPJob job = new BSPJob(conf);
+		// Set the job name
+		job.setJobName("MatrixMultiplicationCPU");
+		// set the BSP class which shall be executed
+		job.setBspClass(MatrixMultiplicationCpuBSP.class);
+		// help Hama to locale the jar to be distributed
+		job.setJarByClass(MatrixMultiplicationCpuBSP.class);
+
+		job.setInputFormat(CompositeInputFormat.class);
+		job.set("mapred.join.expr", CompositeInputFormat.compose("inner",
+				SequenceFileInputFormat.class, aPath, bPath));
+
+		job.setOutputFormat(SequenceFileOutputFormat.class);
+		job.setOutputKeyClass(IntWritable.class);
+		job.setOutputValueClass(VectorWritable.class);
+		FileOutputFormat.setOutputPath(conf, outPath);
+		FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+
+		job.setInt(OUT_CARD, outCardinality);
+
+		job.set("bsp.child.java.opts", "-Xmx4G");
+
+		BSPJobClient jobClient = new BSPJobClient(conf);
+		ClusterStatus cluster = jobClient.getClusterStatus(true);
+
+		if (args.length > 0) {
+			if (args.length == 3) {
+				job.setNumBspTask(Integer.parseInt(args[0]));
+				job.set("piestimator.threadCount", args[1]);
+				job.set("piestimator.iterations", args[2]);
+			} else {
+				System.out.println("Wrong argument size!");
+				System.out.println("    Argument1=NumBspTask");
+				System.out.println("    Argument2=hellorootbeer.kernelCount");
+				System.out.println("    Argument2=hellorootbeer.iterations");
+				return;
+			}
+		} else {
+			job.setNumBspTask(cluster.getMaxTasks());
+			job.set("piestimator.threadCount", ""
+					+ PiEstimatorCpuBSP.threadCount);
+			job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.iterations);
+		}
+		LOG.info("NumBspTask: " + job.getNumBspTask());
+		LOG.info("ThreadCount: " + job.get("piestimator.threadCount"));
+		LOG.info("Iterations: " + job.get("piestimator.iterations"));
+
 		addOption("numRowsA", "nra",
 				"Number of rows of the first input matrix", true);
 		addOption("numColsA", "nca",
@@ -195,132 +241,6 @@ public class MatrixMultiplicationCpuBSP extends AbstractJob {
 			c.printDistributedRowMatrix();
 
 			printOutput(conf);
-		}
-		return 0;
-	}
-
-	static void printOutput(Configuration conf) throws IOException {
-		FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
-		FileStatus[] files = fs.listStatus(OUTPUT_DIR);
-		for (int i = 0; i < files.length; i++) {
-			if (files[i].getLen() > 0) {
-				System.out.println("File " + files[i].getPath());
-				if (files[i].getPath().getName().endsWith(".log")) {
-					FSDataInputStream in = fs.open(files[i].getPath());
-					IOUtils.copyBytes(in, System.out, conf, false);
-					in.close();
-				}
-			}
-		}
-		// fs.delete(FileOutputFormat.getOutputPath(job), true);
-	}
-
-	public static class MatrixMultiplyCpuMapper extends MapReduceBase implements
-			Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
-
-		private int outCardinality;
-		private boolean isDebuggingEnabled;
-		private FSDataOutputStream logMapper;
-
-		@Override
-		public void configure(JobConf conf) {
-
-			outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
-			isDebuggingEnabled = conf.getBoolean(DEBUG, false);
-
-			// Init logging
-			if (isDebuggingEnabled) {
-				try {
-					FileSystem fs = FileSystem.get(conf);
-					logMapper = fs.create(new Path(FileOutputFormat
-							.getOutputPath(conf).getParent()
-							+ "/Mapper_"
-							+ conf.get("mapred.job.id") + ".log"));
-
-					logMapper.writeChars("map,configure,outCardinality="
-							+ outCardinality + "\n");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		@Override
-		public void map(IntWritable index, TupleWritable v,
-				OutputCollector<IntWritable, VectorWritable> out,
-				Reporter reporter) throws IOException {
-
-			// Logging
-			if (isDebuggingEnabled) {
-				for (int i = 0; i < v.size(); i++) {
-					Vector vector = ((VectorWritable) v.get(i)).get();
-					logMapper.writeChars("map,input,key=" + index + ",value="
-							+ vector.toString() + "\n");
-				}
-			}
-
-			Vector firstVector = ((VectorWritable) v.get(0)).get();
-			Vector secondVector = ((VectorWritable) v.get(1)).get();
-
-			// outCardinality is resulting column size n
-			// (l x m) * (m x n) = (l x n)
-			boolean firstIsOutFrag = secondVector.size() == outCardinality;
-
-			// outFrag is Matrix which has the resulting column cardinality
-			// (matrixB)
-			Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
-
-			// multiplier is Matrix which has the resulting row count
-			// (transposed matrixA)
-			Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
-
-			if (isDebuggingEnabled) {
-				logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag
-						+ "\n");
-				logMapper.writeChars("map,outFrag=" + outFrag + "\n");
-				logMapper.writeChars("map,multiplier=" + multiplier + "\n");
-			}
-
-			for (Vector.Element e : multiplier.nonZeroes()) {
-
-				VectorWritable outVector = new VectorWritable();
-				// Scalar Multiplication (Vector x Element)
-				outVector.set(outFrag.times(e.get()));
-
-				out.collect(new IntWritable(e.index()), outVector);
-
-				if (isDebuggingEnabled) {
-					logMapper.writeChars("map,collect,key=" + e.index()
-							+ ",value=" + outVector.get().toString() + "\n");
-				}
-			}
-			if (isDebuggingEnabled) {
-				logMapper.flush();
-			}
-		}
-	}
-
-	public static class MatrixMultiplicationCpuReducer extends MapReduceBase
-			implements
-			Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
-
-		@Override
-		public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
-				OutputCollector<IntWritable, VectorWritable> out,
-				Reporter reporter) throws IOException {
-
-			if (!it.hasNext()) {
-				return;
-			}
-
-			Vector accumulator = new RandomAccessSparseVector(it.next().get());
-			while (it.hasNext()) {
-				Vector row = it.next().get();
-				accumulator.assign(row, Functions.PLUS);
-			}
-
-			out.collect(rowNum, new VectorWritable(
-					new SequentialAccessSparseVector(accumulator)));
 		}
 	}
 }

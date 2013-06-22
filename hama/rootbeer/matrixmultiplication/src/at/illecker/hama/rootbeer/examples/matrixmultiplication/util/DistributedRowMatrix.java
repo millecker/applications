@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.matrixmultiplication;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -44,10 +44,6 @@ import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.Vector.Element;
 import org.apache.mahout.math.VectorIterable;
 import org.apache.mahout.math.VectorWritable;
-import org.apache.mahout.math.hadoop.MatrixColumnMeansJob;
-import org.apache.mahout.math.hadoop.MatrixMultiplicationJob;
-import org.apache.mahout.math.hadoop.TimesSquaredJob;
-import org.apache.mahout.math.hadoop.TransposeJob;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpuBSP;
 
@@ -65,7 +61,7 @@ import com.google.common.collect.Iterators;
  *         DistributedRowMatrix is a FileSystem-backed VectorIterable in which
  *         the vectors live in a
  *         SequenceFile<WritableComparable,VectorWritable>, and distributed
- *         operations are executed as M/R passes on Hadoop. The usage is as
+ *         operations are executed as BSP passes on Apache Hama. The usage is as
  *         follows:
  *         <p>
  *         <p>
@@ -191,32 +187,6 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		return numCols;
 	}
 
-	/**
-	 * This implements matrix this.transpose().times(other)
-	 * 
-	 * @param other
-	 *            a DistributedRowMatrix
-	 * @param outPath
-	 *            path to write result to
-	 * @return a DistributedRowMatrix containing the product
-	 */
-	public DistributedRowMatrix times(DistributedRowMatrix other, Path outPath)
-			throws IOException {
-		if (numRows != other.numRows()) {
-			throw new CardinalityException(numRows, other.numRows());
-		}
-
-		Configuration initialConf = getConf() == null ? new Configuration()
-				: getConf();
-		Configuration conf = MatrixMultiplicationJob
-				.createMatrixMultiplyJobConf(initialConf, rowPath,
-						other.rowPath, outPath, other.numCols);
-		JobClient.runJob(new JobConf(conf));
-		DistributedRowMatrix out = new DistributedRowMatrix(outPath,
-				outputTmpPath, numCols, other.numCols());
-		out.setConf(conf);
-		return out;
-	}
 
 	/**
 	 * This implements matrix multiplication A * B using MapReduce tasks on CPU
@@ -269,12 +239,15 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		// Build MatrixMultiplication job configuration
 		Configuration conf = null;
 		if (!useGPU) {
-			conf = MatrixMultiplicationCpuBSP
-					.createMatrixMultiplicationCpuConf(initialConf,
-							transposed.rowPath, other.rowPath, outPath,
-							other.numCols);
+			conf = MatrixMultiplicationCpuBSP.createMatrixMultiplicationCpuBSPConf(
+					initialConf, transposed.rowPath, other.rowPath, outPath,
+					other.numCols);
 		} else { // use GPU
-			//
+			/*
+			conf = MatrixMultiplicationGpu.createMatrixMultiplicationGpuConf(
+					initialConf, transposed.rowPath, other.rowPath, outPath,
+					other.numCols);
+					*/
 		}
 
 		// Multiply Matrix with transposed one
@@ -340,32 +313,6 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 		return out;
 	}
 
-	public Vector columnMeans() throws IOException {
-		return columnMeans("SequentialAccessSparseVector");
-	}
-
-	/**
-	 * Returns the column-wise mean of a DistributedRowMatrix
-	 * 
-	 * @param vectorClass
-	 *            desired class for the column-wise mean vector e.g.
-	 *            RandomAccessSparseVector, DenseVector
-	 * @return Vector containing the column-wise mean of this
-	 */
-	public Vector columnMeans(String vectorClass) throws IOException {
-		Path outputVectorTmpPath = new Path(outputTmpBasePath, new Path(
-				Long.toString(System.nanoTime())));
-		Configuration initialConf = getConf() == null ? new Configuration()
-				: getConf();
-		String vectorClassFull = "org.apache.mahout.math." + vectorClass;
-		Vector mean = MatrixColumnMeansJob.run(initialConf, rowPath,
-				outputVectorTmpPath, vectorClassFull);
-		if (!keepTempFiles) {
-			FileSystem fs = outputVectorTmpPath.getFileSystem(conf);
-			fs.delete(outputVectorTmpPath, true);
-		}
-		return mean;
-	}
 
 	public DistributedRowMatrix transpose() throws IOException {
 		Path outputPath = new Path(outputTmpBasePath, "transpose-"
