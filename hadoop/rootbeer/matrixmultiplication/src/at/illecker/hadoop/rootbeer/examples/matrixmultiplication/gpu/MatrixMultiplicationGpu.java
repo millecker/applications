@@ -355,24 +355,25 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       rootbeer.runAll(kernels);
       watch.stop();
 
+      List<StatsRow> stats = rootbeer.getStats();
+      for (StatsRow row : stats) {
+        System.out.println("  StatsRow:\n");
+        System.out.println("    init time: " + row.getInitTime() + "\n");
+        System.out.println("    serial time: " + row.getSerializationTime()
+            + "\n");
+        System.out.println("    exec time: " + row.getExecutionTime() + "\n");
+        System.out.println("    deserial time: "
+            + row.getDeserializationTime() + "\n");
+        System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
+        System.out.println("    num threads: " + row.getNumThreads() + "\n");
+      }
+      
       if (isDebuggingEnabled) {
         logMapper.writeChars("map,close,KernelCount=" + kernels.size()
             + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
         logMapper.writeChars("map,close,blockSize=" + blockSize + ",gridSize="
             + gridSize + "\n");
 
-        List<StatsRow> stats = rootbeer.getStats();
-        for (StatsRow row : stats) {
-          System.out.println("  StatsRow:\n");
-          System.out.println("    init time: " + row.getInitTime() + "\n");
-          System.out.println("    serial time: " + row.getSerializationTime()
-              + "\n");
-          System.out.println("    exec time: " + row.getExecutionTime() + "\n");
-          System.out.println("    deserial time: "
-              + row.getDeserializationTime() + "\n");
-          System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
-          System.out.println("    num threads: " + row.getNumThreads() + "\n");
-        }
         logMapper.flush();
       }
 
