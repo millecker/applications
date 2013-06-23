@@ -35,7 +35,8 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "10", "20", "40", "50", "60", "80", "100", "500", "600", "700" })
+  @Param({ "80", "100", "250", "500", "600", "700" })
+  // "10", "20", "40", "50", "60",
   // "1000", "2000" })
   private int n;
 
@@ -44,7 +45,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
   public enum CalcType {
     // JAVA,
-    HADOOP_CPU, HADOOP_GPU
+    CPU, GPU
   };
 
   // private static final Log LOG =
@@ -160,10 +161,10 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     /*
      * case JAVA: sum = matrixMultiplyJava(sum); break;
      */
-      case HADOOP_CPU:
+      case CPU:
         sum = matrixMultiplyHadoopCPU(sum);
         break;
-      case HADOOP_GPU:
+      case GPU:
         sum = matrixMultiplyHadoopGPU(sum);
         break;
       default:

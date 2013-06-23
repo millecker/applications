@@ -1,0 +1,174 @@
+ant run-bench -DbenchTimeLimit='--time-limit 300s' \
+  -DbenchInstrument='--instrument macro' \
+  -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=2' \
+  -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'
+
+Rootbeer log:
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 7
+    exec time: 0
+    deserial time: 4
+    num blocks: 10
+    num threads: 10
+
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 15
+    exec time: 0
+    deserial time: 14
+    num blocks: 20
+    num threads: 20
+
+----------------------------------------
+ StatsRow:
+    init time: 0
+    serial time: 43
+    exec time: 2
+    deserial time: 32
+    num blocks: 40
+    num threads: 40
+
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 60
+    exec time: 3
+    deserial time: 44
+    num blocks: 50
+    num threads: 50
+
+----------------------------------------
+  StatsRow:
+    init time: 0
+    serial time: 72
+    exec time: 4
+    deserial time: 58
+    num blocks: 60
+    num threads: 60
+
+----------------------------------------
+  StatsRow:
+    init time: 0
+    serial time: 100
+    exec time: 6
+    deserial time: 93
+    num blocks: 80
+    num threads: 80
+
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 142
+    exec time: 10
+    deserial time: 106
+    num blocks: 100
+    num threads: 100
+
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 2091
+    exec time: 9
+    deserial time: 110
+    num blocks: 500
+    num threads: 500
+
+  StatsRow:
+    init time: 0
+    serial time: 1928
+    exec time: 342
+    deserial time: 1639
+    num blocks: 448
+    num threads: 256
+
+  StatsRow:
+    init time: 0
+    serial time: 81
+    exec time: 64
+    deserial time: 508
+    num blocks: 86
+    num threads: 240
+
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 2108
+    exec time: 11
+    deserial time: 150
+    num blocks: 600
+    num threads: 600
+
+  StatsRow:
+    init time: 0
+    serial time: 1895
+    exec time: 408
+    deserial time: 2143
+    num blocks: 448
+    num threads: 256
+
+  StatsRow:
+    init time: 0
+    serial time: 1866
+    exec time: 396
+    deserial time: 1783
+    num blocks: 448
+    num threads: 256
+
+  StatsRow:
+    init time: 0
+    serial time: 41
+    exec time: 66
+    deserial time: 167
+    num blocks: 63
+    num threads: 253
+
+----------------------------------------
+
+  StatsRow:
+    init time: 0
+    serial time: 2281
+    exec time: 14
+    deserial time: 104
+    num blocks: 700
+    num threads: 700
+
+  StatsRow:
+    init time: 0
+    serial time: 1896
+    exec time: 466
+    deserial time: 2133
+    num blocks: 448
+    num threads: 256
+
+  StatsRow:
+    init time: 0
+    serial time: 1865
+    exec time: 505
+    deserial time: 2452
+    num blocks: 448
+    num threads: 256
+
+  StatsRow:
+    init time: 0
+    serial time: 1831
+    exec time: 489
+    deserial time: 1790
+    num blocks: 448
+    num threads: 256
+
+  StatsRow:
+    init time: 0
+    serial time: 131
+    exec time: 141
+    deserial time: 364
+    num blocks: 124
+    num threads: 252
