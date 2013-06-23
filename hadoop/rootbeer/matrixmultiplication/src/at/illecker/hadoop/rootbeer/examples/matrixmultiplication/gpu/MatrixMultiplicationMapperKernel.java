@@ -21,21 +21,10 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class MatrixMultiplicationMapperKernel implements Kernel {
 
-  public double[] vector;
-  public double[] multiplier;
+  private double[] vector;
+  private double[] multiplier;
   public double[] result;
-
-  public int block_idxx;
   public int thread_idxx;
-  public int blockSize;
-  public int gridSize;
-  public int globalThreadIndex;
-
-  // debug values
-  public int[] setShareIndex;
-  public double[] setShareValue;
-  public int[] getShareIndex;
-  public double[] getShareValue;
 
   public MatrixMultiplicationMapperKernel(double[] multiplier, double[] vector) {
     this.vector = vector;
@@ -44,15 +33,19 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
   public void gpuMethod() {
 
-    blockSize = RootbeerGpu.getBlockDimx();
-    gridSize = RootbeerGpu.getGridDimx();
-    block_idxx = RootbeerGpu.getBlockIdxx();
+    // int blockSize = RootbeerGpu.getBlockDimx();
+    // int gridSize = RootbeerGpu.getGridDimx();
+    // int block_idxx = RootbeerGpu.getBlockIdxx();
     thread_idxx = RootbeerGpu.getThreadIdxx();
+    // int globalThreadIndex = block_idxx * blockSize + thread_idxx;
 
-    globalThreadIndex = block_idxx * blockSize + thread_idxx;
-
-    int multiplierStartIndex = 128;
+    int multiplierStartIndex = 0;
     int vectorStartIndex = multiplierStartIndex + this.multiplier.length * 8;
+
+    // SETUP shared memory
+    // Why is every thread within a block is doing this?
+    // Not only on thread, sets up the shared memory for the whole block?
+    // shared-mem-size = multiplier.length * 8 + vector.length * 8
 
     // Put multiplier to shared memory
     for (int i = 0; i < this.multiplier.length; i++) {
@@ -68,32 +61,25 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
     // Sync all kernels, until shared memory was established
     RootbeerGpu.syncthreads();
 
-    // Get multiplier of individual thread
+    // Get multiplier depending on thread_index
     double currentMultiplier = RootbeerGpu.getSharedDouble(multiplierStartIndex
         + thread_idxx * 8);
 
     // Scalar Multiplication (Vector x Element)
     this.result = new double[this.vector.length];
-    this.getShareIndex = new int[this.vector.length];
-    this.getShareValue = new double[this.vector.length];
 
     for (int i = 0; i < this.vector.length; i++) {
 
       double vectorElement = RootbeerGpu.getSharedDouble(vectorStartIndex + i
           * 8);
-      double multiplicationResult = vectorElement * currentMultiplier;
+
+      this.result[i] = vectorElement * currentMultiplier;
 
       // Store result to shared memory for accumulation
       // RootbeerGpu.setSharedDouble(multiplicationResultsStartIndex +
       // thread_idxx
       // * this.vector.length * 8 + i * 8, multiplicationResult);
-
-      getShareIndex[i] = vectorStartIndex + i * 8;
-      getShareValue[i] = vectorElement;
-
-      this.result[i] = multiplicationResult;
     }
-
   }
 
   public static void main(String[] args) {

@@ -335,7 +335,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
         kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
             outFragArray));
       }
-      
+
       if (isDebuggingEnabled) {
         logMapper.writeChars("map,GPUKernels=" + kernels.size() + "\n");
         logMapper.flush();
@@ -364,33 +364,22 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
         List<StatsRow> stats = rootbeer.getStats();
         for (StatsRow row : stats) {
-          logMapper.writeChars("  StatsRow:\n");
-          logMapper.writeChars("    init time: " + row.getInitTime() + "\n");
-          logMapper.writeChars("    serial time: " + row.getSerializationTime()
+          System.out.println("  StatsRow:\n");
+          System.out.println("    init time: " + row.getInitTime() + "\n");
+          System.out.println("    serial time: " + row.getSerializationTime()
               + "\n");
-          logMapper.writeChars("    exec time: " + row.getExecutionTime()
-              + "\n");
-          logMapper.writeChars("    deserial time: "
+          System.out.println("    exec time: " + row.getExecutionTime() + "\n");
+          System.out.println("    deserial time: "
               + row.getDeserializationTime() + "\n");
-          logMapper.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
-          logMapper
-              .writeChars("    num threads: " + row.getNumThreads() + "\n");
+          System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
+          System.out.println("    num threads: " + row.getNumThreads() + "\n");
         }
         logMapper.flush();
       }
 
-      // Submit result of GPU kernels
+      // Collect results of GPU kernels
       for (Kernel kernel : kernels) {
         MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
-
-        logMapper.writeChars("map,kernel," + "multiplier="
-            + Arrays.toString(mapperKernel.multiplier) + ",block_idxx="
-            + mapperKernel.block_idxx + ",blockSize=" + mapperKernel.blockSize
-            + ",thread_idxx=" + mapperKernel.thread_idxx
-            + ",globalThreadIndex=" + mapperKernel.globalThreadIndex
-            + ",getShareIndex=" + Arrays.toString(mapperKernel.getShareIndex)
-            + ",getShareValue=" + Arrays.toString(mapperKernel.getShareValue)
-            + "\n");
 
         if (mapperKernel.result != null) {
 

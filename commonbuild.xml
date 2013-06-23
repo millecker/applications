@@ -201,14 +201,36 @@
 				<fail>File ${output.file-rb-jar} not found!</fail>
 			</else>
 		</if>
-		<echo>java ${rootbeer.java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.arg}</echo>
+		<var name="rootbeer.args.available" value="${rootbeer.arg}" />
+		<for list="rbSharedMemSize rbMaxRegCount" param="rb.arg" delimiter=" ">
+			<sequential>
+				<!-- set empty if its not available -->
+				<property name="@{rb.arg}" value="" />
+				<if>
+					<equals arg1="${@{rb.arg}}" arg2="" />
+					<else>
+						<echo>Rootbeer Argument @{rb.arg}: ${@{rb.arg}}</echo>
+						<if>
+							<equals arg1="${rootbeer.args.available}" arg2="" />
+							<then>
+								<var name="rootbeer.args.available" value="${@{rb.arg}}" />
+							</then>
+							<else>
+								<var name="rootbeer.args.available" value="${rootbeer.args.available} ${@{rb.arg}}" />
+							</else>
+						</if>
+					</else>
+				</if>
+			</sequential>
+		</for>
+		<echo>java ${rootbeer.java.arg.xmx} -jar ${rootbeer} ${output.file-rb-jar} ${output.file-rb-gpu-jar} ${rootbeer.args.available}</echo>
 		<exec executable="java" failonerror="true" resultproperty="return.code">
 			<arg value="${rootbeer.java.arg.xmx}" />
 			<arg value="-jar" />
 			<arg value="${rootbeer}" />
 			<arg value="${output.file-rb-jar}" />
 			<arg value="${output.file-rb-gpu-jar}" />
-			<arg line="${rootbeer.arg}" />
+			<arg line="${rootbeer.args.available}" />
 		</exec>
 		<fail>
 			<condition>
