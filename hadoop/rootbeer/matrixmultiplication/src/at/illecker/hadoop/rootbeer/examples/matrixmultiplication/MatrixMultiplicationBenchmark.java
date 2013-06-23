@@ -16,11 +16,15 @@
  */
 package at.illecker.hadoop.rootbeer.examples.matrixmultiplication;
 
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 
@@ -96,11 +100,10 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
     System.out.println("Benchmark " + n + " x " + n + " matrix");
     // Create random DistributedRowMatrix
-    // use constant seeds to get reproducable results
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
         new Random(), MATRIX_A_PATH, true);
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-        new Random(), MATRIX_B_PATH, true);
+        new Random(), MATRIX_B_PATH, false);
 
     // Load DistributedRowMatrix a and b
     matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR_PATH, n, n);
@@ -112,11 +115,28 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
   @Override
   protected void tearDown() throws Exception {
+
     // Cleanup
     FileSystem fs = FileSystem.get(conf);
     fs.delete(MATRIX_A_PATH, true);
     fs.delete(MATRIX_B_PATH, true);
     fs.delete(MATRIX_C_PATH, true);
+
+    printOutput(conf);
+  }
+
+  static void printOutput(Configuration conf) throws IOException {
+    FileSystem fs = FileSystem.get(conf);
+    FileStatus[] files = fs.listStatus(new Path(OUTPUT_DIR));
+    for (int i = 0; i < files.length; i++) {
+      if (files[i].getLen() > 0) {
+        System.out.println("File " + files[i].getPath());
+        FSDataInputStream in = fs.open(files[i].getPath());
+        IOUtils.copyBytes(in, System.out, conf, false);
+        in.close();
+      }
+    }
+    // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
   // Microbenchmark
@@ -168,7 +188,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
         resultMatrix = matrixA.multiplyJava(matrixB, MATRIX_C_PATH);
       } else {
         resultMatrix = matrixA.multiplyMapReduce(matrixB, MATRIX_C_PATH,
-            useGPU, false);
+            useGPU, true);
       }
 
       return resultMatrix.numRows();
