@@ -331,9 +331,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       // One map task consists of multiple kernels within one block
       // Each kernel computes a scalar multiplication and
       // a master kernel accumulates the results
-      kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
-          outFragArray));
-
+      for (int j = 0; j < blockSize; j++) {
+        kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
+            outFragArray));
+      }
+      
       if (isDebuggingEnabled) {
         logMapper.writeChars("map,GPUKernels=" + kernels.size() + "\n");
         logMapper.flush();
