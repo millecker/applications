@@ -315,18 +315,22 @@ public class MatrixMultiplicationGpu extends AbstractJob {
         outFragArray[i] = e.get();
         i++;
       }
+      // outFrag to double[]
+      double[] multiplierArray = new double[multiplier.size()];
+      i = 0;
+      for (Vector.Element e : multiplier.all()) {
+        multiplierArray[i] = e.get();
+        i++;
+      }
 
-      blockSize = multiplier.size();
+      blockSize = multiplierArray.length;
       gridSize++;
 
       // One map task consists of multiple kernels within one block
       // Each kernel computes a scalar multiplication and
       // a master kernel accumulates the results
-      for (Vector.Element e : multiplier.nonZeroes()) {
-        kernels.add(new MatrixMultiplicationMapperKernel(outFragArray, e.get(),
-            e.index()));
-      }
-
+      kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray, outFragArray));
+      
       if (isDebuggingEnabled) {
         logMapper.writeChars("map,GPUKernels=" + kernels.size() + "\n");
         logMapper.flush();
@@ -344,7 +348,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       // gridSize = cols of Matrix B (for each row a scalar multiplication
       // has to be made)
       // sync only possible between threads within a block?
-      rootbeer.setThreadConfig(blockSize, gridSize, kernels.size());
+      rootbeer.setThreadConfig(blockSize, gridSize, blockSize*kernels.size());
       rootbeer.runAll(kernels);
       watch.stop();
 
@@ -388,11 +392,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
         if (mapperKernel.result != null) {
 
-          out.collect(new IntWritable(mapperKernel.row), new VectorWritable(
+          out.collect(new IntWritable(mapperKernel.thread_idxx), new VectorWritable(
               new DenseVector(mapperKernel.result)));
 
           if (isDebuggingEnabled) {
-            logMapper.writeChars("map,collect,key=" + mapperKernel.row
+            logMapper.writeChars("map,collect,key=" + mapperKernel.thread_idxx
                 + ",values=" + Arrays.toString(mapperKernel.result) + "\n");
           }
         }
