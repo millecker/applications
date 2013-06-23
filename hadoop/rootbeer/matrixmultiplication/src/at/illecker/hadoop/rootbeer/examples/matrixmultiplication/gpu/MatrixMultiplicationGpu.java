@@ -384,7 +384,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
         MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
 
         logMapper.writeChars("map,kernel," + "multiplier="
-            + mapperKernel.multiplier + ",block_idxx="
+            + Arrays.toString(mapperKernel.multiplier) + ",block_idxx="
             + mapperKernel.block_idxx + ",blockSize=" + mapperKernel.blockSize
             + ",thread_idxx=" + mapperKernel.thread_idxx
             + ",globalThreadIndex=" + mapperKernel.globalThreadIndex

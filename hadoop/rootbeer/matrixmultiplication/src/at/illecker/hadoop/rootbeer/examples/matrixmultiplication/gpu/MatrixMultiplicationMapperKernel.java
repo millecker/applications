@@ -83,8 +83,9 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
     this.result = new double[this.vector.length];
     this.getShareIndex = new int[this.vector.length];
     this.getShareValue = new double[this.vector.length];
+
     for (int i = 0; i < this.vector.length; i++) {
-      
+
       double vectorElement = RootbeerGpu.getSharedDouble(vectorStartIndex + i
           * 8);
       double multiplicationResult = vectorElement * currentMultiplier;
@@ -96,7 +97,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
       getShareIndex[i] = vectorStartIndex + i * 8;
       getShareValue[i] = vectorElement;
-      
+
       this.result[i] = multiplicationResult;
     }
 
