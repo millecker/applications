@@ -53,23 +53,16 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
     int multiplierStartIndex = 128;
     int vectorStartIndex = multiplierStartIndex + this.multiplier.length * 8;
-    // int multiplicationResultsStartIndex = vectorStartIndex +
-    // this.vector.length
-    // * 8;
 
-    // First kernel of each block builds up shared memory for its own block
-    if (thread_idxx == 0) {
+    // Put multiplier to shared memory
+    for (int i = 0; i < this.multiplier.length; i++) {
+      RootbeerGpu.setSharedDouble(multiplierStartIndex + i * 8,
+          this.multiplier[i]);
+    }
 
-      // Put multiplier to shared memory
-      for (int i = 0; i < this.multiplier.length; i++) {
-        RootbeerGpu.setSharedDouble(multiplierStartIndex + i * 8,
-            this.multiplier[i]);
-      }
-
-      // Put vector to share memory
-      for (int i = 0; i < this.vector.length; i++) {
-        RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
-      }
+    // Put vector to share memory
+    for (int i = 0; i < this.vector.length; i++) {
+      RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
     }
 
     // Sync all kernels, until shared memory was established
