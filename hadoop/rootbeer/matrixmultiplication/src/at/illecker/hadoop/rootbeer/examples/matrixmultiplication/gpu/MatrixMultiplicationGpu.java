@@ -329,8 +329,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       gridSize++;
 
       // One map task consists of multiple kernels within one block
-      // Each kernel computes a scalar multiplication and
-      // a master kernel accumulates the results
+      // Each kernel computes a scalar multiplication
       for (int j = 0; j < blockSize; j++) {
         kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
             outFragArray));
@@ -349,10 +348,10 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       Stopwatch watch = new Stopwatch();
       watch.start();
       Rootbeer rootbeer = new Rootbeer();
-      // blockSize = rows of MatrixA (multiplier)
+      // blockSize = rows of Matrix A (multiplier)
       // gridSize = cols of Matrix B (for each row a scalar multiplication
       // has to be made)
-      rootbeer.setThreadConfig(blockSize, gridSize, blockSize * kernels.size());
+      rootbeer.setThreadConfig(blockSize, gridSize, kernels.size());
       rootbeer.runAll(kernels);
       watch.stop();
 

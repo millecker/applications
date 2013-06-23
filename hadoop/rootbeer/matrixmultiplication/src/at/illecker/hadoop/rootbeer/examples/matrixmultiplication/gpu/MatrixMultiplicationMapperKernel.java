@@ -42,10 +42,8 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
     int multiplierStartIndex = 0;
     int vectorStartIndex = multiplierStartIndex + this.multiplier.length * 8;
 
-    // SETUP shared memory
-    // Why is every thread within a block is doing this?
-    // Not only on thread, sets up the shared memory for the whole block?
-    // shared-mem-size = multiplier.length * 8 + vector.length * 8
+    // Setup shared memory
+    // shared-mem-size = (multiplier.length * 8 + vector.length * 8) * gridSize
 
     // Put multiplier to shared memory
     for (int i = 0; i < this.multiplier.length; i++) {
@@ -67,7 +65,6 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
     // Scalar Multiplication (Vector x Element)
     this.result = new double[this.vector.length];
-
     for (int i = 0; i < this.vector.length; i++) {
 
       double vectorElement = RootbeerGpu.getSharedDouble(vectorStartIndex + i
@@ -75,7 +72,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
       this.result[i] = vectorElement * currentMultiplier;
 
-      // Store result to shared memory for accumulation
+      // Store result to shared memory for accumulation beyond blocks
       // RootbeerGpu.setSharedDouble(multiplicationResultsStartIndex +
       // thread_idxx
       // * this.vector.length * 8 + i * 8, multiplicationResult);
