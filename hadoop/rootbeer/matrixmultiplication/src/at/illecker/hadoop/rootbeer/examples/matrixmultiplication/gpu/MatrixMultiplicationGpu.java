@@ -50,12 +50,13 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
+import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
+import org.apache.mahout.math.function.Functions;
 
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
-import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
@@ -97,7 +98,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       Configuration initialConf, Path aPath, Path bPath, Path outPath,
       int outCardinality) {
 
-    JobConf conf = new JobConf(initialConf, MatrixMultiplicationCpu.class);
+    JobConf conf = new JobConf(initialConf, MatrixMultiplicationGpu.class);
     conf.setJobName("MatrixMultiplicationGPU: " + aPath + " x " + bPath + " = "
         + outPath);
 
@@ -111,10 +112,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     FileOutputFormat.setOutputPath(conf, outPath);
 
     conf.setMapperClass(MatrixMultiplyGpuMapper.class);
+    conf.setCombinerClass(MatrixMultiplicationGpuReducer.class);
+    conf.setReducerClass(MatrixMultiplicationGpuReducer.class);
+
     conf.setMapOutputKeyClass(IntWritable.class);
     conf.setMapOutputValueClass(VectorWritable.class);
-
-    conf.setNumReduceTasks(0);
 
     conf.setOutputKeyClass(IntWritable.class);
     conf.setOutputValueClass(VectorWritable.class);
@@ -329,8 +331,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       // One map task consists of multiple kernels within one block
       // Each kernel computes a scalar multiplication and
       // a master kernel accumulates the results
-      kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray, outFragArray));
-      
+      kernels.add(new MatrixMultiplicationMapperKernel(multiplierArray,
+          outFragArray));
+
       if (isDebuggingEnabled) {
         logMapper.writeChars("map,GPUKernels=" + kernels.size() + "\n");
         logMapper.flush();
@@ -347,8 +350,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       // blockSize = rows of MatrixA (multiplier)
       // gridSize = cols of Matrix B (for each row a scalar multiplication
       // has to be made)
-      // sync only possible between threads within a block?
-      rootbeer.setThreadConfig(blockSize, gridSize, blockSize*kernels.size());
+      rootbeer.setThreadConfig(blockSize, gridSize, blockSize * kernels.size());
       rootbeer.runAll(kernels);
       watch.stop();
 
@@ -384,16 +386,14 @@ public class MatrixMultiplicationGpu extends AbstractJob {
             + mapperKernel.block_idxx + ",blockSize=" + mapperKernel.blockSize
             + ",thread_idxx=" + mapperKernel.thread_idxx
             + ",globalThreadIndex=" + mapperKernel.globalThreadIndex
-            + ",setShareIndex=" + Arrays.toString(mapperKernel.setShareIndex)
-            + ",setShareValue=" + Arrays.toString(mapperKernel.setShareValue)
             + ",getShareIndex=" + Arrays.toString(mapperKernel.getShareIndex)
             + ",getShareValue=" + Arrays.toString(mapperKernel.getShareValue)
             + "\n");
 
         if (mapperKernel.result != null) {
 
-          out.collect(new IntWritable(mapperKernel.thread_idxx), new VectorWritable(
-              new DenseVector(mapperKernel.result)));
+          out.collect(new IntWritable(mapperKernel.thread_idxx),
+              new VectorWritable(new DenseVector(mapperKernel.result)));
 
           if (isDebuggingEnabled) {
             logMapper.writeChars("map,collect,key=" + mapperKernel.thread_idxx
@@ -419,8 +419,8 @@ public class MatrixMultiplicationGpu extends AbstractJob {
 
       // Set user.home to jars dir for .rootbeer folder
       // which includes CUDA lib
-      System.setProperty("user.home", new Path(conf.getJobLocalDir())
-          .getParent().toString() + File.separator + "jars");
+      // System.setProperty("user.home", new Path(conf.getJobLocalDir())
+      // .getParent().toString() + File.separator + "jars");
 
       // Init logging
       if (isDebuggingEnabled) {
@@ -445,17 +445,18 @@ public class MatrixMultiplicationGpu extends AbstractJob {
         OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
         throws IOException {
 
-      // Reducer is Identity function
-
       if (!it.hasNext()) {
         return;
       }
 
+      Vector accumulator = new RandomAccessSparseVector(it.next().get());
       while (it.hasNext()) {
         Vector row = it.next().get();
-        out.collect(rowNum, new VectorWritable(
-            new SequentialAccessSparseVector(row)));
+        accumulator.assign(row, Functions.PLUS);
       }
+
+      out.collect(rowNum, new VectorWritable(new SequentialAccessSparseVector(
+          accumulator)));
     }
   }
 }
