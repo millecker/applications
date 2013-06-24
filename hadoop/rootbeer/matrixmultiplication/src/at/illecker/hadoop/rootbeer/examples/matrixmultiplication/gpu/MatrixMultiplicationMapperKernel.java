@@ -51,12 +51,14 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
     // Setup shared memory
     // shared-mem-size = (vector.length * 8) * gridSize
-    if (thread_idxx == 0) {
+    
+    // TODO setting up shared memory only within first thread of block does not work!
+    // if (thread_idxx == 0) {
       // Put vector to share memory
       for (int i = 0; i < this.vector.length; i++) {
         RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
       }
-    }
+    // }
 
     // Sync all kernels, until shared memory was established
     RootbeerGpu.syncthreads();

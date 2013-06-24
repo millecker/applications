@@ -35,8 +35,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "80", "100" })
-  // "250", "500", "600", "700" })
+  @Param({ "80", "100", "250", "500", "600", "700" })
   // "10", "20", "40", "50", "60",
   // "1000", "2000" })
   private int n;
