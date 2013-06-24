@@ -589,18 +589,21 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
     }
     return matrix;
   }
-  
+
   public boolean verify(DistributedRowMatrix other) {
-    
+
     Iterator<MatrixSlice> iteratorThis = this.iterateAll();
-    Iterator<MatrixSlice> iteratorOther = this.iterateAll();
+    Iterator<MatrixSlice> iteratorOther = other.iterateAll();
 
     while (iteratorThis.hasNext()) {
       Vector thisVector = iteratorThis.next().vector();
       Vector otherVector = iteratorOther.next().vector();
-      
+
       for (int j = 0; j < thisVector.size(); j++) {
-        if (thisVector.getElement(j).get()!=otherVector.getElement(j).get()){
+        if (thisVector.getElement(j).get() != otherVector.getElement(j).get()) {
+          // System.out.println("Verify failed!");
+          // System.out.println("  Vector1: " + thisVector.toString());
+          // System.out.println("  Vector2: " + otherVector.toString());
           return false;
         }
       }

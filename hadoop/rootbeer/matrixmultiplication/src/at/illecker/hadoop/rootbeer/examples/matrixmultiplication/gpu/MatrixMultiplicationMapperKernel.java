@@ -33,6 +33,10 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
   public MatrixMultiplicationMapperKernel(double[] multiplier, double[] vector) {
     this.vector = vector;
     this.multiplier = multiplier;
+    this.results = new double[multiplier.length][vector.length];
+    for (int i = 0; i < multiplier.length; i++) {
+      this.results[i] = null;
+    }
   }
 
   public void gpuMethod() {
@@ -51,11 +55,6 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
       // Put vector to share memory
       for (int i = 0; i < this.vector.length; i++) {
         RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
-      }
-
-      results = new double[multiplier.length][vector.length];
-      for (int i = 0; i < multiplier.length; i++) {
-        results[i] = null;
       }
     }
 
@@ -81,16 +80,18 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
     }
 
+    RootbeerGpu.syncthreads();
+
     addResult(thread_idxx, result);
   }
 
   private synchronized void addResult(int row, double[] vector) {
-    if (results[row] != null) {
+    if (this.results[row] != null) {
       for (int i = 0; i < vector.length; i++) {
-        results[row][i] += vector[i];
+        this.results[row][i] += vector[i];
       }
     } else {
-      results[row] = vector;
+      this.results[row] = vector;
     }
   }
 

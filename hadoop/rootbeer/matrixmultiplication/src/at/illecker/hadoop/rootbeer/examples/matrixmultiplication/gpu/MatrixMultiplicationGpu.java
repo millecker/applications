@@ -86,6 +86,8 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       "input/hadoop/rootbeer/examples/MatrixB.seq");
   private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
       + "/MatrixC.seq");
+  private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
+      + "/MatrixD.seq");
 
   public static Configuration createMatrixMultiplicationGpuConf(Path aPath,
       Path bPath, Path outPath, int outCardinality) {
@@ -193,6 +195,14 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     System.out.println("MatrixMultiplicationGpu using Hadoop finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
+    // Verify
+    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
+    if (c.verify(d)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
+
     if (isDebugging) {
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
@@ -200,6 +210,8 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       b.printDistributedRowMatrix();
       System.out.println("Matrix C:");
       c.printDistributedRowMatrix();
+      System.out.println("Matrix D:");
+      d.printDistributedRowMatrix();
 
       printOutput(conf);
     }
@@ -388,10 +400,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
               + Arrays.toString(mapperKernel.vectorVal) + "\n");
         }
 
-        if (mapperKernel.results != null) {
+        for (int i = 0; i < mapperKernel.results.length; i++) {
 
-          for (int i = 0; i < mapperKernel.results.length; i++) {
-
+          if (mapperKernel.results[i] != null) {
             out.collect(new IntWritable(i), new VectorWritable(new DenseVector(
                 mapperKernel.results[i])));
 
@@ -399,9 +410,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
               logMapper.writeChars("map,collect,key=" + i + ",values="
                   + Arrays.toString(mapperKernel.results[i]) + "\n");
             }
-
           }
         }
+
       }
 
     }
