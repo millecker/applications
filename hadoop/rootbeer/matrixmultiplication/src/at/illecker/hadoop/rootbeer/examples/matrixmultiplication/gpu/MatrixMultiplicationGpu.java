@@ -195,8 +195,14 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     System.out.println("MatrixMultiplicationGpu using Hadoop finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
+    // Overwrite matrix A, NOT transposed for verification check
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
+        numColsA, new Random(42L), MATRIX_A_PATH, false);
+    a = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR, numRowsA, numColsA);
+    a.setConf(conf);
+
     // Verify
-    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
+    DistributedRowMatrix d = a.transpose().multiplyJava(b, MATRIX_D_PATH);
     if (c.verify(d)) {
       System.out.println("Verify PASSED!");
     } else {

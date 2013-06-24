@@ -105,7 +105,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     System.out.println("Benchmark " + n + " x " + n + " matrix");
     // Create random DistributedRowMatrix
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-        new Random(), MATRIX_A_PATH, true);
+        new Random(42L), MATRIX_A_PATH, true);
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
         new Random(), MATRIX_B_PATH, false);
 
@@ -132,10 +132,17 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     printOutput(conf);
   }
 
-  private void verify() throws IOException {
+  private void verify() throws Exception {
 
     DistributedRowMatrix matrixC = new DistributedRowMatrix(MATRIX_C_PATH,
         OUTPUT_DIR_PATH, n, n);
+
+    // Overwrite matrix A, NOT transposed for verification check
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
+        new Random(42L), MATRIX_A_PATH, false);
+    matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR_PATH, n, n);
+    matrixA.setConf(conf);
+
     DistributedRowMatrix matrixD = matrixA.multiplyJava(matrixB, MATRIX_D_PATH);
 
     if (matrixC.verify(matrixD)) {
