@@ -202,7 +202,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     a.setConf(conf);
 
     // Verify
-    DistributedRowMatrix d = a.transpose().multiplyJava(b, MATRIX_D_PATH);
+    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
     if (c.verify(d)) {
       System.out.println("Verify PASSED!");
     } else {
