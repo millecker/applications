@@ -35,7 +35,8 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "80", "100", "250", "500", "600", "700" })
+  @Param({ "80", "100" })
+  // "250", "500", "600", "700" })
   // "10", "20", "40", "50", "60",
   // "1000", "2000" })
   private int n;
@@ -56,6 +57,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
   private Path MATRIX_A_PATH;
   private Path MATRIX_B_PATH;
   private Path MATRIX_C_PATH;
+  private Path MATRIX_D_PATH;
 
   private Configuration conf;
 
@@ -99,6 +101,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     MATRIX_A_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixA.seq");
     MATRIX_B_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixB.seq");
     MATRIX_C_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixC.seq");
+    MATRIX_D_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixD.seq");
 
     System.out.println("Benchmark " + n + " x " + n + " matrix");
     // Create random DistributedRowMatrix
@@ -118,13 +121,29 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
   @Override
   protected void tearDown() throws Exception {
 
+    verify();
+
     // Cleanup
     FileSystem fs = FileSystem.get(conf);
     fs.delete(MATRIX_A_PATH, true);
     fs.delete(MATRIX_B_PATH, true);
     fs.delete(MATRIX_C_PATH, true);
+    fs.delete(MATRIX_D_PATH, true);
 
     printOutput(conf);
+  }
+
+  private void verify() throws IOException {
+
+    DistributedRowMatrix matrixC = new DistributedRowMatrix(MATRIX_C_PATH,
+        OUTPUT_DIR_PATH, n, n);
+    DistributedRowMatrix matrixD = matrixA.multiplyJava(matrixB, MATRIX_D_PATH);
+
+    if (matrixC.verify(matrixD)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
   }
 
   static void printOutput(Configuration conf) throws IOException {

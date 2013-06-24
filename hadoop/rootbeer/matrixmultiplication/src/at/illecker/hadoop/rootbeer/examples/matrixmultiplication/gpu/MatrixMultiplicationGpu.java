@@ -362,12 +362,12 @@ public class MatrixMultiplicationGpu extends AbstractJob {
         System.out.println("    serial time: " + row.getSerializationTime()
             + "\n");
         System.out.println("    exec time: " + row.getExecutionTime() + "\n");
-        System.out.println("    deserial time: "
-            + row.getDeserializationTime() + "\n");
+        System.out.println("    deserial time: " + row.getDeserializationTime()
+            + "\n");
         System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
         System.out.println("    num threads: " + row.getNumThreads() + "\n");
       }
-      
+
       if (isDebuggingEnabled) {
         logMapper.writeChars("map,close,KernelCount=" + kernels.size()
             + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
@@ -381,18 +381,29 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       for (Kernel kernel : kernels) {
         MatrixMultiplicationMapperKernel mapperKernel = (MatrixMultiplicationMapperKernel) kernel;
 
-        if (mapperKernel.result != null) {
-
-          out.collect(new IntWritable(mapperKernel.thread_idxx),
-              new VectorWritable(new DenseVector(mapperKernel.result)));
-
-          if (isDebuggingEnabled) {
-            logMapper.writeChars("map,collect,key=" + mapperKernel.thread_idxx
-                + ",values=" + Arrays.toString(mapperKernel.result) + "\n");
-          }
+        if (isDebuggingEnabled) {
+          logMapper.writeChars("map,close,thread_idxx="
+              + mapperKernel.thread_idxx + ",multiplier="
+              + mapperKernel.multiplierVal + ",vector="
+              + Arrays.toString(mapperKernel.vectorVal) + "\n");
         }
 
+        if (mapperKernel.results != null) {
+
+          for (int i = 0; i < mapperKernel.results.length; i++) {
+
+            out.collect(new IntWritable(i), new VectorWritable(new DenseVector(
+                mapperKernel.results[i])));
+
+            if (isDebuggingEnabled) {
+              logMapper.writeChars("map,collect,key=" + i + ",values="
+                  + Arrays.toString(mapperKernel.results[i]) + "\n");
+            }
+
+          }
+        }
       }
+
     }
   }
 
