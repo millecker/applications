@@ -1,0 +1,17 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="output.file" value="HamaUtil" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="" />
+	<property name="rootbeer.classes" value="" />
+	<property name="gpu.class" value="" />
+	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.util.RandomGraphGenerator" />
+	<property name="bench.class" value="" />
+	<property name="program" value="hadoop" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="vertexNum edgeNum partitionNum output" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
