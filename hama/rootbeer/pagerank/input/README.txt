@@ -10,6 +10,7 @@ The data was released in 2002 by Google as a part of Google Programming Contest.
 Dataset statistics
 Nodes	875713
 Edges	5105039
+
 Nodes in largest WCC	855802 (0.977)
 Edges in largest WCC	5066842 (0.993)
 Nodes in largest SCC	434818 (0.497)

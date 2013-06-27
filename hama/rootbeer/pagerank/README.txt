@@ -2,6 +2,10 @@
 ##### PageRank Example                                                    #####
 ###############################################################################
 
+# Prepare input 
+gzip -d input/web-Google.txt.gz
+hadoop fs -put input/web-Google.txt.gz input/hama/pagerank/web-Google.txt
+
 # Use Apache Ant to build and run example
 
 # Clean all files
@@ -14,15 +18,15 @@ ant jar-gpu
 ant jar-cpu
 
 # Submit GPU Task to Hama
-ant run-gpu [-DNumBspTask=3 -DKernelCount=100 -DIterations=10000]
+ant run-gpu [-Dinput=input/hama/pagerank/input.seq -Doutput=output/hama/pagerank -DbspTasks=3]
 
 # Submit GPU native emulated Task to Hama
-ant run-gpu-nemu [-DNumBspTask=3 -DKernelCount=1 -DIterations=10000]
+ant run-gpu-nemu [-Dinput=input/hama/pagerank/input.seq -Doutput=output/hama/pagerank -DbspTasks=3]
 
 # Submit GPU Java emulated Task to Hama
-ant run-gpu-jemu [-DNumBspTask=3 -DKernelCount=1 -DIterations=10000]
+ant run-gpu-jemu [-Dinput=input/hama/pagerank/input.seq -Doutput=output/hama/pagerank -DbspTasks=3]
 
 # Submit CPU Task to Hama
-ant run-cpu [-DNumBspTask=3 -DKernelCount=1 -DIterations=10000]
+ant run-cpu [-Dinput=input/hama/pagerank/input.seq -Doutput=output/hama/pagerank -DbspTasks=3]
 
 ###############################################################################

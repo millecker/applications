@@ -1,0 +1,17 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="output.file" value="PageRank" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/pagerank/gpu" />
+	<property name="rootbeer.classes" value="PageRankKernel.class" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.pagerank.gpu.PageRankGpu" />
+	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.pagerank.cpu.PageRankCpu" />
+	<property name="bench.class" value="" />
+	<property name="program" value="hama" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="input output bspTasks debug" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
