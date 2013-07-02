@@ -21,23 +21,23 @@ ant jar-bench
 # Submit GPU Task to Hadoop
 ant run-gpu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
   -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
-  [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 24'] 
+  [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 27'] 
   [-Ddebug='--debug true']
 
 # Submit GPU native emulated Task to Hadoop
 ant run-gpu-nemu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
   -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
-  [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 24'] 
+  [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 27'] 
   [-Ddebug='--debug true']
   
 ant run-gpu-nemu -DnumRowsA='--numRowsA 4' -DnumColsA='--numColsA 4'  \
   -DnumRowsB='--numRowsB 4' -DnumColsB='--numColsB 4' -Ddebug='--debug true' \
-  -DrbSharedMemSize='-shared-mem-size 32' -DrbMaxRegCount='-maxrregcount 24'
+  -DrbSharedMemSize='-shared-mem-size 32' -DrbMaxRegCount='-maxrregcount 27'
 
 # Submit GPU Java emulated Task to Hadoop
 ant run-gpu-jemu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
   -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
-  [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 24']
+  [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 27']
   [-Ddebug='--debug true']  
 
 

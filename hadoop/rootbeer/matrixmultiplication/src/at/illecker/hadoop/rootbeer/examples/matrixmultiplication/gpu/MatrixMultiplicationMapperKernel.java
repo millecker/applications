@@ -38,7 +38,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
     this.row = row;
     this.multiplier = multiplier;
     this.vector = vector;
-    this.results = new double[vector.length];
+    this.results = new double[this.vector.length];
   }
 
   public void gpuMethod() {
@@ -71,17 +71,15 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
     vectorVal = new double[this.vector.length];
 
     // Scalar Multiplication (Vector x Element)
-    double[] result = new double[this.vector.length];
     for (int i = 0; i < this.vector.length; i++) {
 
       double vectorElement = RootbeerGpu.getSharedDouble(vectorStartIndex + i
           * 8);
 
       vectorVal[i] = vectorElement;
-      result[i] = vectorElement * multiplier;
+      results[i] = vectorElement * multiplier;
     }
 
-    RootbeerGpu.syncthreads();
   }
 
   public static void main(String[] args) {
