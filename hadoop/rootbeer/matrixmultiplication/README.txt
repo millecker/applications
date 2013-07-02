@@ -19,8 +19,8 @@ ant jar-bench
 ###############################################################################
 
 # Submit GPU Task to Hadoop
-ant run-gpu -DnumRowsA='--numRowsA 100' -DnumColsA='--numColsA 100' \
-  -DnumRowsB='--numRowsB 100' -DnumColsB='--numColsB 100'
+ant run-gpu -DnumRowsA='--numRowsA 256' -DnumColsA='--numColsA 256' \
+  -DnumRowsB='--numRowsB 256' -DnumColsB='--numColsB 256'
   [-DrbSharedMemSize='-shared-mem-size (numColsB*8)']  [-DrbMaxRegCount='-maxrregcount 27'] 
   [-Ddebug='--debug true']
 

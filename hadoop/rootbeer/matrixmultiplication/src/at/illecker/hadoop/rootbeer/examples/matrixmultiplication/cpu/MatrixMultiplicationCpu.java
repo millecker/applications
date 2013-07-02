@@ -78,6 +78,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
       "input/hadoop/rootbeer/examples/MatrixB.seq");
   private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
       + "/MatrixC.seq");
+  private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
+      + "/MatrixD.seq");
 
   public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
       Path bPath, Path outPath, int outCardinality) {
@@ -182,6 +184,20 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
+    // Verification
+    // Overwrite matrix A, NOT transposed for verification check
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
+        numColsA, new Random(42L), MATRIX_A_PATH, false);
+    a = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR, numRowsA, numColsA);
+    a.setConf(conf);
+
+    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
+    if (c.verify(d)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
+
     if (isDebugging) {
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
@@ -189,6 +205,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
       b.printDistributedRowMatrix();
       System.out.println("Matrix C:");
       c.printDistributedRowMatrix();
+      System.out.println("Matrix D:");
+      d.printDistributedRowMatrix();
 
       printOutput(conf);
     }
