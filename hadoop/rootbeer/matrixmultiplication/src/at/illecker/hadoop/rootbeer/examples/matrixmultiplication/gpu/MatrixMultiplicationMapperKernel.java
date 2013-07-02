@@ -21,22 +21,24 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class MatrixMultiplicationMapperKernel implements Kernel {
 
+  // input
   private double[] vector;
-  private double[] multiplier;
-  public double[][] results;
+  private double multiplier;
+  // output
+  public int row;
+  public double[] results;
 
   // debug
   public double multiplierVal;
   public double[] vectorVal;
   public int thread_idxx;
 
-  public MatrixMultiplicationMapperKernel(double[] multiplier, double[] vector) {
-    this.vector = vector;
+  public MatrixMultiplicationMapperKernel(int row, double multiplier,
+      double[] vector) {
+    this.row = row;
     this.multiplier = multiplier;
-    this.results = new double[multiplier.length][vector.length];
-    for (int i = 0; i < multiplier.length; i++) {
-      this.results[i] = null;
-    }
+    this.vector = vector;
+    this.results = new double[vector.length];
   }
 
   public void gpuMethod() {
@@ -49,25 +51,23 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
     int vectorStartIndex = 0;
 
-    // Setup shared memory
-    // shared-mem-size = (vector.length * 8) * gridSize
-    
-    // TODO setting up shared memory only within first thread of block does not work!
+    // shared memory size
+    // shared-mem-size = (vector.length * 8)
+
+    // TODO setting up shared memory only within first thread of block does not
+    // work!
     // if (thread_idxx == 0) {
-      // Put vector to share memory
-      for (int i = 0; i < this.vector.length; i++) {
-        RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
-      }
+    // Put vector to share memory
+    for (int i = 0; i < this.vector.length; i++) {
+      RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
+    }
     // }
 
     // Sync all kernels, until shared memory was established
     RootbeerGpu.syncthreads();
 
-    // Get multiplier depending on thread_index
-    double currentMultiplier = multiplier[thread_idxx];
-
     // debug
-    multiplierVal = currentMultiplier;
+    multiplierVal = multiplier;
     vectorVal = new double[this.vector.length];
 
     // Scalar Multiplication (Vector x Element)
@@ -78,29 +78,16 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
           * 8);
 
       vectorVal[i] = vectorElement;
-      result[i] = vectorElement * currentMultiplier;
-
+      result[i] = vectorElement * multiplier;
     }
 
     RootbeerGpu.syncthreads();
-
-    addResult(thread_idxx, result);
-  }
-
-  private synchronized void addResult(int row, double[] vector) {
-    if (this.results[row] != null) {
-      for (int i = 0; i < vector.length; i++) {
-        this.results[row][i] += vector[i];
-      }
-    } else {
-      this.results[row] = vector;
-    }
   }
 
   public static void main(String[] args) {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new MatrixMultiplicationMapperKernel(null, null);
+    new MatrixMultiplicationMapperKernel(0, 0, null);
   }
 }
