@@ -124,7 +124,7 @@ public class PageRankCpu {
   public static GraphJob createJob(String[] args, HamaConfiguration conf)
       throws IOException {
     GraphJob pageJob = new GraphJob(conf, PageRankCpu.class);
-    pageJob.setJobName("Pagerank");
+    pageJob.setJobName("Pagerank CPU");
 
     pageJob.setVertexClass(PageRankVertexCpu.class);
     pageJob.setInputPath(new Path(args[0]));
