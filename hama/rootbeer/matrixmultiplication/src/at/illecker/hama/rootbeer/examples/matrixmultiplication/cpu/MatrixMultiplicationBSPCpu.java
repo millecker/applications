@@ -78,6 +78,8 @@ public class MatrixMultiplicationBSPCpu
       "input/hama/rootbeer/examples/MatrixB.seq");
   private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
       + "/MatrixC.seq");
+  private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
+      + "/MatrixD.seq");
 
   private int outCardinality;
   private boolean isDebuggingEnabled;
@@ -217,8 +219,8 @@ public class MatrixMultiplicationBSPCpu
     FileStatus[] files = fs.listStatus(OUTPUT_DIR);
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
-        System.out.println("File " + files[i].getPath());
         if (files[i].getPath().getName().endsWith(".log")) {
+          System.out.println("File " + files[i].getPath());
           FSDataInputStream in = fs.open(files[i].getPath());
           IOUtils.copyBytes(in, System.out, conf, false);
           in.close();
@@ -345,6 +347,20 @@ public class MatrixMultiplicationBSPCpu
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
+    // Verification
+    // Overwrite matrix A, NOT transposed for verification check
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
+        numColsA, new Random(42L), MATRIX_A_PATH, false);
+    a = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR, numRowsA, numColsA);
+    a.setConf(conf);
+
+    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
+    if (c.verify(d)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
+    
     if (isDebugging) {
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
@@ -352,7 +368,9 @@ public class MatrixMultiplicationBSPCpu
       b.printDistributedRowMatrix();
       System.out.println("Matrix C:");
       c.printDistributedRowMatrix();
-
+      System.out.println("Matrix D:");
+      d.printDistributedRowMatrix();
+      
       printOutput(conf);
     }
   }
