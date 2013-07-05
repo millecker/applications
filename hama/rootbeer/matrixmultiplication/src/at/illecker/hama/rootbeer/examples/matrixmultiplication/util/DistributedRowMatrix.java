@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -234,7 +235,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
     BSPJob job = null;
     if (!useGPU) {
       job = MatrixMultiplicationBSPCpu.createMatrixMultiplicationBSPCpuConf(
-          initialConf, transposed.rowPath, other.rowPath, outPath,
+          initialConf, transposed.rowPath, other.rowPath, outPath.getParent(),
           other.numCols);
     } else { // use GPU
       /*
@@ -246,6 +247,19 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 
     // Multiply Matrix with transposed one
     if (job.waitForCompletion(true)) {
+
+      // Rename result file to output path
+      Configuration conf = job.getConfiguration();
+      FileSystem fs = outPath.getFileSystem(conf);
+      FileStatus[] files = fs.listStatus(outPath.getParent());
+      for (int i = 0; i < files.length; i++) {
+        if ((files[i].getPath().getName().startsWith("part-"))
+            && (files[i].getLen() > 97)) {
+          fs.rename(files[i].getPath(), outPath);
+          break;
+        }
+      }
+
       // Read resulting Matrix from HDFS
       DistributedRowMatrix out = new DistributedRowMatrix(outPath,
           outputTmpPath, this.numRows, other.numCols());

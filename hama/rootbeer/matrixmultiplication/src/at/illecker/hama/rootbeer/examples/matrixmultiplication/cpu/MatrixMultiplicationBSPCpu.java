@@ -68,7 +68,6 @@ public class MatrixMultiplicationBSPCpu
 
   private static final String OUT_CARD = "output.vector.cardinality";
   private static final String DEBUG = "matrixmultiplication.bsp.cpu.debug";
-
   private static final Path OUTPUT_DIR = new Path(
       "output/hama/rootbeer/examples/matrixmultiplication/CPU-"
           + System.currentTimeMillis());
@@ -210,10 +209,6 @@ public class MatrixMultiplicationBSPCpu
             new VectorWritable(row.getValue()));
       }
 
-      if (isDebuggingEnabled)
-        logger.writeChars("outputPath: "
-            + FileOutputFormat.getOutputPath(new BSPJob(
-                (HamaConfiguration) peer.getConfiguration())));
     }
   }
 
@@ -223,9 +218,11 @@ public class MatrixMultiplicationBSPCpu
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
         System.out.println("File " + files[i].getPath());
-        FSDataInputStream in = fs.open(files[i].getPath());
-        IOUtils.copyBytes(in, System.out, conf, false);
-        in.close();
+        if (files[i].getPath().getName().endsWith(".log")) {
+          FSDataInputStream in = fs.open(files[i].getPath());
+          IOUtils.copyBytes(in, System.out, conf, false);
+          in.close();
+        }
       }
     }
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
@@ -258,7 +255,7 @@ public class MatrixMultiplicationBSPCpu
     job.setOutputKeyClass(IntWritable.class);
     job.setOutputValueClass(VectorWritable.class);
 
-    FileOutputFormat.setOutputPath(job, OUTPUT_DIR);
+    FileOutputFormat.setOutputPath(job, outPath);
 
     job.set(OUT_CARD, "" + outCardinality);
     job.set("bsp.child.java.opts", "-Xmx4G");
