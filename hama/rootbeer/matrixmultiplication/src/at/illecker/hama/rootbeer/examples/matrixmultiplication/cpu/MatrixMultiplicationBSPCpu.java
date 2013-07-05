@@ -17,6 +17,8 @@
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.logging.Log;
@@ -42,8 +44,10 @@ import org.apache.hama.bsp.join.CompositeInputFormat;
 import org.apache.hama.bsp.join.TupleWritable;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.CardinalityException;
+import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
+import org.apache.mahout.math.function.Functions;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;
@@ -98,9 +102,8 @@ public class MatrixMultiplicationBSPCpu
     if (isDebuggingEnabled) {
       try {
         FileSystem fs = FileSystem.get(conf);
-        logger = fs.create(new Path(FileOutputFormat.getOutputPath(
-            new BSPJob((HamaConfiguration) conf)).getParent()
-            + "/BSP_" + peer.getTaskId() + ".log"));
+        logger = fs.create(new Path(FileOutputFormat.getOutputPath(new BSPJob(
+            (HamaConfiguration) conf)) + "/BSP_" + peer.getTaskId() + ".log"));
 
         logger.writeChars("bsp,setup,outCardinality=" + outCardinality + "\n");
       } catch (IOException e) {
@@ -174,25 +177,43 @@ public class MatrixMultiplicationBSPCpu
       BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
       throws IOException {
 
-    /*
-     * Vector accumulator = new RandomAccessSparseVector(it.next().get()); while
-     * (it.hasNext()) { Vector row = it.next().get(); accumulator.assign(row,
-     * Functions.PLUS); }
-     */
-
+    // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
+      Map<Integer, Vector> accumlatedRows = new HashMap<Integer, Vector>();
       MatrixRowMessage currentMatrixRowMessage = null;
-      while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) { //
+
+      // Collect messages
+      while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
+        int rowIndex = currentMatrixRowMessage.getRowIndex();
+        Vector rowValues = currentMatrixRowMessage.getRowValues().get();
 
         if (isDebuggingEnabled) {
-          logger.writeChars("bsp,send,key="
-              + currentMatrixRowMessage.getRowIndex() + ",value="
-              + currentMatrixRowMessage.getRowValues().get().toString() + "\n");
+          logger.writeChars("bsp,gotMsg,key=" + rowIndex + ",value="
+              + rowValues.toString() + "\n");
         }
-        peer.write(new IntWritable(currentMatrixRowMessage.getRowIndex()),
-            currentMatrixRowMessage.getRowValues());
+
+        if (accumlatedRows.containsKey(rowIndex)) {
+          accumlatedRows.get(rowIndex).assign(rowValues, Functions.PLUS);
+        } else {
+          accumlatedRows.put(rowIndex, new RandomAccessSparseVector(rowValues));
+        }
       }
+
+      // Write accumulated results
+      for (Map.Entry<Integer, Vector> row : accumlatedRows.entrySet()) {
+        if (isDebuggingEnabled) {
+          logger.writeChars("bsp,write,key=" + row.getKey() + ",value="
+              + row.getValue().toString() + "\n");
+        }
+        peer.write(new IntWritable(row.getKey()),
+            new VectorWritable(row.getValue()));
+      }
+
+      if (isDebuggingEnabled)
+        logger.writeChars("outputPath: "
+            + FileOutputFormat.getOutputPath(new BSPJob(
+                (HamaConfiguration) peer.getConfiguration())));
     }
   }
 
@@ -202,11 +223,9 @@ public class MatrixMultiplicationBSPCpu
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
         System.out.println("File " + files[i].getPath());
-        if (files[i].getPath().getName().endsWith(".log")) {
-          FSDataInputStream in = fs.open(files[i].getPath());
-          IOUtils.copyBytes(in, System.out, conf, false);
-          in.close();
-        }
+        FSDataInputStream in = fs.open(files[i].getPath());
+        IOUtils.copyBytes(in, System.out, conf, false);
+        in.close();
       }
     }
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
