@@ -17,9 +17,10 @@
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -181,7 +182,8 @@ public class MatrixMultiplicationBSPCpu
     // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
-      Map<Integer, Vector> accumlatedRows = new HashMap<Integer, Vector>();
+      // SortedMap because the final matrix rows should be in order
+      SortedMap<Integer, Vector> accumlatedRows = new TreeMap<Integer, Vector>();
       MatrixRowMessage currentMatrixRowMessage = null;
 
       // Collect messages
@@ -360,7 +362,7 @@ public class MatrixMultiplicationBSPCpu
     } else {
       System.out.println("Verify FAILED!");
     }
-    
+
     if (isDebugging) {
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
@@ -370,7 +372,7 @@ public class MatrixMultiplicationBSPCpu
       c.printDistributedRowMatrix();
       System.out.println("Matrix D:");
       d.printDistributedRowMatrix();
-      
+
       printOutput(conf);
     }
   }
