@@ -232,7 +232,7 @@ public class MatrixMultiplicationBSPCpu
     // Order message by row index
     job.set(MessageManager.QUEUE_TYPE_CLASS,
         "org.apache.hama.bsp.message.queue.SortedMessageQueue");
-    
+
     return job;
   }
 

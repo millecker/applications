@@ -123,7 +123,7 @@ public final class MatrixMultiplicationBSP
 
     HamaConfiguration conf = new HamaConfiguration();
     conf.set(MessageManager.QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.SortedMessageQueue");
+        "org.apache.hama.bsp.message.queue.SortedMessageQueue");
     conf.set("bsp.local.tasks.maximum", "8");
     // LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
 
@@ -151,7 +151,7 @@ public final class MatrixMultiplicationBSP
       job.setOutputPath(outPath);
       job.setBspClass(MatrixMultiplicationBSP.class);
       job.setJarByClass(MatrixMultiplicationBSP.class);
-      job.setPartitioner(MatrixRowPartitioner.class);
+      // job.setPartitioner(MatrixRowPartitioner.class);
 
       long startTime = System.currentTimeMillis();
       job.waitForCompletion(true);
