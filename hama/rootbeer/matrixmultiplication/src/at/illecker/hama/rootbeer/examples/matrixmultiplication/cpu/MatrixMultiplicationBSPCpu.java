@@ -17,6 +17,8 @@
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.logging.Log;
@@ -41,6 +43,7 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
+import org.apache.hama.util.KeyValuePair;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
 import org.apache.mahout.math.Vector;
@@ -73,7 +76,8 @@ public class MatrixMultiplicationBSPCpu
   private boolean isDebuggingEnabled;
   private FSDataOutputStream logger;
   private String masterTask;
-  private SequenceFile.Reader reader;
+
+  private List<KeyValuePair<Integer, Vector>> bColumns = new ArrayList<KeyValuePair<Integer, Vector>>();
   private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
 
   @Override
@@ -100,7 +104,18 @@ public class MatrixMultiplicationBSPCpu
       }
     }
 
-    reopenMatrixB(peer.getConfiguration());
+    // Receive columns of Matrix B
+    SequenceFile.Reader reader = new SequenceFile.Reader(FileSystem.get(conf),
+        new Path(conf.get(MATRIX_MULT_B_PATH)), conf);
+
+    IntWritable bKey = new IntWritable();
+    VectorWritable bVector = new VectorWritable();
+    // for each col of matrix B (cause by transposed B)
+    while (reader.next(bKey, bVector)) {
+      bColumns
+          .add(new KeyValuePair<Integer, Vector>(bKey.get(), bVector.get()));
+    }
+    reader.close();
   }
 
   @Override
@@ -120,19 +135,16 @@ public class MatrixMultiplicationBSPCpu
       }
 
       DenseVector outVector = null;
-      IntWritable bKey = new IntWritable();
-      VectorWritable bVector = new VectorWritable();
-      // while for each col of matrix B (cause by transposed B)
-      while (reader.next(bKey, bVector)) {
+      // for each col of matrix B (cause by transposed B)
+      for (KeyValuePair<Integer, Vector> bVectorRow : bColumns) {
 
         if (outVector == null) {
-          outVector = new DenseVector(bVector.get().size());
+          outVector = new DenseVector(bVectorRow.getValue().size());
         }
 
-        double dot = aVector.get().dot(bVector.get());
+        double dot = aVector.get().dot(bVectorRow.getValue());
 
-        outVector.set(bKey.get(), dot);
-
+        outVector.set(bVectorRow.getKey(), dot);
       }
 
       peer.send(masterTask, new MatrixRowMessage(aKey.get(),
@@ -143,13 +155,9 @@ public class MatrixMultiplicationBSPCpu
             + outVector.toString() + "\n");
         logger.flush();
       }
-
-      reopenMatrixB(peer.getConfiguration());
     }
-    reader.close();
 
     peer.sync();
-
   }
 
   @Override
@@ -173,14 +181,6 @@ public class MatrixMultiplicationBSPCpu
         peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
       }
     }
-  }
-
-  public void reopenMatrixB(Configuration conf) throws IOException {
-    if (reader != null) {
-      reader.close();
-    }
-    reader = new SequenceFile.Reader(FileSystem.get(conf), new Path(
-        conf.get(MATRIX_MULT_B_PATH)), conf);
   }
 
   static void printOutput(Configuration conf) throws IOException {
@@ -238,7 +238,7 @@ public class MatrixMultiplicationBSPCpu
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
     LOG.info("DEBUG: bsp.join.expr: " + job.get("bsp.join.expr"));
-    
+
     return job;
   }
 
