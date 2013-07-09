@@ -14,12 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.cpu;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
@@ -48,30 +45,25 @@ import org.apache.hama.bsp.join.CompositeInputFormat;
 import org.apache.hama.bsp.join.TupleWritable;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.CardinalityException;
-import org.apache.mahout.math.DenseVector;
 import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.function.Functions;
 
-import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
-import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.util.DistributedRowMatrix;
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.util.MatrixRowMessage;
 
-public class MatrixMultiplicationBSPGpu
+public class MatrixMultiplicationBSPCpu
     extends
     BSP<IntWritable, TupleWritable, IntWritable, VectorWritable, MatrixRowMessage> {
 
   private static final Log LOG = LogFactory
-      .getLog(MatrixMultiplicationBSPGpu.class);
+      .getLog(MatrixMultiplicationBSPCpu.class);
 
   private static final String OUT_CARD = "output.vector.cardinality";
-  private static final String DEBUG = "matrixmultiplication.bsp.gpu.debug";
+  private static final String DEBUG = "matrixmultiplication.bsp.cpu.debug";
   private static final Path OUTPUT_DIR = new Path(
-      "output/hama/rootbeer/examples/matrixmultiplication/GPU-"
+      "output/hama/rootbeer/examples/matrixmultiplication/CPU-"
           + System.currentTimeMillis());
 
   private static final Path MATRIX_A_PATH = new Path(
@@ -87,10 +79,6 @@ public class MatrixMultiplicationBSPGpu
   private boolean isDebuggingEnabled;
   private FSDataOutputStream logger;
   private String masterTask;
-
-  private List<Kernel> kernels = new ArrayList<Kernel>();
-  int blockSize = 0;
-  int gridSize = 0;
 
   @Override
   public void setup(
@@ -159,72 +147,21 @@ public class MatrixMultiplicationBSPGpu
         logger.writeChars("bsp,multiplier=" + multiplier + "\n");
       }
 
-      // outFrag to double[]
-      double[] outFragArray = new double[outFrag.size()];
-      int i = 0;
-      for (Vector.Element e : outFrag.all()) {
-        outFragArray[i] = e.get();
-        i++;
+      for (Vector.Element e : multiplier.nonZeroes()) {
+
+        VectorWritable outVector = new VectorWritable();
+        // Scalar Multiplication (Vector x Element)
+        outVector.set(outFrag.times(e.get()));
+
+        peer.send(masterTask, new MatrixRowMessage(e.index(), outVector));
+
+        if (isDebuggingEnabled) {
+          logger.writeChars("bsp,send,key=" + e.index() + ",value="
+              + outVector.get().toString() + "\n");
+        }
       }
-
-      // One map task consists of multiple kernels within one block
-      // Each kernel computes a scalar multiplication
-      blockSize = multiplier.size();
-      gridSize++;
-
-      for (int j = 0; j < blockSize; j++) {
-        kernels.add(new MatrixMultiplicationBSPKernel(j, multiplier.get(j),
-            outFragArray));
-      }
-
-      Stopwatch watch = new Stopwatch();
-      watch.start();
-      Rootbeer rootbeer = new Rootbeer();
-      // blockSize = rows of Matrix A (multiplier)
-      // gridSize = cols of Matrix B (for each row a scalar multiplication
-      // has to be made)
-      rootbeer.setThreadConfig(blockSize, gridSize, kernels.size());
-      rootbeer.runAll(kernels);
-      watch.stop();
-
-      List<StatsRow> stats = rootbeer.getStats();
-      for (StatsRow row : stats) {
-        System.out.println("  StatsRow:\n");
-        System.out.println("    init time: " + row.getInitTime() + "\n");
-        System.out.println("    serial time: " + row.getSerializationTime()
-            + "\n");
-        System.out.println("    exec time: " + row.getExecutionTime() + "\n");
-        System.out.println("    deserial time: " + row.getDeserializationTime()
-            + "\n");
-        System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
-        System.out.println("    num threads: " + row.getNumThreads() + "\n");
-      }
-
       if (isDebuggingEnabled) {
-        logger.writeChars("bsp,KernelCount=" + kernels.size() + ",GPUTime="
-            + watch.elapsedTimeMillis() + "ms\n");
-        logger.writeChars("bps,blockSize=" + blockSize + ",gridSize="
-            + gridSize + "\n");
         logger.flush();
-      }
-
-      // Collect results of GPU kernels
-      for (Kernel kernel : kernels) {
-        MatrixMultiplicationBSPKernel bspKernel = (MatrixMultiplicationBSPKernel) kernel;
-
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,thread_idxx=" + bspKernel.thread_idxx
-              + ",multiplier=" + bspKernel.multiplierVal + ",vector="
-              + Arrays.toString(bspKernel.vectorVal) + "\n");
-        }
-
-        peer.send(masterTask, new MatrixRowMessage(bspKernel.row,
-            new VectorWritable(new DenseVector(bspKernel.results))));
-
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,send,key=" + bspKernel.row + ",value="
-              + Arrays.toString(bspKernel.results) + "\n");
-        }
       }
     }
     peer.sync();
@@ -303,13 +240,15 @@ public class MatrixMultiplicationBSPGpu
     // Set the job name
     job.setJobName("MatrixMultiplicationBSP CPU");
     // set the BSP class which shall be executed
-    job.setBspClass(MatrixMultiplicationBSPGpu.class);
+    job.setBspClass(MatrixMultiplicationBSPCpu.class);
     // help Hama to locale the jar to be distributed
-    job.setJarByClass(MatrixMultiplicationBSPGpu.class);
+    job.setJarByClass(MatrixMultiplicationBSPCpu.class);
 
     job.setInputFormat(CompositeInputFormat.class);
+
     job.set("bsp.join.expr", CompositeInputFormat.compose("inner",
         SequenceFileInputFormat.class, aPath, bPath));
+    LOG.info("bsp.join.expr: " + job.get("bsp.join.expr"));
 
     job.setOutputFormat(SequenceFileOutputFormat.class);
     job.setOutputKeyClass(IntWritable.class);

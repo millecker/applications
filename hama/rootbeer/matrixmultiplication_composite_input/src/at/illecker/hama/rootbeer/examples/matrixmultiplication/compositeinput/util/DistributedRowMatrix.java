@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.matrixmultiplication.util;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -50,7 +50,7 @@ import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.hadoop.TimesSquaredJob;
 import org.apache.mahout.math.hadoop.TransposeJob;
 
-import at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationBSPCpu;
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.cpu.MatrixMultiplicationBSPCpu;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;

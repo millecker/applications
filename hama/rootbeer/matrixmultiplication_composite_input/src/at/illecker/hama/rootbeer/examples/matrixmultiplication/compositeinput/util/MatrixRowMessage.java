@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.matrixmultiplication.util;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;

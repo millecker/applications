@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
+package at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.gpu;
 
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
