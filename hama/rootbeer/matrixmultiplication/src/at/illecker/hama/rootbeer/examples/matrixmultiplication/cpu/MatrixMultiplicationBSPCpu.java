@@ -17,10 +17,7 @@
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Random;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,13 +39,12 @@ import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
+import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
-import org.apache.mahout.math.function.Functions;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;
@@ -164,37 +160,18 @@ public class MatrixMultiplicationBSPCpu
     // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
-      // SortedMap because the final matrix rows should be in order
-      SortedMap<Integer, Vector> accumlatedRows = new TreeMap<Integer, Vector>();
       MatrixRowMessage currentMatrixRowMessage = null;
-
       // Collect messages
       while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
         int rowIndex = currentMatrixRowMessage.getRowIndex();
         Vector rowValues = currentMatrixRowMessage.getRowValues().get();
 
         if (isDebuggingEnabled) {
-          logger.writeChars("bsp,gotMsg,key=" + rowIndex + ",value="
+          logger.writeChars("bsp,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
         }
-
-        if (accumlatedRows.containsKey(rowIndex)) {
-          accumlatedRows.get(rowIndex).assign(rowValues, Functions.PLUS);
-        } else {
-          accumlatedRows.put(rowIndex, new RandomAccessSparseVector(rowValues));
-        }
+        peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
       }
-
-      // Write accumulated results
-      for (Map.Entry<Integer, Vector> row : accumlatedRows.entrySet()) {
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,write,key=" + row.getKey() + ",value="
-              + row.getValue().toString() + "\n");
-        }
-        peer.write(new IntWritable(row.getKey()),
-            new VectorWritable(row.getValue()));
-      }
-
     }
   }
 
@@ -252,6 +229,10 @@ public class MatrixMultiplicationBSPCpu
     job.set(MATRIX_MULT_B_PATH, bPath.toString());
     job.set("bsp.child.java.opts", "-Xmx4G");
 
+    // Order message by row index
+    job.set(MessageManager.QUEUE_TYPE_CLASS,
+        "org.apache.hama.bsp.message.queue.SortedMessageQueue");
+    
     return job;
   }
 
