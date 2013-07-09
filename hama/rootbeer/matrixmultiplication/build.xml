@@ -1,0 +1,17 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="output.file" value="MatrixMultiplication" />
+	<property name="libjars.gpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
+	<property name="libjars.cpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/matrixmultiplication/gpu" />
+	<property name="rootbeer.classes" value="MatrixMultiplicationBSPKernel.class" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpu" />
+	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationBSPCpu" />
+	<property name="bench.class" value="" />
+	<property name="program" value="hama" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="numBspTask numRowsA numColsA numRowsB numColsB debug" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
