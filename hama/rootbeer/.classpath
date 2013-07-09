@@ -3,6 +3,7 @@
 	<classpathentry kind="src" path="hellorootbeer/src"/>
 	<classpathentry kind="src" path="piestimator/src"/>
 	<classpathentry kind="src" path="matrixmultiplication/src"/>
+	<classpathentry kind="src" path="matrixmultiplication_composite_input/src"/>
 	<classpathentry kind="src" path="pagerank/src"/>
 	<classpathentry kind="src" path="singleshortestpath/src"/>
 	<classpathentry kind="src" path="util/src"/>
