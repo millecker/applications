@@ -17,6 +17,6 @@ hama seqdumper -libjars HamaExamples.jar -seqFile input/examples/MatrixA.seq
 
 # MatrixMultiplication
 ./HamaExamples.sh de.jungblut.bsp.MatrixMultiplicationBSP
-./HamaExamples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {N}
+./HamaExamples.sh at.illecker.hama.examples.matrixmultiplication.MatrixMultiplication {MATRIX_SIZE_N} {NumBspTasks}
 
 ###############################################################################

@@ -124,9 +124,13 @@ public class MatrixMultiplication
 
     int n = 200;
     int m = 200;
+    int numBspTask = 0;
     if (args.length > 0) {
       n = Integer.parseInt(args[0]);
       m = n;
+    }
+    if (args.length > 1) {
+      numBspTask = Integer.parseInt(args[1]);
     }
 
     System.out.println("DenseDoubleMatrix Size: " + n + "x" + m);
@@ -156,10 +160,12 @@ public class MatrixMultiplication
     // set Job Config
     BSPJob job = new BSPJob(conf);
 
-    // job.setNumBspTask(4);
+    if (numBspTask>0) {
+      job.setNumBspTask(numBspTask);
+    }
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+    LOG.info("DEBUG: (NumBspTask=bsp.peers.num): " + job.get("bsp.peers.num"));
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
-    LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
 
     job.setInputFormat(SequenceFileInputFormat.class);
