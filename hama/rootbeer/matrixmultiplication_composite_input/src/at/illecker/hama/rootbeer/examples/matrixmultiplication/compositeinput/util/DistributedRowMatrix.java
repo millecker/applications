@@ -51,6 +51,7 @@ import org.apache.mahout.math.hadoop.TimesSquaredJob;
 import org.apache.mahout.math.hadoop.TransposeJob;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.cpu.MatrixMultiplicationBSPCpu;
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.gpu.MatrixMultiplicationBSPGpu;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -238,11 +239,9 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
           initialConf, transposed.rowPath, other.rowPath, outPath.getParent(),
           other.numCols);
     } else { // use GPU
-      /*
-       * conf = MatrixMultiplicationGpu.createMatrixMultiplicationGpuConf(
-       * initialConf, transposed.rowPath, other.rowPath, outPath,
-       * other.numCols);
-       */
+      job = MatrixMultiplicationBSPGpu.createMatrixMultiplicationBSPGpuConf(
+          initialConf, transposed.rowPath, other.rowPath, outPath.getParent(),
+          other.numCols);
     }
 
     // Multiply Matrix with transposed one

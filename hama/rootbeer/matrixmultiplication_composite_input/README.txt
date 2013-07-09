@@ -1,5 +1,5 @@
 ###############################################################################
-##### MatrixMultiplication Example                                        #####
+##### MatrixMultiplication using CompositeInputFormat Example             #####
 ###############################################################################
 
 # Use Apache Ant to build and run example

@@ -288,20 +288,20 @@ public class MatrixMultiplicationBSPGpu
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  public static BSPJob createMatrixMultiplicationBSPCpuConf(Path aPath,
+  public static BSPJob createMatrixMultiplicationBSPGpuConf(Path aPath,
       Path bPath, Path outPath, int outCardinality) throws IOException {
 
-    return createMatrixMultiplicationBSPCpuConf(new HamaConfiguration(), aPath,
+    return createMatrixMultiplicationBSPGpuConf(new HamaConfiguration(), aPath,
         bPath, outPath, outCardinality);
   }
 
-  public static BSPJob createMatrixMultiplicationBSPCpuConf(Configuration conf,
+  public static BSPJob createMatrixMultiplicationBSPGpuConf(Configuration conf,
       Path aPath, Path bPath, Path outPath, int outCardinality)
       throws IOException {
 
     BSPJob job = new BSPJob(new HamaConfiguration(conf));
     // Set the job name
-    job.setJobName("MatrixMultiplicationBSP CPU");
+    job.setJobName("MatrixMultiplicationBSP GPU");
     // set the BSP class which shall be executed
     job.setBspClass(MatrixMultiplicationBSPGpu.class);
     // help Hama to locale the jar to be distributed
@@ -364,10 +364,10 @@ public class MatrixMultiplicationBSPGpu
       conf.setInt("bsp.peers.num", cluster.getMaxTasks());
     }
 
-    conf.setInt("matrixmultiplication.bsp.cpu.numRowsA", numRowsA);
-    conf.setInt("matrixmultiplication.bsp.cpu.numColsA", numColsA);
-    conf.setInt("matrixmultiplication.bsp.cpu.numRowsB", numRowsB);
-    conf.setInt("matrixmultiplication.bsp.cpu.numColsB", numRowsB);
+    conf.setInt("matrixmultiplication.bsp.gpu.numRowsA", numRowsA);
+    conf.setInt("matrixmultiplication.bsp.gpu.numColsA", numColsA);
+    conf.setInt("matrixmultiplication.bsp.gpu.numRowsB", numRowsB);
+    conf.setInt("matrixmultiplication.bsp.gpu.numColsB", numRowsB);
     conf.setBoolean(DEBUG, isDebugging);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
@@ -401,7 +401,7 @@ public class MatrixMultiplicationBSPGpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, true, false);
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
