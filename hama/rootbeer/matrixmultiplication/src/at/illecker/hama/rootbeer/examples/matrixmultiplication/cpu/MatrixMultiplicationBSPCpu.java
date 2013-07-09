@@ -44,6 +44,7 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.CardinalityException;
+import org.apache.mahout.math.DenseVector;
 import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
@@ -113,6 +114,7 @@ public class MatrixMultiplicationBSPCpu
 
     IntWritable aKey = new IntWritable();
     VectorWritable aVector = new VectorWritable();
+    // while for each row of matrix A
     while (peer.readNext(aKey, aVector)) {
 
       // Logging
@@ -121,34 +123,28 @@ public class MatrixMultiplicationBSPCpu
             + aVector.get().toString() + "\n");
       }
 
-      // multiplier is Matrix which has the resulting row count
-      // (transposed matrixA)
-      Vector multiplier = aVector.get();
-      if (isDebuggingEnabled) {
-        logger.writeChars("bsp,multiplier=" + multiplier + "\n");
-      }
-
+      DenseVector outVector = null;
       IntWritable bKey = new IntWritable();
       VectorWritable bVector = new VectorWritable();
-      // while for each row of matrix B
+      // while for each col of matrix B (cause by transposed B)
       while (reader.next(bKey, bVector)) {
 
-        for (Vector.Element e : multiplier.nonZeroes()) {
-
-          VectorWritable outVector = new VectorWritable();
-          // Scalar Multiplication (Vector x Element)
-          outVector.set(bVector.get().times(e.get()));
-
-          peer.send(masterTask, new MatrixRowMessage(e.index(), outVector));
-
-          if (isDebuggingEnabled) {
-            logger.writeChars("bsp,send,key=" + e.index() + ",value="
-                + outVector.get().toString() + "\n");
-          }
+        if (outVector == null) {
+          outVector = new DenseVector(bVector.get().size());
         }
+
+        double dot = aVector.get().dot(bVector.get());
+
+        outVector.set(bKey.get(), dot);
+
       }
 
+      peer.send(masterTask, new MatrixRowMessage(aKey.get(),
+          new VectorWritable(outVector)));
+
       if (isDebuggingEnabled) {
+        logger.writeChars("bsp,send,key=" + aKey.get() + ",value="
+            + outVector.toString() + "\n");
         logger.flush();
       }
 
@@ -157,6 +153,7 @@ public class MatrixMultiplicationBSPCpu
     reader.close();
 
     peer.sync();
+
   }
 
   @Override
@@ -319,11 +316,12 @@ public class MatrixMultiplicationBSPCpu
 
     // Create random DistributedRowMatrix
     // use constant seeds to get reproducable results
-    // Matrix A is stored transposed
+    // Matrix A
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-        numColsA, new Random(42L), MATRIX_A_PATH, true);
+        numColsA, new Random(42L), MATRIX_A_PATH, false);
+    // Matrix B is stored transposed
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_PATH, false);
+        numColsB, new Random(1337L), MATRIX_B_PATH, true);
 
     // Load DistributedRowMatrix a and b
     DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
@@ -341,11 +339,11 @@ public class MatrixMultiplicationBSPCpu
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
     // Verification
-    // Overwrite matrix A, NOT transposed for verification check
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-        numColsA, new Random(42L), MATRIX_A_PATH, false);
-    a = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR, numRowsA, numColsA);
-    a.setConf(conf);
+    // Overwrite matrix B, NOT transposed for verification check
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
+        numColsB, new Random(1337L), MATRIX_B_PATH, false);
+    b = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
+    b.setConf(conf);
 
     DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
     if (c.verify(d)) {
