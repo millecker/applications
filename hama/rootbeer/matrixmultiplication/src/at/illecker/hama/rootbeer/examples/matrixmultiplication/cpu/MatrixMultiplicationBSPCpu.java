@@ -219,12 +219,11 @@ public class MatrixMultiplicationBSPCpu
 
     job.setInputFormat(SequenceFileInputFormat.class);
     job.setInputPath(aPath);
-    LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
 
     job.setOutputFormat(SequenceFileOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, outPath);
     job.setOutputKeyClass(IntWritable.class);
     job.setOutputValueClass(VectorWritable.class);
+    job.setOutputPath(outPath);
 
     job.set(MATRIX_MULT_B_PATH, bPath.toString());
     job.set("bsp.child.java.opts", "-Xmx4G");
@@ -233,6 +232,13 @@ public class MatrixMultiplicationBSPCpu
     job.set(MessageManager.QUEUE_TYPE_CLASS,
         "org.apache.hama.bsp.message.queue.SortedMessageQueue");
 
+    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+    LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
+    LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
+    LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
+    LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
+    LOG.info("DEBUG: bsp.join.expr: " + job.get("bsp.join.expr"));
+    
     return job;
   }
 
@@ -315,7 +321,7 @@ public class MatrixMultiplicationBSPCpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, true);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false);
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
