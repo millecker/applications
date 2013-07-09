@@ -235,8 +235,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
     BSPJob job = null;
     if (!useGPU) {
       job = MatrixMultiplicationBSPCpu.createMatrixMultiplicationBSPCpuConf(
-          initialConf, transposed.rowPath, other.rowPath, outPath.getParent(),
-          other.numCols);
+          initialConf, transposed.rowPath, other.rowPath, outPath.getParent());
     } else { // use GPU
       /*
        * conf = MatrixMultiplicationGpu.createMatrixMultiplicationGpuConf(

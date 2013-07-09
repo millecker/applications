@@ -32,6 +32,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSP;
 import org.apache.hama.bsp.BSPJob;
@@ -41,8 +42,6 @@ import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
-import org.apache.hama.bsp.join.CompositeInputFormat;
-import org.apache.hama.bsp.join.TupleWritable;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.RandomAccessSparseVector;
@@ -55,12 +54,11 @@ import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMes
 
 public class MatrixMultiplicationBSPCpu
     extends
-    BSP<IntWritable, TupleWritable, IntWritable, VectorWritable, MatrixRowMessage> {
+    BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> {
 
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationBSPCpu.class);
 
-  private static final String OUT_CARD = "output.vector.cardinality";
   private static final String DEBUG = "matrixmultiplication.bsp.cpu.debug";
   private static final Path OUTPUT_DIR = new Path(
       "output/hama/rootbeer/examples/matrixmultiplication/CPU-"
@@ -75,19 +73,19 @@ public class MatrixMultiplicationBSPCpu
   private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
       + "/MatrixD.seq");
 
-  private int outCardinality;
   private boolean isDebuggingEnabled;
   private FSDataOutputStream logger;
   private String masterTask;
+  private SequenceFile.Reader reader;
+  private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
 
   @Override
   public void setup(
-      BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
       throws IOException {
 
     Configuration conf = peer.getConfiguration();
 
-    outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
     isDebuggingEnabled = conf.getBoolean(DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
@@ -100,76 +98,70 @@ public class MatrixMultiplicationBSPCpu
         logger = fs.create(new Path(FileOutputFormat.getOutputPath(new BSPJob(
             (HamaConfiguration) conf)) + "/BSP_" + peer.getTaskId() + ".log"));
 
-        logger.writeChars("bsp,setup,outCardinality=" + outCardinality + "\n");
       } catch (IOException e) {
         e.printStackTrace();
       }
     }
 
+    reopenMatrixB(peer.getConfiguration());
   }
 
   @Override
   public void bsp(
-      BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    IntWritable key = new IntWritable();
-    TupleWritable value = new TupleWritable();
-    while (peer.readNext(key, value)) {
+    IntWritable aKey = new IntWritable();
+    VectorWritable aVector = new VectorWritable();
+    while (peer.readNext(aKey, aVector)) {
 
       // Logging
       if (isDebuggingEnabled) {
-        for (int i = 0; i < value.size(); i++) {
-          Vector vector = ((VectorWritable) value.get(i)).get();
-          logger.writeChars("bsp,input,key=" + key + ",value="
-              + vector.toString() + "\n");
-        }
+        logger.writeChars("bsp,input,key=" + aKey + ",value="
+            + aVector.get().toString() + "\n");
       }
-
-      Vector firstVector = ((VectorWritable) value.get(0)).get();
-      Vector secondVector = ((VectorWritable) value.get(1)).get();
-
-      // outCardinality is resulting column size n
-      // (l x m) * (m x n) = (l x n)
-      boolean firstIsOutFrag = secondVector.size() == outCardinality;
-
-      // outFrag is Matrix which has the resulting column cardinality
-      // (matrixB)
-      Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
 
       // multiplier is Matrix which has the resulting row count
       // (transposed matrixA)
-      Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
-
+      Vector multiplier = aVector.get();
       if (isDebuggingEnabled) {
-        logger.writeChars("bsp,firstIsOutFrag=" + firstIsOutFrag + "\n");
-        logger.writeChars("bsp,outFrag=" + outFrag + "\n");
         logger.writeChars("bsp,multiplier=" + multiplier + "\n");
       }
 
-      for (Vector.Element e : multiplier.nonZeroes()) {
+      IntWritable bKey = new IntWritable();
+      VectorWritable bVector = new VectorWritable();
+      // while for each row of matrix B
+      while (reader.next(bKey, bVector)) {
 
-        VectorWritable outVector = new VectorWritable();
-        // Scalar Multiplication (Vector x Element)
-        outVector.set(outFrag.times(e.get()));
+        for (Vector.Element e : multiplier.nonZeroes()) {
 
-        peer.send(masterTask, new MatrixRowMessage(e.index(), outVector));
+          VectorWritable outVector = new VectorWritable();
+          // Scalar Multiplication (Vector x Element)
+          outVector.set(bVector.get().times(e.get()));
 
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,send,key=" + e.index() + ",value="
-              + outVector.get().toString() + "\n");
+          peer.send(masterTask, new MatrixRowMessage(e.index(), outVector));
+
+          if (isDebuggingEnabled) {
+            logger.writeChars("bsp,send,key=" + e.index() + ",value="
+                + outVector.get().toString() + "\n");
+          }
         }
       }
+
       if (isDebuggingEnabled) {
         logger.flush();
       }
+
+      reopenMatrixB(peer.getConfiguration());
     }
+    reader.close();
+
     peer.sync();
   }
 
   @Override
   public void cleanup(
-      BSPPeer<IntWritable, TupleWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
       throws IOException {
 
     // MasterTask accumulates result
@@ -209,6 +201,14 @@ public class MatrixMultiplicationBSPCpu
     }
   }
 
+  public void reopenMatrixB(Configuration conf) throws IOException {
+    if (reader != null) {
+      reader.close();
+    }
+    reader = new SequenceFile.Reader(FileSystem.get(conf), new Path(
+        conf.get(MATRIX_MULT_B_PATH)), conf);
+  }
+
   static void printOutput(Configuration conf) throws IOException {
     FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
     FileStatus[] files = fs.listStatus(OUTPUT_DIR);
@@ -226,15 +226,14 @@ public class MatrixMultiplicationBSPCpu
   }
 
   public static BSPJob createMatrixMultiplicationBSPCpuConf(Path aPath,
-      Path bPath, Path outPath, int outCardinality) throws IOException {
+      Path bPath, Path outPath) throws IOException {
 
     return createMatrixMultiplicationBSPCpuConf(new HamaConfiguration(), aPath,
-        bPath, outPath, outCardinality);
+        bPath, outPath);
   }
 
   public static BSPJob createMatrixMultiplicationBSPCpuConf(Configuration conf,
-      Path aPath, Path bPath, Path outPath, int outCardinality)
-      throws IOException {
+      Path aPath, Path bPath, Path outPath) throws IOException {
 
     BSPJob job = new BSPJob(new HamaConfiguration(conf));
     // Set the job name
@@ -244,19 +243,16 @@ public class MatrixMultiplicationBSPCpu
     // help Hama to locale the jar to be distributed
     job.setJarByClass(MatrixMultiplicationBSPCpu.class);
 
-    job.setInputFormat(CompositeInputFormat.class);
-
-    job.set("bsp.join.expr", CompositeInputFormat.compose("inner",
-        SequenceFileInputFormat.class, aPath, bPath));
-    LOG.info("bsp.join.expr: " + job.get("bsp.join.expr"));
+    job.setInputFormat(SequenceFileInputFormat.class);
+    job.setInputPath(aPath);
+    LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
 
     job.setOutputFormat(SequenceFileOutputFormat.class);
+    FileOutputFormat.setOutputPath(job, outPath);
     job.setOutputKeyClass(IntWritable.class);
     job.setOutputValueClass(VectorWritable.class);
 
-    FileOutputFormat.setOutputPath(job, outPath);
-
-    job.set(OUT_CARD, "" + outCardinality);
+    job.set(MATRIX_MULT_B_PATH, bPath.toString());
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     return job;
