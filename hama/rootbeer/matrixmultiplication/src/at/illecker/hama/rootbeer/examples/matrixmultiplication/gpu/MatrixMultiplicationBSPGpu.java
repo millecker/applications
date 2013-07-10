@@ -162,12 +162,12 @@ public class MatrixMultiplicationBSPGpu
         i++;
       }
 
-      // Each kernel computes a scalar product
+      // Each kernel computes a scalar multiplication
       blockSize = aRow.length;
       gridSize++;
 
       for (int j = 0; j < blockSize; j++) {
-        kernels.add(new MatrixMultiplicationBSPKernel(aKey.get(), aRow, bCols));
+        kernels.add(new MatrixMultiplicationBSPSliceKernel(aKey.get(), aRow, bCols));
       }
 
     }
@@ -204,7 +204,7 @@ public class MatrixMultiplicationBSPGpu
     }
 
     for (Kernel kernel : kernels) {
-      MatrixMultiplicationBSPKernel bspKernel = (MatrixMultiplicationBSPKernel) kernel;
+      MatrixMultiplicationBSPSliceKernel bspKernel = (MatrixMultiplicationBSPSliceKernel) kernel;
 
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,kernel,block_idxx=" + bspKernel.block_idxx
