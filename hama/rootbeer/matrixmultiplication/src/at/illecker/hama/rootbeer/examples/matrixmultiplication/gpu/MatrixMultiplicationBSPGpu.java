@@ -124,6 +124,11 @@ public class MatrixMultiplicationBSPGpu
     while (reader.next(bKey, bVector)) {
       bColumns
           .add(new KeyValuePair<Integer, Vector>(bKey.get(), bVector.get()));
+
+      if (isDebuggingEnabled) {
+        logger.writeChars("bsp,setup,MatrixB (" + bKey.get() + ","
+            + bVector.get() + ")\n");
+      }
     }
     reader.close();
 
@@ -134,6 +139,12 @@ public class MatrixMultiplicationBSPGpu
       for (Vector.Element e : bColumns.get(j).getValue().all()) {
         bCols[j][i] = e.get();
         i++;
+      }
+    }
+    if (isDebuggingEnabled) {
+      for (int i = 0; i < bCols.length; i++) {
+        logger.writeChars("bsp,setup,bCols (" + i + ","
+            + Arrays.toString(bCols[i]) + ")\n");
       }
     }
   }
@@ -167,7 +178,8 @@ public class MatrixMultiplicationBSPGpu
       gridSize++;
 
       for (int j = 0; j < blockSize; j++) {
-        kernels.add(new MatrixMultiplicationBSPSliceKernel(aKey.get(), aRow, bCols));
+        kernels.add(new MatrixMultiplicationBSPSliceKernel(aKey.get(), aRow,
+            bCols, blockSize, 1));
       }
 
     }
@@ -211,19 +223,38 @@ public class MatrixMultiplicationBSPGpu
             + "\n");
         logger.writeChars("bsp,kernel,thread_idxx=" + bspKernel.thread_idxx
             + "\n");
-        logger.writeChars("bsp,kernel,aRowSharedMemIndex="
-            + Arrays.toString(bspKernel.aRowSharedMemIndex) + "\n");
-        logger.writeChars("bsp,kernel,aRowSharedMemValues="
-            + Arrays.toString(bspKernel.aRowSharedMemValues) + "\n");
+        logger.writeChars("bsp,kernel,blockSize=" + bspKernel.blockSize + "\n");
+        logger.writeChars("bsp,kernel,threadIters=" + bspKernel.threadIters
+            + "\n");
+        logger.writeChars("bsp,kernel,slizeSize=" + bspKernel.sliceSize + "\n");
+        logger.writeChars("bsp,kernel,columnsSliceSize="
+            + bspKernel.columnsSliceSize + "\n");
 
-        logger.writeChars("bsp,kernel,bColsSharedMemIndex="
-            + Arrays.toString(bspKernel.bColsSharedMemIndex) + "\n");
-        logger.writeChars("bsp,kernel,bColsSharedMemValues="
-            + Arrays.toString(bspKernel.bColsSharedMemValues) + "\n");
+        for (int i = 0; i < bspKernel.threadIters; i++) {
+          logger.writeChars("bsp,kernel,threadIter=" + i
+              + ",bColsSharedMemIndex="
+              + Arrays.toString(bspKernel.bColsSharedMemIndex[i]) + "\n");
+          logger.writeChars("bsp,kernel,threadIter=" + i
+              + ",bColsSharedMemValues="
+              + Arrays.toString(bspKernel.bColsSharedMemValues[i]) + "\n");
+        }
 
-        logger.writeChars("bsp,kernel,bColum="
-            + Arrays.toString(bspKernel.bColum) + "\n");
-        logger.writeChars("bsp,kernel,result=" + bspKernel.result + "\n");
+        logger.writeChars("bsp,kernel,multipliers="
+            + Arrays.toString(bspKernel.multipliers) + "\n");
+
+        for (int i = 0; i < bspKernel.columnsSliceSize; i++) {
+          logger.writeChars("bsp,kernel,columnsSliceId=" + i + ",currBColumns="
+              + Arrays.toString(bspKernel.currBColumns[i]) + "\n");
+        }
+
+        logger.writeChars("bsp,kernel,sumResultsSetSharedMemIndex="
+            + Arrays.toString(bspKernel.sumResultsSetSharedMemIndex) + "\n");
+        logger.writeChars("bsp,kernel,sumResultsSetSharedMemValues="
+            + Arrays.toString(bspKernel.sumResultsSetSharedMemValues) + "\n");
+        logger.writeChars("bsp,kernel,sumResultsGetSharedMemIndex="
+            + Arrays.toString(bspKernel.sumResultsGetSharedMemIndex) + "\n");
+        logger.writeChars("bsp,kernel,sumResultsGetSharedMemValues="
+            + Arrays.toString(bspKernel.sumResultsGetSharedMemValues) + "\n");
 
       }
 
@@ -239,6 +270,7 @@ public class MatrixMultiplicationBSPGpu
               + outVector.toString() + "\n");
           logger.flush();
         }
+
       }
     }
 
