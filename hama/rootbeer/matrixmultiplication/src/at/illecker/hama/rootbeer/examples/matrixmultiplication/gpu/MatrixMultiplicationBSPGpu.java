@@ -215,7 +215,7 @@ public class MatrixMultiplicationBSPGpu
     }
     
     if (isDebuggingEnabled) {
-      logger.writeChars("bsp,KernelCount=" + blockSize*gridSize + ",GPUTime="
+      logger.writeChars("bsp,threadNum=" + blockSize*gridSize + ",GPUTime="
           + watch.elapsedTimeMillis() + "ms\n");
       logger.writeChars("bps,blockSize=" + blockSize + ",gridSize=" + gridSize
           + "\n");

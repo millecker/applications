@@ -48,7 +48,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
   public int threadSliceSize;
   public int blockSliceSize;
 
-  public MatrixMultiplicationBSPSliceKernel(int[] rowAId, double[][] matrixA,
+  public MatrixMultiplicationBSPSliceKernel(int[] rowAId, double[][] rowsA,
       double[][] matrixB, int blockSize, int gridSize) {
     this.rowAId = rowAId;
     this.rowsA = rowsA;
@@ -68,7 +68,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     int matrixAColSize = rowsA[0].length;
     int matrixBRowSize = this.matrixB.length;
     int matrixBColSize = this.matrixB[0].length;
-
+    
     // Check for wrong matrix sizes
     if (matrixAColSize != matrixBRowSize) {
       return;
@@ -118,7 +118,6 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
       // Sync threads, until shared memory is established
       RootbeerGpu.syncthreads();
-
       
       
       
