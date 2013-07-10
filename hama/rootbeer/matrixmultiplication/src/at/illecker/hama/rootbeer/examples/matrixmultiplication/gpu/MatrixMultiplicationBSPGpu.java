@@ -223,16 +223,13 @@ public class MatrixMultiplicationBSPGpu
     }
     
 
-
-    /*
-    List<Calculation> calc_list = kernel.m_calcList.getList();
+    List<Calculation> calc_list = kernel.calcList.getList();
     for(Calculation calc : calc_list){
       if(calc == null){
         continue;
       }
-      System.out.println(calc.toString());
+      logger.writeChars("bps,calc="+calc.toString());
     }
-    */
 
     
     /*

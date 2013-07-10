@@ -31,9 +31,6 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
   public double[] results = null;
 
   // debug
-  public int[] bColsSharedMemIndex;
-  public double[] bColsSharedMemValues;
-  
   /*
   public double[] multipliers;
   public double[][] currBColumns;
@@ -42,11 +39,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
   public int[] sumResultsGetSharedMemIndex;
   public double[] sumResultsGetSharedMemValues;
   */
+  public CalcList calcList;
   
-  public int thread_idxx;
-  public int block_idxx;
-  public int threadSliceSize;
-  public int blockSliceSize;
 
   public MatrixMultiplicationBSPSliceKernel(int[] rowAId, double[][] rowsA,
       double[][] matrixB, int blockSize, int gridSize) {
@@ -55,14 +49,15 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     this.matrixB = matrixB;
     this.blockSize = blockSize;
     this.gridSize = gridSize;
+    calcList = new CalcList();
   }
 
   public void gpuMethod() {
 
     // int blockSize = RootbeerGpu.getBlockDimx();
     // int gridSize = RootbeerGpu.getGridDimx();
-    block_idxx = RootbeerGpu.getBlockIdxx();
-    thread_idxx = RootbeerGpu.getThreadIdxx();
+    int block_idxx = RootbeerGpu.getBlockIdxx();
+    int thread_idxx = RootbeerGpu.getThreadIdxx();
     // int globalThreadIndex = block_idxx * blockSize + thread_idxx;
 
     int matrixAColSize = rowsA[0].length;
@@ -76,11 +71,11 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     // threadSliceSize defines how much multipliers of row A a thread has to
     // compute with rows of col B
-    threadSliceSize = matrixAColSize / blockSize;
+    int threadSliceSize = matrixAColSize / blockSize;
 
     // blockSliceSize defines the column slice amount
     // columns of B per blockIters
-    blockSliceSize = matrixBColSize / gridSize;
+    int blockSliceSize = matrixBColSize / gridSize;
 
     // Setup results only within first thread of block
     if (thread_idxx == 0) {
@@ -94,9 +89,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     // * sliceSize * 8;
     // int resultsStartIndex = columnSlizeResultsStartIndex + blockSize * 8;
 
-    
-    bColsSharedMemIndex = new int[blockSliceSize * threadSliceSize];
-    bColsSharedMemValues = new double[blockSliceSize * threadSliceSize];
+    int[] bColsSharedMemIndex = new int[blockSliceSize * threadSliceSize];
+    double[] bColsSharedMemValues = new double[blockSliceSize * threadSliceSize];
 
       // Setup columns of matrix B to shared memory
       for (int i = 0; i < blockSliceSize; i++) {
@@ -119,7 +113,14 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
       // Sync threads, until shared memory is established
       RootbeerGpu.syncthreads();
       
-      
+      Calculation calc = new Calculation();          
+      calc.thread_idxx = thread_idxx;
+      calc.block_idxx = block_idxx;
+      calc.threadSliceSize = threadSliceSize;
+      calc.blockSliceSize = blockSliceSize;
+      calc.bColsSharedMemIndex = bColsSharedMemIndex;
+      calc.bColsSharedMemValues = bColsSharedMemValues;
+      calcList.add(calc);
       
       
       /*
