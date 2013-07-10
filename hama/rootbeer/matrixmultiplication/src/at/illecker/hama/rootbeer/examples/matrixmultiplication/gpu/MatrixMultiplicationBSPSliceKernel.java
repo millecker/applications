@@ -192,5 +192,6 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     // to keep kernel constructor in
     // rootbeer transformation
     new MatrixMultiplicationBSPSliceKernel(null, null, null, 0, 0);
+    new CalcList().getList();
   }
 }
