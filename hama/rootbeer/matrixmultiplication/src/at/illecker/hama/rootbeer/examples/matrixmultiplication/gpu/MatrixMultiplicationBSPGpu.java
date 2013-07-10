@@ -18,8 +18,12 @@ package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,7 +47,6 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
-import org.apache.hama.util.KeyValuePair;
 import org.apache.mahout.math.Arrays;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
@@ -80,16 +83,16 @@ public class MatrixMultiplicationBSPGpu
 
   private boolean isDebuggingEnabled;
   private FSDataOutputStream logger;
+  
   private String masterTask;
 
-  private double[][] bCols;
-  private List<KeyValuePair<Integer, Vector>> bColumns = new ArrayList<KeyValuePair<Integer, Vector>>();
   private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
-
-  private List<Kernel> kernels = new ArrayList<Kernel>();
-  int blockSize = 0;
-  int gridSize = 0;
-
+  private Map<Integer, Vector> matrixB = new TreeMap<Integer, Vector>();
+  private double[][] matrixBArr;
+  
+  private final int BLOCK_SIZE = 256;
+  private final int GRID_SIZE = 14;
+ 
   @Override
   public void setup(
       BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
@@ -122,8 +125,7 @@ public class MatrixMultiplicationBSPGpu
     VectorWritable bVector = new VectorWritable();
     // for each col of matrix B (cause by transposed B)
     while (reader.next(bKey, bVector)) {
-      bColumns
-          .add(new KeyValuePair<Integer, Vector>(bKey.get(), bVector.get()));
+      matrixB.put(bKey.get(), bVector.get());
 
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,setup,MatrixB (" + bKey.get() + ","
@@ -133,18 +135,12 @@ public class MatrixMultiplicationBSPGpu
     reader.close();
 
     // Setup double array for GPU kernels
-    bCols = new double[bColumns.size()][bVector.get().size()];
-    for (int j = 0; j < bColumns.size(); j++) {
-      int i = 0;
-      for (Vector.Element e : bColumns.get(j).getValue().all()) {
-        bCols[j][i] = e.get();
-        i++;
-      }
-    }
+    matrixBArr = toArray(matrixB.values());
+    
     if (isDebuggingEnabled) {
-      for (int i = 0; i < bCols.length; i++) {
-        logger.writeChars("bsp,setup,bCols (" + i + ","
-            + Arrays.toString(bCols[i]) + ")\n");
+      for (int i = 0; i < matrixBArr.length; i++) {
+        logger.writeChars("bsp,setup,MatrixBArr (" + i + ","
+            + Arrays.toString(matrixBArr[i]) + ")\n");
       }
     }
   }
@@ -154,46 +150,57 @@ public class MatrixMultiplicationBSPGpu
       BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
+    Map<Integer, Vector> matrixA = new TreeMap<Integer, Vector>();
+    
     IntWritable aKey = new IntWritable();
     VectorWritable aVector = new VectorWritable();
     // for each row of matrix A
     while (peer.readNext(aKey, aVector)) {
-
+      matrixA.put(aKey.get(), aVector.get());  
       // Logging
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,input,key=" + aKey + ",value="
             + aVector.get().toString() + "\n");
       }
-
-      // Prepare GPU kernel inputs
-      double[] aRow = new double[aVector.get().size()];
-      int i = 0;
-      for (Vector.Element e : aVector.get().all()) {
-        aRow[i] = e.get();
-        i++;
-      }
-
-      // Each kernel computes a scalar multiplication
-      blockSize = aRow.length;
-      gridSize++;
-
-      for (int j = 0; j < blockSize; j++) {
-        kernels.add(new MatrixMultiplicationBSPSliceKernel(aKey.get(), aRow,
-            bCols, blockSize, 1));
-      }
-
     }
 
+    // Setup double array for GPU kernels
+    double[][] matrixAArr = toArray(matrixA.values());
+    if (isDebuggingEnabled) {
+      for (int i = 0; i < matrixAArr.length; i++) {
+        logger.writeChars("bsp,setup,matrixAArr (" + i + ","
+            + Arrays.toString(matrixAArr[i]) + ")\n");
+      }
+    }
+    
+    // Setup int array of Row Ids for GPU kernels
+    Set<Integer> matrixARowId = matrixB.keySet(); // your set
+    int[] matrixARowIdArr = new int[matrixARowId.size()];
+    int rowIndex = 0;
+    for(Integer rowId : matrixARowId){
+      matrixARowIdArr[rowIndex] = rowId;
+      rowIndex++;
+    }
+    if (isDebuggingEnabled) {
+        logger.writeChars("bsp,setup,matrixARowIdArr="
+            + Arrays.toString(matrixARowIdArr) + "\n");
+    }
+    
+    int blockSize = (BLOCK_SIZE>matrixAArr[0].length)?matrixAArr[0].length:BLOCK_SIZE;
+    int gridSize = (GRID_SIZE>matrixBArr[0].length)?matrixBArr[0].length:BLOCK_SIZE;
+    
+    MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(matrixARowIdArr, matrixAArr,
+           matrixBArr, blockSize, gridSize);
+    Rootbeer rootbeer = new Rootbeer();
+    rootbeer.setThreadConfig(blockSize, gridSize, blockSize*gridSize);
+    
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
     watch.start();
-    Rootbeer rootbeer = new Rootbeer();
-    // blockSize = rows of Matrix A
-    // gridSize = cols of Matrix A
-    rootbeer.setThreadConfig(blockSize, gridSize, kernels.size());
-    rootbeer.runAll(kernels);
-    watch.stop();
+    rootbeer.runAll(kernel);
+    watch.stop(); 
 
+    // DEBUG information of GPU run
     List<StatsRow> stats = rootbeer.getStats();
     for (StatsRow row : stats) {
       System.out.println("  StatsRow:\n");
@@ -206,15 +213,29 @@ public class MatrixMultiplicationBSPGpu
       System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
       System.out.println("    num threads: " + row.getNumThreads() + "\n");
     }
-
+    
     if (isDebuggingEnabled) {
-      logger.writeChars("bsp,KernelCount=" + kernels.size() + ",GPUTime="
+      logger.writeChars("bsp,KernelCount=" + blockSize*gridSize + ",GPUTime="
           + watch.elapsedTimeMillis() + "ms\n");
       logger.writeChars("bps,blockSize=" + blockSize + ",gridSize=" + gridSize
           + "\n");
       logger.flush();
     }
+    
 
+
+    /*
+    List<Calculation> calc_list = kernel.m_calcList.getList();
+    for(Calculation calc : calc_list){
+      if(calc == null){
+        continue;
+      }
+      System.out.println(calc.toString());
+    }
+    */
+
+    
+    /*
     for (Kernel kernel : kernels) {
       MatrixMultiplicationBSPSliceKernel bspKernel = (MatrixMultiplicationBSPSliceKernel) kernel;
 
@@ -270,10 +291,11 @@ public class MatrixMultiplicationBSPGpu
               + outVector.toString() + "\n");
           logger.flush();
         }
-
       }
+      
+      
     }
-
+*/
     peer.sync();
   }
 
@@ -300,6 +322,27 @@ public class MatrixMultiplicationBSPGpu
     }
   }
 
+  private double[][] toArray(Collection<Vector> vectors){
+    double[][] matrixArr = null;
+    
+    if (vectors.size()>0) {
+      
+      int i = 0;
+      for (Vector v : vectors) {
+        if (matrixArr == null) {
+          matrixArr = new double[vectors.size()][v.size()];
+        }
+        int j = 0;
+        for (Vector.Element e : v.all()) {
+          matrixArr[i][j] = e.get();
+          j++;
+        }
+        i++;
+      }
+    }
+    return matrixArr;
+  }
+  
   static void printOutput(Configuration conf) throws IOException {
     FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
     FileStatus[] files = fs.listStatus(OUTPUT_DIR);
@@ -425,7 +468,7 @@ public class MatrixMultiplicationBSPGpu
         numColsA, new Random(42L), MATRIX_A_PATH, false);
     // Matrix B is stored transposed
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_PATH, true);
+        numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
     // Load DistributedRowMatrix a and b
     DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
