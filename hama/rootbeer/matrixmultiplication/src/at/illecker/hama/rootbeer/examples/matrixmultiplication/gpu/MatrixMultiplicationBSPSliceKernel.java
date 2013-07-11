@@ -39,7 +39,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
   public int[] sumResultsGetSharedMemIndex;
   public double[] sumResultsGetSharedMemValues;
   */
-  public CalcList calcList;
+  public ResultList resultList;
   
 
   public MatrixMultiplicationBSPSliceKernel(int[] rowAId, double[][] rowsA,
@@ -49,7 +49,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     this.matrixB = matrixB;
     this.blockSize = blockSize;
     this.gridSize = gridSize;
-    calcList = new CalcList();
+    resultList = new ResultList();
   }
 
   public void gpuMethod() {
@@ -113,14 +113,14 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
       // Sync threads, until shared memory is established
       RootbeerGpu.syncthreads();
       
-      Calculation calc = new Calculation();          
-      calc.thread_idxx = thread_idxx;
-      calc.block_idxx = block_idxx;
-      calc.threadSliceSize = threadSliceSize;
-      calc.blockSliceSize = blockSliceSize;
-      calc.bColsSharedMemIndex = bColsSharedMemIndex;
-      calc.bColsSharedMemValues = bColsSharedMemValues;
-      calcList.add(calc);
+      Result result = new Result();          
+      result.thread_idxx = thread_idxx;
+      result.block_idxx = block_idxx;
+      result.threadSliceSize = threadSliceSize;
+      result.blockSliceSize = blockSliceSize;
+      result.bColsSharedMemIndex = bColsSharedMemIndex;
+      result.bColsSharedMemValues = bColsSharedMemValues;
+      resultList.add(result);
       
       
       /*
@@ -188,10 +188,10 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
   }
 
   public static void main(String[] args) {
-    // Dummy constructor invocation
-    // to keep kernel constructor in
+    // Dummy invocations to keep methods via
     // rootbeer transformation
     new MatrixMultiplicationBSPSliceKernel(null, null, null, 0, 0);
-    new CalcList().getList();
+    new ResultList().getList();
+    new Result().toString();
   }
 }

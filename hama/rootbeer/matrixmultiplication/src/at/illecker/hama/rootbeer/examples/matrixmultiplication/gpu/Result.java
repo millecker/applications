@@ -16,37 +16,35 @@
  */
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
 
-import java.util.List;
-import java.util.ArrayList;
+public class Result {
 
-public class CalcList {
+  public int thread_idxx;
+  public int block_idxx;
+  public int threadSliceSize;
+  public int blockSliceSize;
+  public int[] bColsSharedMemIndex;
+  public double[] bColsSharedMemValues;
 
-  private Calculation[] m_data;
-  private int m_size;
+  @Override
+  public String toString() {
+    StringBuilder ret = new StringBuilder();
+    ret.append("calc row: \n");
+    ret.append("  thread_idxx: ");
+    ret.append(thread_idxx);
+    ret.append("\n");
 
-  public CalcList(){
-    m_data = new Calculation[8];
-    m_size = 0;
-  }
+    ret.append("  block_idxx: ");
+    ret.append(block_idxx);
+    ret.append("\n");
 
-  public void add(Calculation calc){
-    m_data[m_size] = calc;
-    ++m_size;
+    ret.append("  threadSliceSize: ");
+    ret.append(threadSliceSize);
+    ret.append("\n");
 
-    if(m_size == m_data.length){
-      Calculation[] new_data = new Calculation[m_size * 2];
-      for(int i = 0; i < m_size - 1; ++i){
-        new_data[i] = m_data[i];
-      }
-      m_data = new_data;
-    }
-  }
+    ret.append("  blockSliceSize: ");
+    ret.append(blockSliceSize);
+    ret.append("\n");
 
-  public List<Calculation> getList(){
-    List<Calculation> ret = new ArrayList<Calculation>();
-    for(int i = 0; i < m_size - 1; ++i){
-      ret.add(m_data[i]);
-    }
-    return ret;
+    return ret.toString();
   }
 }
