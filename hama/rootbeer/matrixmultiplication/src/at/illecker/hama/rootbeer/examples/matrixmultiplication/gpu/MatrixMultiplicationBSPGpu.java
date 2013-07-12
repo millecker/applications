@@ -223,13 +223,33 @@ public class MatrixMultiplicationBSPGpu
     }
     
 
+    int i = 0;
     List<Result> resultList = kernel.resultList.getList();
     for(Result result : resultList){
+      
       if(result == null){
+        logger.writeChars("bsp,result["+i+"]=NULL\n");
+        i++;
         continue;
       }
-      logger.writeChars("bps,result="+result.toString());
+      logger.writeChars("bsp,result["+i+"]="+result.toString()+ "\n");
+      logger.writeChars("bsp,bColsSharedMemIndex="+Arrays.toString(result.bColsSharedMemIndex)+ "\n");
+      logger.writeChars("bsp,bColsSharedMemValues="+Arrays.toString(result.bColsSharedMemValues)+ "\n");
+      for (int j = 0; j<result.multipliers.length; j++) {
+        logger.writeChars("bsp,multiplier["+j+"]="+Arrays.toString(result.multipliers[j])+ "\n");
+        logger.writeChars("bsp,bColsVals["+j+"]="+Arrays.toString(result.bColsVals[j])+ "\n");
+      }
+      logger.writeChars("bsp,threadResultsSharedMemIndex="+Arrays.toString(result.threadResultsSharedMemIndex)+ "\n");
+      logger.writeChars("bsp,threadResultsSharedMemValues="+Arrays.toString(result.threadResultsSharedMemValues)+ "\n");
+      i++;
+      
+      if (result.resultCols != null) {
+        logger.writeChars("bsp,blockResultsSharedMemIndex="+Arrays.toString(result.blockResultsSharedMemIndex)+ "\n");
+        logger.writeChars("bsp,blockResultsSharedMemValues="+Arrays.toString(result.blockResultsSharedMemValues)+ "\n");
+        logger.writeChars("bsp,resultCols="+Arrays.toString(result.resultCols)+ "\n");
+      }
     }
+    logger.writeChars("bsp,resultCount="+i+ "\n");
 
     
     /*
@@ -489,23 +509,27 @@ public class MatrixMultiplicationBSPGpu
     b = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
     b.setConf(conf);
 
+/*
     DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
     if (c.verify(d)) {
       System.out.println("Verify PASSED!");
     } else {
       System.out.println("Verify FAILED!");
     }
+ */
 
     if (isDebugging) {
+
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
       System.out.println("Matrix B:");
       b.printDistributedRowMatrix();
+      /*
       System.out.println("Matrix C:");
       c.printDistributedRowMatrix();
       System.out.println("Matrix D:");
       d.printDistributedRowMatrix();
-
+*/
       printOutput(conf);
     }
   }

@@ -22,8 +22,20 @@ public class Result {
   public int block_idxx;
   public int threadSliceSize;
   public int blockSliceSize;
+
   public int[] bColsSharedMemIndex;
   public double[] bColsSharedMemValues;
+
+  double[][] multipliers;
+  double[][] bColsVals;
+
+  int[] threadResultsSharedMemIndex;
+  double[] threadResultsSharedMemValues;
+
+  int[] blockResultsSharedMemIndex;
+  double[] blockResultsSharedMemValues;
+
+  double[] resultCols;
 
   @Override
   public String toString() {
@@ -43,7 +55,7 @@ public class Result {
 
     ret.append("  blockSliceSize: ");
     ret.append(blockSliceSize);
-    ret.append("\n");
+    // ret.append("\n");
 
     return ret.toString();
   }
