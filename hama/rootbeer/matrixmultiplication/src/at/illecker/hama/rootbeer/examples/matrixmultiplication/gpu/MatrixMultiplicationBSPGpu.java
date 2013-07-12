@@ -244,8 +244,12 @@ public class MatrixMultiplicationBSPGpu
       i++;
       
       if (result.resultCols != null) {
-        logger.writeChars("bsp,blockResultsSharedMemIndex="+Arrays.toString(result.blockResultsSharedMemIndex)+ "\n");
-        logger.writeChars("bsp,blockResultsSharedMemValues="+Arrays.toString(result.blockResultsSharedMemValues)+ "\n");
+        
+        for (int j = 0; j<result.blockResultsSharedMemIndex.length; j++) {       
+         logger.writeChars("bsp,blockResultsSharedMemIndex["+j+"]="+Arrays.toString(result.blockResultsSharedMemIndex[j])+ "\n"); 
+         logger.writeChars("bsp,blockResultsSharedMemValues["+j+"]="+Arrays.toString(result.blockResultsSharedMemValues[j])+ "\n");
+        }
+        
         logger.writeChars("bsp,resultCols="+Arrays.toString(result.resultCols)+ "\n");
       }
     }

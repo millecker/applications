@@ -167,15 +167,16 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     
     // set fields to null otherwise rootbeer will eliminate it
     result.blockResultsSharedMemIndex =  null;
-    result.threadResultsSharedMemValues = null;
+    result.blockResultsSharedMemValues = null;
     result.resultCols = null;
     
+
     // Thread 0 of each block accumulates results
     if (thread_idxx == 0) {
 
       // Debug
-      int[] blockResultsSharedMemIndex = new int[matrixARows];
-      double[] blockResultsSharedMemValues = new double[matrixARows];
+      int[][] blockResultsSharedMemIndex = new int[blockSize][matrixARows];
+      double[][] blockResultsSharedMemValues = new double[blockSize][matrixARows];
       
       double[] resultCols = new double[matrixARows];
 
@@ -187,23 +188,23 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
         for (int j = 0; j < matrixARows; j++) {
 
           int sharedMemIndex = threadSlizeResultsStartIndex
-              + (i * matrixARows * 8) + (j * matrixARows * 8);
+              + (i * 8) + (j * matrixARows * 8);
 
-          blockResultsSharedMemIndex[i] = sharedMemIndex;
-          blockResultsSharedMemValues[i] = RootbeerGpu
+          blockResultsSharedMemIndex[i][j] = sharedMemIndex;
+          blockResultsSharedMemValues[i][j] = RootbeerGpu
               .getSharedDouble(sharedMemIndex);
 
-          sum += blockResultsSharedMemValues[i];
+          sum += blockResultsSharedMemValues[i][j];
         }
         resultCols[i] = sum;
       }
       
-      result.blockResultsSharedMemIndex = threadResultsSharedMemIndex;
-      result.threadResultsSharedMemValues = threadResultsSharedMemValues;
+      result.blockResultsSharedMemIndex = blockResultsSharedMemIndex;
+      result.blockResultsSharedMemValues = blockResultsSharedMemValues;
       result.resultCols = resultCols;
 
     }
- 
+    
     resultList.add(result);
 
   }

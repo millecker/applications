@@ -32,8 +32,8 @@ public class Result {
   int[] threadResultsSharedMemIndex;
   double[] threadResultsSharedMemValues;
 
-  int[] blockResultsSharedMemIndex;
-  double[] blockResultsSharedMemValues;
+  int[][] blockResultsSharedMemIndex;
+  double[][] blockResultsSharedMemValues;
 
   double[] resultCols;
 
