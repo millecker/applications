@@ -186,8 +186,8 @@ public class MatrixMultiplicationBSPGpu
             + Arrays.toString(matrixARowIdArr) + "\n");
     }
     
-    int blockSize = (BLOCK_SIZE>matrixAArr[0].length)?matrixAArr[0].length:BLOCK_SIZE;
-    int gridSize = (GRID_SIZE>matrixBArr[0].length)?matrixBArr[0].length:BLOCK_SIZE;
+    int blockSize = 2; //(BLOCK_SIZE>matrixAArr[0].length)?matrixAArr[0].length:BLOCK_SIZE;
+    int gridSize = 2; //(GRID_SIZE>matrixBArr[0].length)?matrixBArr[0].length:BLOCK_SIZE;
     
     MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(matrixARowIdArr, matrixAArr,
            matrixBArr, blockSize, gridSize);
@@ -235,12 +235,16 @@ public class MatrixMultiplicationBSPGpu
       logger.writeChars("bsp,result["+i+"]="+result.toString()+ "\n");
       logger.writeChars("bsp,bColsSharedMemIndex="+Arrays.toString(result.bColsSharedMemIndex)+ "\n");
       logger.writeChars("bsp,bColsSharedMemValues="+Arrays.toString(result.bColsSharedMemValues)+ "\n");
+for (int k=0; k<result.bColsVals.length; k++) {
       for (int j = 0; j<result.multipliers.length; j++) {
         logger.writeChars("bsp,multiplier["+j+"]="+Arrays.toString(result.multipliers[j])+ "\n");
-        logger.writeChars("bsp,bColsVals["+j+"]="+Arrays.toString(result.bColsVals[j])+ "\n");
+        logger.writeChars("bsp,bColsVals["+k+"]["+j+"]="+Arrays.toString(result.bColsVals[k][j])+ "\n");
       }
-      logger.writeChars("bsp,threadResultsSharedMemIndex="+Arrays.toString(result.threadResultsSharedMemIndex)+ "\n");
-      logger.writeChars("bsp,threadResultsSharedMemValues="+Arrays.toString(result.threadResultsSharedMemValues)+ "\n");
+}
+      for (int j = 0; j<result.threadResultsSharedMemIndex.length; j++) { 
+        logger.writeChars("bsp,threadResultsSharedMemIndex["+j+"]="+Arrays.toString(result.threadResultsSharedMemIndex[j])+ "\n");
+        logger.writeChars("bsp,threadResultsSharedMemValues["+j+"]="+Arrays.toString(result.threadResultsSharedMemValues[j])+ "\n");
+      }
       i++;
       
       if (result.resultCols != null) {

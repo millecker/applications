@@ -89,9 +89,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     int[] bColsSharedMemIndex = new int[blockSliceSize * threadSliceSize];
     double[] bColsSharedMemValues = new double[blockSliceSize * threadSliceSize];
 
-    // TODO
-    // Only one thread within each block has to establish shared memory
-
+    
+    // Each thread sets its own shared memory within their blocks
     // Setup columns of matrix B to shared memory
     for (int i = 0; i < blockSliceSize; i++) {
       for (int j = 0; j < threadSliceSize; j++) {
@@ -115,12 +114,14 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     // Debug
     double[][] multipliers = new double[matrixARows][threadSliceSize];
-    double[][] bColsVals = new double[matrixARows][threadSliceSize];
+    double[][][] bColsVals = new double[blockSliceSize][matrixARows][threadSliceSize];
     // Debug
-    int[] threadResultsSharedMemIndex = new int[matrixARows];
-    double[] threadResultsSharedMemValues = new double[matrixARows];
+    int[][] threadResultsSharedMemIndex = new int[blockSliceSize][matrixARows];
+    double[][] threadResultsSharedMemValues = new double[blockSliceSize][matrixARows];
 
-    for (int i = 0; i < matrixARows; i++) {
+    for (int k = 0; k <blockSliceSize; k++) {
+    
+     for (int i = 0; i < matrixARows; i++) {
 
       double sum = 0;
       for (int j = 0; j < threadSliceSize; j++) {
@@ -128,23 +129,28 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
         double multiplier = rowsA[i][(thread_idxx * threadSliceSize) + j];
         multipliers[i][j] = multiplier;
 
-        bColsVals[i][j] = RootbeerGpu.getSharedDouble((thread_idxx
-            * threadSliceSize * 8)
+        bColsVals[k][i][j] = RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
+            + (thread_idxx * blockSliceSize * threadSliceSize * 8)
             + (j * 8));
+        
         sum += multiplier
-            * RootbeerGpu.getSharedDouble((thread_idxx * threadSliceSize * 8)
+            * RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
+                + (thread_idxx * blockSliceSize * threadSliceSize * 8)
                 + (j * 8));
       }
 
       int sharedMemIndex = threadSlizeResultsStartIndex
-          + (thread_idxx * matrixARows * 8) + (i * 8);
+          + (k * threadSliceSize * blockSliceSize * 8)
+          + (thread_idxx * threadSliceSize * matrixARows * 8) 
+          + (i * 8);
 
-      threadResultsSharedMemIndex[i] = sharedMemIndex;
+      threadResultsSharedMemIndex[k][i] = sharedMemIndex;
 
       RootbeerGpu.setSharedDouble(sharedMemIndex, sum);
 
-      threadResultsSharedMemValues[i] = RootbeerGpu
+      threadResultsSharedMemValues[k][i] = RootbeerGpu
           .getSharedDouble(sharedMemIndex);
+     }
     }
 
     // Sync threads, until every thread has finished

@@ -27,10 +27,10 @@ public class Result {
   public double[] bColsSharedMemValues;
 
   double[][] multipliers;
-  double[][] bColsVals;
+  double[][][] bColsVals;
 
-  int[] threadResultsSharedMemIndex;
-  double[] threadResultsSharedMemValues;
+  int[][] threadResultsSharedMemIndex;
+  double[][] threadResultsSharedMemValues;
 
   int[][] blockResultsSharedMemIndex;
   double[][] blockResultsSharedMemValues;
