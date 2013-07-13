@@ -81,8 +81,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     // Shared Memory Start Indexes
     int bColsStartIndex = 0;
-    int threadSlizeResultsStartIndex = bColsStartIndex + blockSliceSize
-        * threadSliceSize * 8;
+    int threadSlizeResultsStartIndex = bColsStartIndex + 
+        (blockSize * blockSliceSize * threadSliceSize * 8);
     // int resultsStartIndex = columnSlizeResultsStartIndex + blockSize * 8;
 
     // Debug
@@ -207,6 +207,45 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     
     resultList.add(result);
 
+    
+    
+    
+    // Accumulation of thread results using Parallel Scan
+    /*
+    int[] reductionSharedMemIndex = new int[blockSize];
+    for (int i=0; i<reductionSharedMemIndex.length; i++)
+      reductionSharedMemIndex[i] = 0;
+    
+    // Reduction
+    int stride;
+    for (stride = 1; stride <= blockSize; stride <<= 1) {
+       int index = (thread_idxx + 1) * stride * 2 - 1;
+       
+       reductionSharedMemIndex
+       
+       if (index < 2 * blockSize) {
+          scan_array[index] += scan_array[index - stride];
+       }
+       RootbeerGpu.syncthreads();
+    }
+ 
+    // Post reduction
+    for (stride = blockSize >> 1; stride; stride >>= 1) {
+       int index = (thread_idxx + 1) * stride * 2 - 1;
+       if (index + stride < 2 * blockSize)
+          scan_array[index + stride] += scan_array[index];
+       RootbeerGpu.syncthreads();
+    }
+ 
+    if (start + t < len)
+       output[start + t] = scan_array[t];
+    if (start + BLOCK_SIZE + t < len)
+       output[start + BLOCK_SIZE + t] = scan_array[BLOCK_SIZE + t];
+ 
+    if (aux && t == 0)
+       aux[blockIdx.x] = scan_array[2 * BLOCK_SIZE - 1];
+    
+    */
   }
 
   public static void main(String[] args) {
