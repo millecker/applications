@@ -321,7 +321,8 @@ public class MatrixMultiplicationBSPCpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false,
+        false);
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
