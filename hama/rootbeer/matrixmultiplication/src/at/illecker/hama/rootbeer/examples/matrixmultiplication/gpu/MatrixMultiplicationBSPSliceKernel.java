@@ -27,20 +27,10 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
   public int blockSize;
   public int gridSize;
   // output
-  public int[] rowAId;
-  public double[] results = null;
-
-  // debug
-  /*
-   * public double[][] currBColumns; public int[] sumResultsSetSharedMemIndex;
-   * public double[] sumResultsSetSharedMemValues; public int[]
-   * sumResultsGetSharedMemIndex; public double[] sumResultsGetSharedMemValues;
-   */
   public ResultList resultList;
 
-  public MatrixMultiplicationBSPSliceKernel(int[] rowAId, double[][] rowsA,
+  public MatrixMultiplicationBSPSliceKernel(double[][] rowsA,
       double[][] matrixB, int blockSize, int gridSize) {
-    this.rowAId = rowAId;
     this.rowsA = rowsA;
     this.matrixB = matrixB;
     this.blockSize = blockSize;
@@ -73,11 +63,6 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     // blockSliceSize defines the column slice amount
     // columns of B per blockIters
     int blockSliceSize = matrixBColSize / gridSize;
-
-    // Setup shared memory only within first thread of block
-    if (thread_idxx == 0) {
-      results = new double[matrixBColSize];
-    }
 
     // Shared Memory Start Indexes
     int bColsStartIndex = 0;
@@ -118,6 +103,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     int[][] threadResultsSharedMemIndex = new int[blockSliceSize][matrixARows];
     double[][] threadResultsSharedMemValues = new double[blockSliceSize][matrixARows];
 
+    // Calculate scalar product
     for (int k = 0; k < blockSliceSize; k++) {
 
       for (int i = 0; i < matrixARows; i++) {
@@ -173,10 +159,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     // set fields to null otherwise rootbeer will eliminate it
     result.blockResultsSharedMemIndex = null;
     result.blockResultsSharedMemValues = null;
+    result.resultColsIndex = null;
     result.resultCols = null;
-
-    // TODO
-    // Do parallel scan instead of sequential accumulation
 
     // Thread 0 of each block accumulates results
     if (thread_idxx == 0) {
@@ -185,8 +169,9 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
       int[][][] blockResultsSharedMemIndex = new int[blockSliceSize][blockSize][matrixARows];
       double[][][] blockResultsSharedMemValues = new double[blockSliceSize][blockSize][matrixARows];
 
+      int[] resultColsIndex = new int[blockSliceSize];
       double[][] resultCols = new double[blockSliceSize][matrixARows];
-
+      
       for (int i = 0; i < blockSliceSize; i++) {
 
         for (int j = 0; j < matrixARows; j++) {
@@ -196,9 +181,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
           for (int thread_id = 0; thread_id < blockSize; thread_id++) {
 
             int sharedMemIndex = threadSlizeResultsStartIndex
-                + (i * matrixARows * 8) 
-                + (thread_id * matrixARows * blockSliceSize * 8)
-                + (j * 8);
+                + (i * matrixARows * 8)
+                + (thread_id * matrixARows * blockSliceSize * 8) + (j * 8);
 
             blockResultsSharedMemIndex[i][thread_id][j] = sharedMemIndex;
             blockResultsSharedMemValues[i][thread_id][j] = RootbeerGpu
@@ -206,7 +190,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
             sum += blockResultsSharedMemValues[i][thread_id][j];
           }
-
+          
+          resultColsIndex[i] = (block_idxx * blockSliceSize) + i;
           resultCols[i][j] = sum;
 
         }
@@ -214,57 +199,36 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
       result.blockResultsSharedMemIndex = blockResultsSharedMemIndex;
       result.blockResultsSharedMemValues = blockResultsSharedMemValues;
+      result.resultColsIndex = resultColsIndex;
       result.resultCols = resultCols;
-
     }
 
     resultList.add(result);
 
-    RootbeerGpu.syncthreads();
+    // TODO
+    // Do parallel scan instead of sequential accumulation
 
-    
     // Accumulation of thread results using Parallel Scan
     /*
-    int[] reductionSharedMemIndex = new int[blockSize];
-    for (int i=0; i<reductionSharedMemIndex.length; i++)
-      reductionSharedMemIndex[i] = 0;
-    
-    // Reduction
-    int stride;
-    for (stride = 1; stride <= blockSize; stride <<= 1) {
-       int index = (thread_idxx + 1) * stride * 2 - 1;
-       
-       reductionSharedMemIndex
-       
-       if (index < 2 * blockSize) {
-          scan_array[index] += scan_array[index - stride];
-       }
-       RootbeerGpu.syncthreads();
-    }
- 
-    // Post reduction
-    for (stride = blockSize >> 1; stride; stride >>= 1) {
-       int index = (thread_idxx + 1) * stride * 2 - 1;
-       if (index + stride < 2 * blockSize)
-          scan_array[index + stride] += scan_array[index];
-       RootbeerGpu.syncthreads();
-    }
- 
-    if (start + t < len)
-       output[start + t] = scan_array[t];
-    if (start + BLOCK_SIZE + t < len)
-       output[start + BLOCK_SIZE + t] = scan_array[BLOCK_SIZE + t];
- 
-    if (aux && t == 0)
-       aux[blockIdx.x] = scan_array[2 * BLOCK_SIZE - 1];
-    
-    */
+     * int[] reductionSharedMemIndex = new int[blockSize]; for (int i=0;
+     * i<reductionSharedMemIndex.length; i++) reductionSharedMemIndex[i] = 0; //
+     * Reduction int stride; for (stride = 1; stride <= blockSize; stride <<= 1)
+     * { int index = (thread_idxx + 1) * stride * 2 - 1; reductionSharedMemIndex
+     * if (index < 2 * blockSize) { scan_array[index] += scan_array[index -
+     * stride]; } RootbeerGpu.syncthreads(); } // Post reduction for (stride =
+     * blockSize >> 1; stride; stride >>= 1) { int index = (thread_idxx + 1) *
+     * stride * 2 - 1; if (index + stride < 2 * blockSize) scan_array[index +
+     * stride] += scan_array[index]; RootbeerGpu.syncthreads(); } if (start + t
+     * < len) output[start + t] = scan_array[t]; if (start + BLOCK_SIZE + t <
+     * len) output[start + BLOCK_SIZE + t] = scan_array[BLOCK_SIZE + t]; if (aux
+     * && t == 0) aux[blockIdx.x] = scan_array[2 * BLOCK_SIZE - 1];
+     */
   }
 
   public static void main(String[] args) {
     // Dummy invocations to keep methods via
     // rootbeer transformation
-    new MatrixMultiplicationBSPSliceKernel(null, null, null, 0, 0);
+    new MatrixMultiplicationBSPSliceKernel(null, null, 0, 0);
     new ResultList().getList();
     new Result().toString();
   }

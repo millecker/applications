@@ -26,16 +26,18 @@ public class Result {
   public int[] bColsSharedMemIndex;
   public double[] bColsSharedMemValues;
 
-  double[][] multipliers;
-  double[][][] bColsVals;
+  public double[][] multipliers;
+  public double[][][] bColsVals;
 
-  int[][] threadResultsSharedMemIndex;
-  double[][] threadResultsSharedMemValues;
+  public int[][] threadResultsSharedMemIndex;
+  public double[][] threadResultsSharedMemValues;
 
-  int[][][] blockResultsSharedMemIndex;
-  double[][][] blockResultsSharedMemValues;
+  public int[][][] blockResultsSharedMemIndex;
+  public double[][][] blockResultsSharedMemValues;
 
-  double[][] resultCols;
+  // output
+  public int[] resultColsIndex;
+  public double[][] resultCols;
 
   @Override
   public String toString() {

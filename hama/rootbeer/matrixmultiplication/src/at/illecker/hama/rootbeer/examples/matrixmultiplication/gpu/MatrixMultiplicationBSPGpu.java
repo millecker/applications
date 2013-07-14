@@ -17,12 +17,10 @@
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
@@ -55,7 +53,6 @@ import org.apache.mahout.math.VectorWritable;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
@@ -83,16 +80,16 @@ public class MatrixMultiplicationBSPGpu
 
   private boolean isDebuggingEnabled;
   private FSDataOutputStream logger;
-  
+
   private String masterTask;
 
   private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
   private Map<Integer, Vector> matrixB = new TreeMap<Integer, Vector>();
   private double[][] matrixBArr;
-  
+
   private final int BLOCK_SIZE = 256;
   private final int GRID_SIZE = 14;
- 
+
   @Override
   public void setup(
       BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
@@ -117,13 +114,13 @@ public class MatrixMultiplicationBSPGpu
       }
     }
 
-    // Receive columns of Matrix B
+    // Receive matrix B
     SequenceFile.Reader reader = new SequenceFile.Reader(FileSystem.get(conf),
         new Path(conf.get(MATRIX_MULT_B_PATH)), conf);
 
     IntWritable bKey = new IntWritable();
     VectorWritable bVector = new VectorWritable();
-    // for each col of matrix B (cause by transposed B)
+    // for each row of matrix B
     while (reader.next(bKey, bVector)) {
       matrixB.put(bKey.get(), bVector.get());
 
@@ -134,9 +131,9 @@ public class MatrixMultiplicationBSPGpu
     }
     reader.close();
 
-    // Setup double array for GPU kernels
+    // Convert matrix B to double array for GPU kernels
     matrixBArr = toArray(matrixB.values());
-    
+
     if (isDebuggingEnabled) {
       for (int i = 0; i < matrixBArr.length; i++) {
         logger.writeChars("bsp,setup,MatrixBArr (" + i + ","
@@ -151,12 +148,12 @@ public class MatrixMultiplicationBSPGpu
       throws IOException, SyncException, InterruptedException {
 
     Map<Integer, Vector> matrixA = new TreeMap<Integer, Vector>();
-    
+
     IntWritable aKey = new IntWritable();
     VectorWritable aVector = new VectorWritable();
-    // for each row of matrix A
+    // Collect all rows of matrix A which belong to this bsp task
     while (peer.readNext(aKey, aVector)) {
-      matrixA.put(aKey.get(), aVector.get());  
+      matrixA.put(aKey.get(), aVector.get());
       // Logging
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,input,key=" + aKey + ",value="
@@ -164,7 +161,7 @@ public class MatrixMultiplicationBSPGpu
       }
     }
 
-    // Setup double array for GPU kernels
+    // Convert rows of matrix A to double array for GPU kernels
     double[][] matrixAArr = toArray(matrixA.values());
     if (isDebuggingEnabled) {
       for (int i = 0; i < matrixAArr.length; i++) {
@@ -172,33 +169,24 @@ public class MatrixMultiplicationBSPGpu
             + Arrays.toString(matrixAArr[i]) + ")\n");
       }
     }
-    
-    // Setup int array of Row Ids for GPU kernels
-    Set<Integer> matrixARowId = matrixB.keySet(); // your set
-    int[] matrixARowIdArr = new int[matrixARowId.size()];
-    int rowIndex = 0;
-    for(Integer rowId : matrixARowId){
-      matrixARowIdArr[rowIndex] = rowId;
-      rowIndex++;
-    }
-    if (isDebuggingEnabled) {
-        logger.writeChars("bsp,setup,matrixARowIdArr="
-            + Arrays.toString(matrixARowIdArr) + "\n");
-    }
-    
-    int blockSize = 2; //(BLOCK_SIZE>matrixAArr[0].length)?matrixAArr[0].length:BLOCK_SIZE;
-    int gridSize = 2; //(GRID_SIZE>matrixBArr[0].length)?matrixBArr[0].length:BLOCK_SIZE;
-    
-    MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(matrixARowIdArr, matrixAArr,
-           matrixBArr, blockSize, gridSize);
+
+    int blockSize = 2;// (BLOCK_SIZE > matrixAArr[0].length) ?
+                      // matrixAArr[0].length
+    // : BLOCK_SIZE;
+    int gridSize = 2; // (GRID_SIZE > matrixBArr[0].length) ?
+                      // matrixBArr[0].length
+    // : BLOCK_SIZE;
+
+    MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(
+        matrixAArr, matrixBArr, blockSize, gridSize);
     Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(blockSize, gridSize, blockSize*gridSize);
-    
+    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
+
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
     watch.start();
     rootbeer.runAll(kernel);
-    watch.stop(); 
+    watch.stop();
 
     // DEBUG information of GPU run
     List<StatsRow> stats = rootbeer.getStats();
@@ -213,119 +201,92 @@ public class MatrixMultiplicationBSPGpu
       System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
       System.out.println("    num threads: " + row.getNumThreads() + "\n");
     }
-    
+
     if (isDebuggingEnabled) {
-      logger.writeChars("bsp,threadNum=" + blockSize*gridSize + ",GPUTime="
+      logger.writeChars("bsp,threadNum=" + blockSize * gridSize + ",GPUTime="
           + watch.elapsedTimeMillis() + "ms\n");
       logger.writeChars("bps,blockSize=" + blockSize + ",gridSize=" + gridSize
           + "\n");
       logger.flush();
     }
-    
 
     int i = 0;
     List<Result> resultList = kernel.resultList.getList();
-    for(Result result : resultList){
-      
-      if(result == null){
-        logger.writeChars("bsp,result["+i+"]=NULL\n");
+    for (Result result : resultList) {
+
+      if (result == null) {
+        logger.writeChars("bsp,result[" + i + "]=NULL\n");
         i++;
         continue;
       }
-      logger.writeChars("bsp,result["+i+"]="+result.toString()+ "\n");
-      logger.writeChars("bsp,bColsSharedMemIndex="+Arrays.toString(result.bColsSharedMemIndex)+ "\n");
-      logger.writeChars("bsp,bColsSharedMemValues="+Arrays.toString(result.bColsSharedMemValues)+ "\n");
-for (int k=0; k<result.bColsVals.length; k++) {
-      for (int j = 0; j<result.multipliers.length; j++) {
-        logger.writeChars("bsp,multiplier["+j+"]="+Arrays.toString(result.multipliers[j])+ "\n");
-        logger.writeChars("bsp,bColsVals["+k+"]["+j+"]="+Arrays.toString(result.bColsVals[k][j])+ "\n");
+
+      logger.writeChars("bsp,result[" + i + "]=" + result.toString() + "\n");
+
+      // DEBUG info columns of matrix B within shared memory
+      logger.writeChars("bsp,bColsSharedMemIndex="
+          + Arrays.toString(result.bColsSharedMemIndex) + "\n");
+      logger.writeChars("bsp,bColsSharedMemValues="
+          + Arrays.toString(result.bColsSharedMemValues) + "\n");
+
+      // DEBUG info thread computations
+      for (int k = 0; k < result.bColsVals.length; k++) {
+        for (int j = 0; j < result.multipliers.length; j++) {
+          logger.writeChars("bsp,multiplier[" + j + "]="
+              + Arrays.toString(result.multipliers[j]) + "\n");
+          logger.writeChars("bsp,bColsVals[" + k + "][" + j + "]="
+              + Arrays.toString(result.bColsVals[k][j]) + "\n");
+        }
       }
-}
-      for (int j = 0; j<result.threadResultsSharedMemIndex.length; j++) { 
-        logger.writeChars("bsp,threadResultsSharedMemIndex["+j+"]="+Arrays.toString(result.threadResultsSharedMemIndex[j])+ "\n");
-        logger.writeChars("bsp,threadResultsSharedMemValues["+j+"]="+Arrays.toString(result.threadResultsSharedMemValues[j])+ "\n");
+
+      // DEBUG info threadResults within shared memory
+      for (int j = 0; j < result.threadResultsSharedMemIndex.length; j++) {
+        logger.writeChars("bsp,threadResultsSharedMemIndex[" + j + "]="
+            + Arrays.toString(result.threadResultsSharedMemIndex[j]) + "\n");
+        logger.writeChars("bsp,threadResultsSharedMemValues[" + j + "]="
+            + Arrays.toString(result.threadResultsSharedMemValues[j]) + "\n");
       }
-      i++;
-      
+
       if (result.resultCols != null) {
-        
-        for (int j = 0; j<result.blockResultsSharedMemIndex.length; j++) {    
-          for (int k = 0; k<result.blockResultsSharedMemIndex[0].length; k++) {    
-              
-            logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_"+j+"][thread_"+k+"]="+Arrays.toString(result.blockResultsSharedMemIndex[j][k])+ "\n"); 
-            logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_"+j+"][thread_"+k+"]="+Arrays.toString(result.blockResultsSharedMemValues[j][k])+ "\n");
+
+        // DEBUG info blockResults within shared memory
+        for (int j = 0; j < result.blockResultsSharedMemIndex.length; j++) {
+          for (int k = 0; k < result.blockResultsSharedMemIndex[0].length; k++) {
+
+            logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_" + j
+                + "][thread_" + k + "]="
+                + Arrays.toString(result.blockResultsSharedMemIndex[j][k])
+                + "\n");
+            logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_" + j
+                + "][thread_" + k + "]="
+                + Arrays.toString(result.blockResultsSharedMemValues[j][k])
+                + "\n");
           }
         }
-        
-        for (int j = 0; j<result.resultCols.length; j++) {       
-          logger.writeChars("bsp,resultCols["+j+"]="+Arrays.toString(result.resultCols[j])+ "\n");
+
+        // Collect GPU results and send to masterTask
+        for (int j = 0; j < result.resultCols.length; j++) {
+
+          logger.writeChars("bsp,resultCols[" + j + "]="
+              + Arrays.toString(result.resultCols[j]) + "\n");
+
+          // Send resulting column to masterTask
+          DenseVector outVector = new DenseVector(result.resultCols[j]);
+          peer.send(masterTask, new MatrixRowMessage(result.resultColsIndex[j],
+              new VectorWritable(outVector)));
+
+          if (isDebuggingEnabled) {
+            logger.writeChars("bsp,send,key=" + result.resultColsIndex[j]
+                + ",value=" + outVector.toString() + "\n");
+            logger.flush();
+          }
+
         }
       }
+
+      i++;
     }
-    logger.writeChars("bsp,resultCount="+i+ "\n");
+    logger.writeChars("bsp,resultCount=" + i + "\n");
 
-    
-    /*
-    for (Kernel kernel : kernels) {
-      MatrixMultiplicationBSPSliceKernel bspKernel = (MatrixMultiplicationBSPSliceKernel) kernel;
-
-      if (isDebuggingEnabled) {
-        logger.writeChars("bsp,kernel,block_idxx=" + bspKernel.block_idxx
-            + "\n");
-        logger.writeChars("bsp,kernel,thread_idxx=" + bspKernel.thread_idxx
-            + "\n");
-        logger.writeChars("bsp,kernel,blockSize=" + bspKernel.blockSize + "\n");
-        logger.writeChars("bsp,kernel,threadIters=" + bspKernel.threadIters
-            + "\n");
-        logger.writeChars("bsp,kernel,slizeSize=" + bspKernel.sliceSize + "\n");
-        logger.writeChars("bsp,kernel,columnsSliceSize="
-            + bspKernel.columnsSliceSize + "\n");
-
-        for (int i = 0; i < bspKernel.threadIters; i++) {
-          logger.writeChars("bsp,kernel,threadIter=" + i
-              + ",bColsSharedMemIndex="
-              + Arrays.toString(bspKernel.bColsSharedMemIndex[i]) + "\n");
-          logger.writeChars("bsp,kernel,threadIter=" + i
-              + ",bColsSharedMemValues="
-              + Arrays.toString(bspKernel.bColsSharedMemValues[i]) + "\n");
-        }
-
-        logger.writeChars("bsp,kernel,multipliers="
-            + Arrays.toString(bspKernel.multipliers) + "\n");
-
-        for (int i = 0; i < bspKernel.columnsSliceSize; i++) {
-          logger.writeChars("bsp,kernel,columnsSliceId=" + i + ",currBColumns="
-              + Arrays.toString(bspKernel.currBColumns[i]) + "\n");
-        }
-
-        logger.writeChars("bsp,kernel,sumResultsSetSharedMemIndex="
-            + Arrays.toString(bspKernel.sumResultsSetSharedMemIndex) + "\n");
-        logger.writeChars("bsp,kernel,sumResultsSetSharedMemValues="
-            + Arrays.toString(bspKernel.sumResultsSetSharedMemValues) + "\n");
-        logger.writeChars("bsp,kernel,sumResultsGetSharedMemIndex="
-            + Arrays.toString(bspKernel.sumResultsGetSharedMemIndex) + "\n");
-        logger.writeChars("bsp,kernel,sumResultsGetSharedMemValues="
-            + Arrays.toString(bspKernel.sumResultsGetSharedMemValues) + "\n");
-
-      }
-
-      if (bspKernel.results != null) {
-
-        // Send GPU Kernel result vector
-        DenseVector outVector = new DenseVector(bspKernel.results);
-        peer.send(masterTask, new MatrixRowMessage(bspKernel.aRowId,
-            new VectorWritable(outVector)));
-
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,send,key=" + bspKernel.aRowId + ",value="
-              + outVector.toString() + "\n");
-          logger.flush();
-        }
-      }
-      
-      
-    }
-*/
     peer.sync();
   }
 
@@ -352,11 +313,11 @@ for (int k=0; k<result.bColsVals.length; k++) {
     }
   }
 
-  private double[][] toArray(Collection<Vector> vectors){
+  private double[][] toArray(Collection<Vector> vectors) {
     double[][] matrixArr = null;
-    
-    if (vectors.size()>0) {
-      
+
+    if (vectors.size() > 0) {
+
       int i = 0;
       for (Vector v : vectors) {
         if (matrixArr == null) {
@@ -372,7 +333,7 @@ for (int k=0; k<result.bColsVals.length; k++) {
     }
     return matrixArr;
   }
-  
+
   static void printOutput(Configuration conf) throws IOException {
     FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
     FileStatus[] files = fs.listStatus(OUTPUT_DIR);
@@ -522,14 +483,11 @@ for (int k=0; k<result.bColsVals.length; k++) {
     b = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
     b.setConf(conf);
 
-/*
-    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
-    if (c.verify(d)) {
-      System.out.println("Verify PASSED!");
-    } else {
-      System.out.println("Verify FAILED!");
-    }
- */
+    /*
+     * DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH); if
+     * (c.verify(d)) { System.out.println("Verify PASSED!"); } else {
+     * System.out.println("Verify FAILED!"); }
+     */
 
     if (isDebugging) {
 
@@ -538,11 +496,9 @@ for (int k=0; k<result.bColsVals.length; k++) {
       System.out.println("Matrix B:");
       b.printDistributedRowMatrix();
       /*
-      System.out.println("Matrix C:");
-      c.printDistributedRowMatrix();
-      System.out.println("Matrix D:");
-      d.printDistributedRowMatrix();
-*/
+       * System.out.println("Matrix C:"); c.printDistributedRowMatrix();
+       * System.out.println("Matrix D:"); d.printDistributedRowMatrix();
+       */
       printOutput(conf);
     }
   }
