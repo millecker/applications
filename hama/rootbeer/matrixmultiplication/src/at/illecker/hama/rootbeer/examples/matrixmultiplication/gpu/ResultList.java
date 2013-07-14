@@ -29,7 +29,7 @@ public class ResultList {
     m_size = 0;
   }
 
-  public synchronized void add(Result newResult) {
+  public void add(Result newResult) {
     m_data[m_size] = newResult;
     ++m_size;
 

@@ -81,15 +81,14 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     // Shared Memory Start Indexes
     int bColsStartIndex = 0;
-    int threadSlizeResultsStartIndex = bColsStartIndex + 
-        (blockSize * blockSliceSize * threadSliceSize * 8);
+    int threadSlizeResultsStartIndex = bColsStartIndex
+        + (blockSize * blockSliceSize * threadSliceSize * 8);
     // int resultsStartIndex = columnSlizeResultsStartIndex + blockSize * 8;
 
     // Debug
     int[] bColsSharedMemIndex = new int[blockSliceSize * threadSliceSize];
     double[] bColsSharedMemValues = new double[blockSliceSize * threadSliceSize];
 
-    
     // Each thread sets its own shared memory within their blocks
     // Setup columns of matrix B to shared memory
     for (int i = 0; i < blockSliceSize; i++) {
@@ -119,38 +118,38 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     int[][] threadResultsSharedMemIndex = new int[blockSliceSize][matrixARows];
     double[][] threadResultsSharedMemValues = new double[blockSliceSize][matrixARows];
 
-    for (int k = 0; k <blockSliceSize; k++) {
-    
-     for (int i = 0; i < matrixARows; i++) {
+    for (int k = 0; k < blockSliceSize; k++) {
 
-      double sum = 0;
-      for (int j = 0; j < threadSliceSize; j++) {
+      for (int i = 0; i < matrixARows; i++) {
 
-        double multiplier = rowsA[i][(thread_idxx * threadSliceSize) + j];
-        multipliers[i][j] = multiplier;
+        double sum = 0;
+        for (int j = 0; j < threadSliceSize; j++) {
 
-        bColsVals[k][i][j] = RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
-            + (thread_idxx * blockSliceSize * threadSliceSize * 8)
-            + (j * 8));
-        
-        sum += multiplier
-            * RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
-                + (thread_idxx * blockSliceSize * threadSliceSize * 8)
-                + (j * 8));
+          double multiplier = rowsA[i][(thread_idxx * threadSliceSize) + j];
+          multipliers[i][j] = multiplier;
+
+          bColsVals[k][i][j] = RootbeerGpu
+              .getSharedDouble((k * blockSliceSize * 8)
+                  + (thread_idxx * blockSliceSize * threadSliceSize * 8)
+                  + (j * 8));
+
+          sum += multiplier
+              * RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
+                  + (thread_idxx * blockSliceSize * threadSliceSize * 8)
+                  + (j * 8));
+        }
+
+        int sharedMemIndex = threadSlizeResultsStartIndex
+            + (k * threadSliceSize * blockSliceSize * 8)
+            + (thread_idxx * threadSliceSize * matrixARows * 8) + (i * 8);
+
+        threadResultsSharedMemIndex[k][i] = sharedMemIndex;
+
+        RootbeerGpu.setSharedDouble(sharedMemIndex, sum);
+
+        threadResultsSharedMemValues[k][i] = RootbeerGpu
+            .getSharedDouble(sharedMemIndex);
       }
-
-      int sharedMemIndex = threadSlizeResultsStartIndex
-          + (k * threadSliceSize * blockSliceSize * 8)
-          + (thread_idxx * threadSliceSize * matrixARows * 8) 
-          + (i * 8);
-
-      threadResultsSharedMemIndex[k][i] = sharedMemIndex;
-
-      RootbeerGpu.setSharedDouble(sharedMemIndex, sum);
-
-      threadResultsSharedMemValues[k][i] = RootbeerGpu
-          .getSharedDouble(sharedMemIndex);
-     }
     }
 
     // Sync threads, until every thread has finished
@@ -170,51 +169,59 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     result.threadResultsSharedMemIndex = threadResultsSharedMemIndex;
     result.threadResultsSharedMemValues = threadResultsSharedMemValues;
-    
+
     // set fields to null otherwise rootbeer will eliminate it
-    result.blockResultsSharedMemIndex =  null;
+    result.blockResultsSharedMemIndex = null;
     result.blockResultsSharedMemValues = null;
     result.resultCols = null;
-    
+
+    // TODO
+    // Do parallel scan instead of sequential accumulation
 
     // Thread 0 of each block accumulates results
     if (thread_idxx == 0) {
 
       // Debug
-      int[][] blockResultsSharedMemIndex = new int[blockSize][matrixARows];
-      double[][] blockResultsSharedMemValues = new double[blockSize][matrixARows];
-      
-      double[] resultCols = new double[matrixARows];
+      int[][][] blockResultsSharedMemIndex = new int[blockSliceSize][blockSize][matrixARows];
+      double[][][] blockResultsSharedMemValues = new double[blockSliceSize][blockSize][matrixARows];
 
-      
-      // Collect results for each thread
-      for (int i = 0; i < blockSize; i++) {
+      double[][] resultCols = new double[blockSliceSize][matrixARows];
 
-        double sum = 0;
+      for (int i = 0; i < blockSliceSize; i++) {
+
         for (int j = 0; j < matrixARows; j++) {
 
-          int sharedMemIndex = threadSlizeResultsStartIndex
-              + (i * 8) + (j * matrixARows * 8);
+          double sum = 0;
+          // Collect results for each thread
+          for (int thread_id = 0; thread_id < blockSize; thread_id++) {
 
-          blockResultsSharedMemIndex[i][j] = sharedMemIndex;
-          blockResultsSharedMemValues[i][j] = RootbeerGpu
-              .getSharedDouble(sharedMemIndex);
+            int sharedMemIndex = threadSlizeResultsStartIndex
+                + (i * matrixARows * 8) 
+                + (thread_id * matrixARows * blockSliceSize * 8)
+                + (j * 8);
 
-          sum += blockResultsSharedMemValues[i][j];
+            blockResultsSharedMemIndex[i][thread_id][j] = sharedMemIndex;
+            blockResultsSharedMemValues[i][thread_id][j] = RootbeerGpu
+                .getSharedDouble(sharedMemIndex);
+
+            sum += blockResultsSharedMemValues[i][thread_id][j];
+          }
+
+          resultCols[i][j] = sum;
+
         }
-        resultCols[i] = sum;
       }
-      
+
       result.blockResultsSharedMemIndex = blockResultsSharedMemIndex;
       result.blockResultsSharedMemValues = blockResultsSharedMemValues;
       result.resultCols = resultCols;
 
     }
-    
+
     resultList.add(result);
 
-    
-    
+    RootbeerGpu.syncthreads();
+
     
     // Accumulation of thread results using Parallel Scan
     /*

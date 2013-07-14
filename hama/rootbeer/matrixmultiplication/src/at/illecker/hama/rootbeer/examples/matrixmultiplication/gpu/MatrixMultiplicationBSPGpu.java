@@ -249,12 +249,17 @@ for (int k=0; k<result.bColsVals.length; k++) {
       
       if (result.resultCols != null) {
         
-        for (int j = 0; j<result.blockResultsSharedMemIndex.length; j++) {       
-         logger.writeChars("bsp,blockResultsSharedMemIndex["+j+"]="+Arrays.toString(result.blockResultsSharedMemIndex[j])+ "\n"); 
-         logger.writeChars("bsp,blockResultsSharedMemValues["+j+"]="+Arrays.toString(result.blockResultsSharedMemValues[j])+ "\n");
+        for (int j = 0; j<result.blockResultsSharedMemIndex.length; j++) {    
+          for (int k = 0; k<result.blockResultsSharedMemIndex[0].length; k++) {    
+              
+            logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_"+j+"][thread_"+k+"]="+Arrays.toString(result.blockResultsSharedMemIndex[j][k])+ "\n"); 
+            logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_"+j+"][thread_"+k+"]="+Arrays.toString(result.blockResultsSharedMemValues[j][k])+ "\n");
+          }
         }
         
-        logger.writeChars("bsp,resultCols="+Arrays.toString(result.resultCols)+ "\n");
+        for (int j = 0; j<result.resultCols.length; j++) {       
+          logger.writeChars("bsp,resultCols["+j+"]="+Arrays.toString(result.resultCols[j])+ "\n");
+        }
       }
     }
     logger.writeChars("bsp,resultCount="+i+ "\n");
