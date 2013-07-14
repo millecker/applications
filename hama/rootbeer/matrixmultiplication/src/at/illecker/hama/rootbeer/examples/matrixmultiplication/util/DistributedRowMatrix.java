@@ -563,6 +563,10 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
       Vector thisVector = iteratorThis.next().vector();
       Vector otherVector = iteratorOther.next().vector();
 
+      if (thisVector.size() != otherVector.size()) {
+        return false;
+      }
+      
       for (int j = 0; j < thisVector.size(); j++) {
         if (thisVector.getElement(j).get() != otherVector.getElement(j).get()) {
           // System.out.println("Verify failed!");

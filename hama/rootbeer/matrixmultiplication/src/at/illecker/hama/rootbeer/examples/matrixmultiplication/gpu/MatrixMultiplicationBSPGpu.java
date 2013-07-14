@@ -43,7 +43,6 @@ import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
-import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.mahout.math.Arrays;
 import org.apache.mahout.math.CardinalityException;
@@ -52,14 +51,14 @@ import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
-import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixColMessage;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class MatrixMultiplicationBSPGpu
     extends
-    BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> {
+    BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixColMessage> {
 
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationBSPGpu.class);
@@ -92,7 +91,7 @@ public class MatrixMultiplicationBSPGpu
 
   @Override
   public void setup(
-      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixColMessage> peer)
       throws IOException {
 
     Configuration conf = peer.getConfiguration();
@@ -144,7 +143,7 @@ public class MatrixMultiplicationBSPGpu
 
   @Override
   public void bsp(
-      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixColMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
     Map<Integer, Vector> matrixA = new TreeMap<Integer, Vector>();
@@ -170,12 +169,10 @@ public class MatrixMultiplicationBSPGpu
       }
     }
 
-    int blockSize = 2;// (BLOCK_SIZE > matrixAArr[0].length) ?
-                      // matrixAArr[0].length
-    // : BLOCK_SIZE;
-    int gridSize = 2; // (GRID_SIZE > matrixBArr[0].length) ?
-                      // matrixBArr[0].length
-    // : BLOCK_SIZE;
+    int blockSize = (BLOCK_SIZE > matrixAArr[0].length) ? matrixAArr[0].length
+        : BLOCK_SIZE;
+    int gridSize = (GRID_SIZE > matrixBArr[0].length) ? matrixBArr[0].length
+        : BLOCK_SIZE;
 
     MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(
         matrixAArr, matrixBArr, blockSize, gridSize);
@@ -271,7 +268,7 @@ public class MatrixMultiplicationBSPGpu
 
           // Send resulting column to masterTask
           DenseVector outVector = new DenseVector(result.resultCols[j]);
-          peer.send(masterTask, new MatrixRowMessage(result.resultColsIndex[j],
+          peer.send(masterTask, new MatrixColMessage(result.resultColsIndex[j],
               new VectorWritable(outVector)));
 
           if (isDebuggingEnabled) {
@@ -288,29 +285,37 @@ public class MatrixMultiplicationBSPGpu
     logger.writeChars("bsp,resultCount=" + i + "\n");
 
     peer.sync();
-  }
-
-  @Override
-  public void cleanup(
-      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
-      throws IOException {
 
     // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
-      MatrixRowMessage currentMatrixRowMessage = null;
+      Map<Integer, Vector> resultCols = new TreeMap<Integer, Vector>();
+
       // Collect messages
-      while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
-        int rowIndex = currentMatrixRowMessage.getRowIndex();
-        Vector rowValues = currentMatrixRowMessage.getRowValues().get();
+      MatrixColMessage currentMatrixColMessage = null;
+      while ((currentMatrixColMessage = peer.getCurrentMessage()) != null) {
+        resultCols.put(currentMatrixColMessage.getColIndex(),
+            currentMatrixColMessage.getColValues().get());
+      }
+
+      // Write resultMatrix out
+      for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
+
+        // Build row vector
+        DenseVector rowVector = new DenseVector(resultCols.size());
+        for (int colIndex = 0; colIndex < resultCols.size(); colIndex++) {
+          rowVector.setQuick(colIndex, resultCols.get(colIndex).get(rowIndex));
+        }
 
         if (isDebuggingEnabled) {
           logger.writeChars("bsp,write,key=" + rowIndex + ",value="
-              + rowValues.toString() + "\n");
+              + rowVector.toString() + "\n");
         }
-        peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
+        // Write out row
+        peer.write(new IntWritable(rowIndex), new VectorWritable(rowVector));
       }
     }
+
   }
 
   private double[][] toArray(Collection<Vector> vectors) {
@@ -380,8 +385,8 @@ public class MatrixMultiplicationBSPGpu
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     // Order message by row index
-    job.set(MessageManager.QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.queue.SortedMessageQueue");
+    // job.set(MessageManager.QUEUE_TYPE_CLASS,
+    // "org.apache.hama.bsp.message.queue.SortedMessageQueue");
 
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
@@ -457,7 +462,7 @@ public class MatrixMultiplicationBSPGpu
     // Matrix A
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
         numColsA, new Random(42L), MATRIX_A_PATH, false);
-    // Matrix B is stored transposed
+    // Matrix B
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
         numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
@@ -477,28 +482,23 @@ public class MatrixMultiplicationBSPGpu
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
     // Verification
-    // Overwrite matrix B, NOT transposed for verification check
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_PATH, false);
-    b = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
-    b.setConf(conf);
-
-    /*
-     * DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH); if
-     * (c.verify(d)) { System.out.println("Verify PASSED!"); } else {
-     * System.out.println("Verify FAILED!"); }
-     */
+    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
+    if (c.verify(d)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
 
     if (isDebugging) {
-
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
       System.out.println("Matrix B:");
       b.printDistributedRowMatrix();
-      /*
-       * System.out.println("Matrix C:"); c.printDistributedRowMatrix();
-       * System.out.println("Matrix D:"); d.printDistributedRowMatrix();
-       */
+      System.out.println("Matrix C:");
+      c.printDistributedRowMatrix();
+      System.out.println("Matrix D:");
+      d.printDistributedRowMatrix();
+
       printOutput(conf);
     }
   }

@@ -171,7 +171,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
       int[] resultColsIndex = new int[blockSliceSize];
       double[][] resultCols = new double[blockSliceSize][matrixARows];
-      
+
       for (int i = 0; i < blockSliceSize; i++) {
 
         for (int j = 0; j < matrixARows; j++) {
@@ -190,7 +190,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
             sum += blockResultsSharedMemValues[i][thread_id][j];
           }
-          
+
           resultColsIndex[i] = (block_idxx * blockSliceSize) + i;
           resultCols[i][j] = sum;
 
