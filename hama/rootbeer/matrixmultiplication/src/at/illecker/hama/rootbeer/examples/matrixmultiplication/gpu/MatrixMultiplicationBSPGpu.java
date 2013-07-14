@@ -204,7 +204,6 @@ public class MatrixMultiplicationBSPGpu
           + watch.elapsedTimeMillis() + "ms\n");
       logger.writeChars("bps,blockSize=" + blockSize + ",gridSize=" + gridSize
           + "\n");
-      logger.flush();
     }
 
     int i = 0;
@@ -212,59 +211,66 @@ public class MatrixMultiplicationBSPGpu
     for (Result result : resultList) {
 
       if (result == null) {
-        logger.writeChars("bsp,result[" + i + "]=NULL\n");
+        if (isDebuggingEnabled) {
+          logger.writeChars("bsp,result[" + i + "]=NULL\n");
+        }
         i++;
         continue;
       }
 
-      logger.writeChars("bsp,result[" + i + "]=" + result.toString() + "\n");
+      if (isDebuggingEnabled) {
+        logger.writeChars("bsp,result[" + i + "]=" + result.toString() + "\n");
 
-      // DEBUG info columns of matrix B within shared memory
-      logger.writeChars("bsp,bColsSharedMemIndex="
-          + Arrays.toString(result.bColsSharedMemIndex) + "\n");
-      logger.writeChars("bsp,bColsSharedMemValues="
-          + Arrays.toString(result.bColsSharedMemValues) + "\n");
+        // DEBUG info columns of matrix B within shared memory
+        logger.writeChars("bsp,bColsSharedMemIndex="
+            + Arrays.toString(result.bColsSharedMemIndex) + "\n");
+        logger.writeChars("bsp,bColsSharedMemValues="
+            + Arrays.toString(result.bColsSharedMemValues) + "\n");
 
-      // DEBUG info thread computations
-      for (int k = 0; k < result.bColsVals.length; k++) {
-        for (int j = 0; j < result.multipliers.length; j++) {
-          logger.writeChars("bsp,multiplier[" + j + "]="
-              + Arrays.toString(result.multipliers[j]) + "\n");
-          logger.writeChars("bsp,bColsVals[" + k + "][" + j + "]="
-              + Arrays.toString(result.bColsVals[k][j]) + "\n");
+        // DEBUG info thread computations
+        for (int k = 0; k < result.bColsVals.length; k++) {
+          for (int j = 0; j < result.multipliers.length; j++) {
+            logger.writeChars("bsp,multiplier[" + j + "]="
+                + Arrays.toString(result.multipliers[j]) + "\n");
+            logger.writeChars("bsp,bColsVals[" + k + "][" + j + "]="
+                + Arrays.toString(result.bColsVals[k][j]) + "\n");
+          }
         }
-      }
 
-      // DEBUG info threadResults within shared memory
-      for (int j = 0; j < result.threadResultsSharedMemIndex.length; j++) {
-        logger.writeChars("bsp,threadResultsSharedMemIndex[" + j + "]="
-            + Arrays.toString(result.threadResultsSharedMemIndex[j]) + "\n");
-        logger.writeChars("bsp,threadResultsSharedMemValues[" + j + "]="
-            + Arrays.toString(result.threadResultsSharedMemValues[j]) + "\n");
+        // DEBUG info threadResults within shared memory
+        for (int j = 0; j < result.threadResultsSharedMemIndex.length; j++) {
+          logger.writeChars("bsp,threadResultsSharedMemIndex[" + j + "]="
+              + Arrays.toString(result.threadResultsSharedMemIndex[j]) + "\n");
+          logger.writeChars("bsp,threadResultsSharedMemValues[" + j + "]="
+              + Arrays.toString(result.threadResultsSharedMemValues[j]) + "\n");
+        }
       }
 
       if (result.resultCols != null) {
 
-        // DEBUG info blockResults within shared memory
-        for (int j = 0; j < result.blockResultsSharedMemIndex.length; j++) {
-          for (int k = 0; k < result.blockResultsSharedMemIndex[0].length; k++) {
-
-            logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_" + j
-                + "][thread_" + k + "]="
-                + Arrays.toString(result.blockResultsSharedMemIndex[j][k])
-                + "\n");
-            logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_" + j
-                + "][thread_" + k + "]="
-                + Arrays.toString(result.blockResultsSharedMemValues[j][k])
-                + "\n");
+        if (isDebuggingEnabled) {
+          // DEBUG info blockResults within shared memory
+          for (int j = 0; j < result.blockResultsSharedMemIndex.length; j++) {
+            for (int k = 0; k < result.blockResultsSharedMemIndex[0].length; k++) {
+              logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_"
+                  + j + "][thread_" + k + "]="
+                  + Arrays.toString(result.blockResultsSharedMemIndex[j][k])
+                  + "\n");
+              logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_"
+                  + j + "][thread_" + k + "]="
+                  + Arrays.toString(result.blockResultsSharedMemValues[j][k])
+                  + "\n");
+            }
           }
         }
 
         // Collect GPU results and send to masterTask
         for (int j = 0; j < result.resultCols.length; j++) {
 
-          logger.writeChars("bsp,resultCols[" + j + "]="
-              + Arrays.toString(result.resultCols[j]) + "\n");
+          if (isDebuggingEnabled) {
+            logger.writeChars("bsp,resultCols[" + j + "]="
+                + Arrays.toString(result.resultCols[j]) + "\n");
+          }
 
           // Send resulting column to masterTask
           DenseVector outVector = new DenseVector(result.resultCols[j]);
@@ -274,15 +280,18 @@ public class MatrixMultiplicationBSPGpu
           if (isDebuggingEnabled) {
             logger.writeChars("bsp,send,key=" + result.resultColsIndex[j]
                 + ",value=" + outVector.toString() + "\n");
-            logger.flush();
           }
-
         }
+
       }
 
       i++;
     }
-    logger.writeChars("bsp,resultCount=" + i + "\n");
+
+    if (isDebuggingEnabled) {
+      logger.writeChars("bsp,resultCount=" + i + "\n");
+      logger.flush();
+    }
 
     peer.sync();
 
@@ -296,6 +305,11 @@ public class MatrixMultiplicationBSPGpu
       while ((currentMatrixColMessage = peer.getCurrentMessage()) != null) {
         resultCols.put(currentMatrixColMessage.getColIndex(),
             currentMatrixColMessage.getColValues().get());
+        if (isDebuggingEnabled) {
+          logger.writeChars("bsp,collect,key="
+              + currentMatrixColMessage.getColIndex() + ",value="
+              + currentMatrixColMessage.getColValues().get().toString() + "\n");
+        }
       }
 
       // Write resultMatrix out
@@ -303,8 +317,10 @@ public class MatrixMultiplicationBSPGpu
 
         // Build row vector
         DenseVector rowVector = new DenseVector(resultCols.size());
-        for (int colIndex = 0; colIndex < resultCols.size(); colIndex++) {
-          rowVector.setQuick(colIndex, resultCols.get(colIndex).get(rowIndex));
+        int colIndex = 0;
+        for (Vector colVector : resultCols.values()) {
+          rowVector.setQuick(colIndex, colVector.get(rowIndex));
+          colIndex++;
         }
 
         if (isDebuggingEnabled) {
@@ -393,7 +409,6 @@ public class MatrixMultiplicationBSPGpu
     LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
-    LOG.info("DEBUG: bsp.join.expr: " + job.get("bsp.join.expr"));
 
     return job;
   }
