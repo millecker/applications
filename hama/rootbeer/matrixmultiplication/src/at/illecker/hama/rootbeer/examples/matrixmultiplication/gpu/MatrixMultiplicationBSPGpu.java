@@ -164,7 +164,7 @@ public class MatrixMultiplicationBSPGpu
     double[][] matrixAArr = toArray(matrixA.values());
     if (isDebuggingEnabled) {
       for (int i = 0; i < matrixAArr.length; i++) {
-        logger.writeChars("bsp,setup,matrixAArr (" + i + ","
+        logger.writeChars("bsp,input,matrixAArr (" + i + ","
             + Arrays.toString(matrixAArr[i]) + ")\n");
       }
     }
@@ -172,7 +172,12 @@ public class MatrixMultiplicationBSPGpu
     int blockSize = (BLOCK_SIZE > matrixAArr[0].length) ? matrixAArr[0].length
         : BLOCK_SIZE;
     int gridSize = (GRID_SIZE > matrixBArr[0].length) ? matrixBArr[0].length
-        : BLOCK_SIZE;
+        : GRID_SIZE;
+
+    if (isDebuggingEnabled) {
+      logger.writeChars("bsp,blockSize=" + blockSize + ",gridSize=" + gridSize
+          + ",threadNum=" + blockSize * gridSize + "\n");
+    }
 
     MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(
         matrixAArr, matrixBArr, blockSize, gridSize);
@@ -198,14 +203,11 @@ public class MatrixMultiplicationBSPGpu
       System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
       System.out.println("    num threads: " + row.getNumThreads() + "\n");
     }
-
     if (isDebuggingEnabled) {
-      logger.writeChars("bsp,threadNum=" + blockSize * gridSize + ",GPUTime="
-          + watch.elapsedTimeMillis() + "ms\n");
-      logger.writeChars("bps,blockSize=" + blockSize + ",gridSize=" + gridSize
-          + "\n");
+      logger.writeChars("bsp,GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
     }
 
+    // Get GPU results
     int i = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
