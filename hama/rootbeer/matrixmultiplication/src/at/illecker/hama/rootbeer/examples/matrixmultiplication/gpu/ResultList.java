@@ -21,31 +21,32 @@ import java.util.List;
 
 public class ResultList {
 
-  private Result[] m_data;
-  private int m_size;
+  private Result[] data;
+  private int size;
 
   public ResultList() {
-    m_data = new Result[8];
-    m_size = 0;
+    data = new Result[8];
+    size = 0;
   }
 
   public synchronized void add(Result newResult) {
-    m_data[m_size] = newResult;
-    ++m_size;
+    data[size] = newResult;
+    size++;
 
-    if (m_size == m_data.length) {
-      Result[] new_data = new Result[m_size * 2];
-      for (int i = 0; i < m_size - 1; ++i) {
-        new_data[i] = m_data[i];
+    // if data is full create new array with double dimension
+    if (size == data.length) {
+      Result[] new_data = new Result[size * 2];
+      for (int i = 0; i < size; ++i) {
+        new_data[i] = data[i];
       }
-      m_data = new_data;
+      data = new_data;
     }
   }
 
   public List<Result> getList() {
     List<Result> ret = new ArrayList<Result>();
-    for (int i = 0; i < m_size - 1; ++i) {
-      ret.add(m_data[i]);
+    for (int i = 0; i < size; ++i) {
+      ret.add(data[i]);
     }
     return ret;
   }
