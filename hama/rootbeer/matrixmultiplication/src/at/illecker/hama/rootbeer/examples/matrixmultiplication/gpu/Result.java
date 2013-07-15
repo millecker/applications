@@ -23,22 +23,22 @@ public class Result {
   public int threadSliceSize;
   public int blockSliceSize;
 
-  public int[] bColsSharedMemIndex;
-  public double[] bColsSharedMemValues;
+  public int[][] bColsSharedMemIndex = null;
+  public double[][] bColsSharedMemValues = null;
 
-  public double[][] multipliers;
-  public int[][][] bColsIndexes;
-  public double[][][] bColsVals;
+  public double[][] multipliers = null;
+  public int[][][] bColsIndexes = null;
+  public double[][][] bColsVals = null;
 
-  public int[][] threadResultsSharedMemIndex;
-  public double[][] threadResultsSharedMemValues;
+  public int[][] threadResultsSharedMemIndex = null;
+  public double[][] threadResultsSharedMemValues = null;
 
-  public int[][][] blockResultsSharedMemIndex;
-  public double[][][] blockResultsSharedMemValues;
+  public int[][][] blockResultsSharedMemIndex = null;
+  public double[][][] blockResultsSharedMemValues = null;
 
   // output
-  public int[] resultColsIndex;
-  public double[][] resultCols;
+  public int[] resultColsIndex = null;
+  public double[][] resultCols = null;
 
   @Override
   public String toString() {
@@ -58,7 +58,6 @@ public class Result {
 
     ret.append("  blockSliceSize: ");
     ret.append(blockSliceSize);
-    // ret.append("\n");
 
     return ret.toString();
   }
