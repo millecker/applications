@@ -27,6 +27,7 @@ public class Result {
   public double[] bColsSharedMemValues;
 
   public double[][] multipliers;
+  public int[][][] bColsIndexes;
   public double[][][] bColsVals;
 
   public int[][] threadResultsSharedMemIndex;

@@ -58,17 +58,18 @@ public class MatrixMultiplicationBSPSliceKernelCleaned implements Kernel {
 
     // threadSliceSize defines how much multipliers of row A a thread has to
     // compute with rows of col B
+    // TODO constant distribution
     int threadSliceSize = matrixAColSize / blockSize;
 
     // blockSliceSize defines the column slice amount
     // columns of B per blockIters
+    // TODO constant distribution
     int blockSliceSize = matrixBColSize / gridSize;
 
     // Shared Memory Start Indexes
     int bColsStartIndex = 0;
     int threadSlizeResultsStartIndex = bColsStartIndex
         + (blockSize * blockSliceSize * threadSliceSize * 8);
-    // int resultsStartIndex = columnSlizeResultsStartIndex + blockSize * 8;
 
     // Each thread sets its own shared memory within their blocks
     // Setup columns of matrix B to shared memory
@@ -98,14 +99,15 @@ public class MatrixMultiplicationBSPSliceKernelCleaned implements Kernel {
           double multiplier = rowsA[i][(thread_idxx * threadSliceSize) + j];
 
           sum += multiplier
-              * RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
+              * RootbeerGpu.getSharedDouble(bColsStartIndex
                   + (thread_idxx * blockSliceSize * threadSliceSize * 8)
-                  + (j * 8));
+                  + (k * threadSliceSize * 8) + (j * 8));
         }
 
         int sharedMemIndex = threadSlizeResultsStartIndex
-            + (k * threadSliceSize * blockSliceSize * 8)
-            + (thread_idxx * threadSliceSize * matrixARows * 8) + (i * 8);
+            + (k * matrixARows * 8)
+            + (thread_idxx * threadSliceSize * blockSliceSize * matrixARows * 8)
+            + (i * 8);
 
         RootbeerGpu.setSharedDouble(sharedMemIndex, sum);
       }
@@ -136,7 +138,6 @@ public class MatrixMultiplicationBSPSliceKernelCleaned implements Kernel {
                 + (thread_id * matrixARows * blockSliceSize * 8) + (j * 8);
 
             sum += RootbeerGpu.getSharedDouble(sharedMemIndex);
-            ;
           }
 
           resultColsIndex[i] = (block_idxx * blockSliceSize) + i;

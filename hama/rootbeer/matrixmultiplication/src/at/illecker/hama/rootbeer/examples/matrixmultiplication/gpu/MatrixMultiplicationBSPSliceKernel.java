@@ -58,10 +58,14 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     // threadSliceSize defines how much multipliers of row A a thread has to
     // compute with rows of col B
+    // TODO constant distribution
     int threadSliceSize = matrixAColSize / blockSize;
 
     // blockSliceSize defines the column slice amount
     // columns of B per blockIters
+    // TODO constant distribution
+    // int x = (int) (double + 0.5d);
+    // (aufrunden - ein thread muss dann ausgleichen)
     int blockSliceSize = matrixBColSize / gridSize;
 
     // Shared Memory Start Indexes
@@ -98,6 +102,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     // Debug
     double[][] multipliers = new double[matrixARows][threadSliceSize];
+    int[][][] bColsIndexes = new int[blockSliceSize][matrixARows][threadSliceSize];
     double[][][] bColsVals = new double[blockSliceSize][matrixARows][threadSliceSize];
     // Debug
     int[][] threadResultsSharedMemIndex = new int[blockSliceSize][matrixARows];
@@ -114,20 +119,22 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
           double multiplier = rowsA[i][(thread_idxx * threadSliceSize) + j];
           multipliers[i][j] = multiplier;
 
-          bColsVals[k][i][j] = RootbeerGpu
-              .getSharedDouble((k * blockSliceSize * 8)
-                  + (thread_idxx * blockSliceSize * threadSliceSize * 8)
-                  + (j * 8));
+          int sharedMemIndex = bColsStartIndex
+              + (thread_idxx * blockSliceSize * threadSliceSize * 8)
+              + (k * threadSliceSize * 8) + (j * 8);
 
-          sum += multiplier
-              * RootbeerGpu.getSharedDouble((k * blockSliceSize * 8)
-                  + (thread_idxx * blockSliceSize * threadSliceSize * 8)
-                  + (j * 8));
+          bColsIndexes[k][i][j] = sharedMemIndex;
+
+          bColsVals[k][i][j] = RootbeerGpu
+              .getSharedDouble(bColsIndexes[k][i][j]);
+
+          sum += multiplier * bColsVals[k][i][j];
         }
 
         int sharedMemIndex = threadSlizeResultsStartIndex
-            + (k * threadSliceSize * blockSliceSize * 8)
-            + (thread_idxx * threadSliceSize * matrixARows * 8) + (i * 8);
+            + (k * matrixARows * 8)
+            + (thread_idxx * threadSliceSize * blockSliceSize * matrixARows * 8)
+            + (i * 8);
 
         threadResultsSharedMemIndex[k][i] = sharedMemIndex;
 
@@ -151,6 +158,7 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     result.bColsSharedMemValues = bColsSharedMemValues;
 
     result.multipliers = multipliers;
+    result.bColsIndexes = bColsIndexes;
     result.bColsVals = bColsVals;
 
     result.threadResultsSharedMemIndex = threadResultsSharedMemIndex;

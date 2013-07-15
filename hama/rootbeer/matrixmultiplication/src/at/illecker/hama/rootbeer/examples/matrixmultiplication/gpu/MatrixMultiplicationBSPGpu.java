@@ -235,6 +235,8 @@ public class MatrixMultiplicationBSPGpu
           for (int j = 0; j < result.multipliers.length; j++) {
             logger.writeChars("bsp,multiplier[" + j + "]="
                 + Arrays.toString(result.multipliers[j]) + "\n");
+            logger.writeChars("bsp,bColsIndexes[" + k + "][" + j + "]="
+                + Arrays.toString(result.bColsIndexes[k][j]) + "\n");
             logger.writeChars("bsp,bColsVals[" + k + "][" + j + "]="
                 + Arrays.toString(result.bColsVals[k][j]) + "\n");
           }
