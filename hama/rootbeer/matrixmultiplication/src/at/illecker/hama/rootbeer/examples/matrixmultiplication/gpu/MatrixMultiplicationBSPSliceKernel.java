@@ -75,8 +75,8 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
     // int resultsStartIndex = columnSlizeResultsStartIndex + blockSize * 8;
 
     // Debug
-    int[] bColsSharedMemIndex = new int[blockSliceSize * threadSliceSize];
-    double[] bColsSharedMemValues = new double[blockSliceSize * threadSliceSize];
+    int[][] bColsSharedMemIndex = new int[blockSliceSize][threadSliceSize];
+    double[][] bColsSharedMemValues = new double[blockSliceSize][threadSliceSize];
 
     // Each thread sets its own shared memory within their blocks
     // Setup columns of matrix B to shared memory
@@ -87,12 +87,12 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
             + (thread_idxx * blockSliceSize * threadSliceSize * 8)
             + (i * threadSliceSize * 8) + (j * 8);
 
-        bColsSharedMemIndex[(i * threadSliceSize) + j] = sharedMemIndex;
+        bColsSharedMemIndex[i][j] = sharedMemIndex;
 
         RootbeerGpu.setSharedDouble(sharedMemIndex, this.matrixB[thread_idxx
             * threadSliceSize + j][(block_idxx * blockSliceSize) + i]);
 
-        bColsSharedMemValues[(i * threadSliceSize) + j] = RootbeerGpu
+        bColsSharedMemValues[i][j] = RootbeerGpu
             .getSharedDouble(sharedMemIndex);
       }
     }
@@ -163,12 +163,6 @@ public class MatrixMultiplicationBSPSliceKernel implements Kernel {
 
     result.threadResultsSharedMemIndex = threadResultsSharedMemIndex;
     result.threadResultsSharedMemValues = threadResultsSharedMemValues;
-
-    // set fields to null otherwise rootbeer will eliminate it
-    result.blockResultsSharedMemIndex = null;
-    result.blockResultsSharedMemValues = null;
-    result.resultColsIndex = null;
-    result.resultCols = null;
 
     // Thread 0 of each block accumulates results
     if (thread_idxx == 0) {

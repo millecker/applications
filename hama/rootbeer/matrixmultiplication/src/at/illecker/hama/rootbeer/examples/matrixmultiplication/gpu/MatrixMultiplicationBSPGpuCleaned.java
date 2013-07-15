@@ -189,18 +189,20 @@ public class MatrixMultiplicationBSPGpuCleaned
       }
 
       // Write resultMatrix out
-      for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
+      if (resultCols.size() > 0) {
+        for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
 
-        // Build row vector
-        DenseVector rowVector = new DenseVector(resultCols.size());
-        int colIndex = 0;
-        for (Vector colVector : resultCols.values()) {
-          rowVector.setQuick(colIndex, colVector.get(rowIndex));
-          colIndex++;
+          // Build row vector
+          DenseVector rowVector = new DenseVector(resultCols.size());
+          int colIndex = 0;
+          for (Vector colVector : resultCols.values()) {
+            rowVector.setQuick(colIndex, colVector.get(rowIndex));
+            colIndex++;
+          }
+
+          // Write out row
+          peer.write(new IntWritable(rowIndex), new VectorWritable(rowVector));
         }
-
-        // Write out row
-        peer.write(new IntWritable(rowIndex), new VectorWritable(rowVector));
       }
     }
   }

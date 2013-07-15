@@ -225,29 +225,40 @@ public class MatrixMultiplicationBSPGpu
         logger.writeChars("bsp,result[" + i + "]=" + result.toString() + "\n");
 
         // DEBUG info columns of matrix B within shared memory
-        logger.writeChars("bsp,bColsSharedMemIndex="
-            + Arrays.toString(result.bColsSharedMemIndex) + "\n");
-        logger.writeChars("bsp,bColsSharedMemValues="
-            + Arrays.toString(result.bColsSharedMemValues) + "\n");
+        if (result.bColsSharedMemIndex != null) {
+          for (int k = 0; k < result.bColsSharedMemIndex.length; k++) {
+            logger.writeChars("bsp,bColsSharedMemIndex[" + k + "]="
+                + Arrays.toString(result.bColsSharedMemIndex[k]) + "\n");
+            logger.writeChars("bsp,bColsSharedMemValues[" + k + "]="
+                + Arrays.toString(result.bColsSharedMemValues[k]) + "\n");
+          }
+        }
 
         // DEBUG info thread computations
-        for (int k = 0; k < result.bColsVals.length; k++) {
-          for (int j = 0; j < result.multipliers.length; j++) {
-            logger.writeChars("bsp,multiplier[" + j + "]="
-                + Arrays.toString(result.multipliers[j]) + "\n");
-            logger.writeChars("bsp,bColsIndexes[" + k + "][" + j + "]="
-                + Arrays.toString(result.bColsIndexes[k][j]) + "\n");
-            logger.writeChars("bsp,bColsVals[" + k + "][" + j + "]="
-                + Arrays.toString(result.bColsVals[k][j]) + "\n");
+        if ((result.bColsVals != null) && (result.multipliers != null)) {
+          for (int k = 0; k < result.bColsVals.length; k++) {
+            for (int j = 0; j < result.multipliers.length; j++) {
+              logger.writeChars("bsp,multiplier[" + j + "]="
+                  + Arrays.toString(result.multipliers[j]) + "\n");
+              logger.writeChars("bsp,bColsIndexes[" + k + "][" + j + "]="
+                  + Arrays.toString(result.bColsIndexes[k][j]) + "\n");
+              logger.writeChars("bsp,bColsVals[" + k + "][" + j + "]="
+                  + Arrays.toString(result.bColsVals[k][j]) + "\n");
+            }
           }
         }
 
         // DEBUG info threadResults within shared memory
-        for (int j = 0; j < result.threadResultsSharedMemIndex.length; j++) {
-          logger.writeChars("bsp,threadResultsSharedMemIndex[" + j + "]="
-              + Arrays.toString(result.threadResultsSharedMemIndex[j]) + "\n");
-          logger.writeChars("bsp,threadResultsSharedMemValues[" + j + "]="
-              + Arrays.toString(result.threadResultsSharedMemValues[j]) + "\n");
+        if (result.threadResultsSharedMemIndex != null) {
+          for (int j = 0; j < result.threadResultsSharedMemIndex.length; j++) {
+            logger
+                .writeChars("bsp,threadResultsSharedMemIndex[" + j + "]="
+                    + Arrays.toString(result.threadResultsSharedMemIndex[j])
+                    + "\n");
+            logger.writeChars("bsp,threadResultsSharedMemValues[" + j + "]="
+                + Arrays.toString(result.threadResultsSharedMemValues[j])
+                + "\n");
+          }
         }
       }
 
@@ -255,16 +266,18 @@ public class MatrixMultiplicationBSPGpu
 
         if (isDebuggingEnabled) {
           // DEBUG info blockResults within shared memory
-          for (int j = 0; j < result.blockResultsSharedMemIndex.length; j++) {
-            for (int k = 0; k < result.blockResultsSharedMemIndex[0].length; k++) {
-              logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_"
-                  + j + "][thread_" + k + "]="
-                  + Arrays.toString(result.blockResultsSharedMemIndex[j][k])
-                  + "\n");
-              logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_"
-                  + j + "][thread_" + k + "]="
-                  + Arrays.toString(result.blockResultsSharedMemValues[j][k])
-                  + "\n");
+          if (result.blockResultsSharedMemIndex != null) {
+            for (int j = 0; j < result.blockResultsSharedMemIndex.length; j++) {
+              for (int k = 0; k < result.blockResultsSharedMemIndex[0].length; k++) {
+                logger.writeChars("bsp,blockResultsSharedMemIndex[blockSlize_"
+                    + j + "][thread_" + k + "]="
+                    + Arrays.toString(result.blockResultsSharedMemIndex[j][k])
+                    + "\n");
+                logger.writeChars("bsp,blockResultsSharedMemValues[blockSlize_"
+                    + j + "][thread_" + k + "]="
+                    + Arrays.toString(result.blockResultsSharedMemValues[j][k])
+                    + "\n");
+              }
             }
           }
         }
@@ -318,22 +331,24 @@ public class MatrixMultiplicationBSPGpu
       }
 
       // Write resultMatrix out
-      for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
+      if (resultCols.size() > 0) {
+        for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
 
-        // Build row vector
-        DenseVector rowVector = new DenseVector(resultCols.size());
-        int colIndex = 0;
-        for (Vector colVector : resultCols.values()) {
-          rowVector.setQuick(colIndex, colVector.get(rowIndex));
-          colIndex++;
-        }
+          // Build row vector
+          DenseVector rowVector = new DenseVector(resultCols.size());
+          int colIndex = 0;
+          for (Vector colVector : resultCols.values()) {
+            rowVector.setQuick(colIndex, colVector.get(rowIndex));
+            colIndex++;
+          }
 
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,write,key=" + rowIndex + ",value="
-              + rowVector.toString() + "\n");
+          if (isDebuggingEnabled) {
+            logger.writeChars("bsp,write,key=" + rowIndex + ",value="
+                + rowVector.toString() + "\n");
+          }
+          // Write out row
+          peer.write(new IntWritable(rowIndex), new VectorWritable(rowVector));
         }
-        // Write out row
-        peer.write(new IntWritable(rowIndex), new VectorWritable(rowVector));
       }
     }
 
