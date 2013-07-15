@@ -18,7 +18,7 @@ if (is.na(args[1])) {
 
 # Load result file
 caliperJsonFile <- args[1]
-#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-16T17:30:23Z.json"
+#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13:37:02Z.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -118,10 +118,11 @@ for (scenarioIndex in 1:length(caliperResult)) {
     measurement <- measurements[[measurementIndex]]
     
     value <- measurement$value
+    weight <- measurement$weight
     magnitude <- value$magnitude
     unit <- value$unit
   
-    newMeasurementRow <- c(scenario=scenarioIndex,measurement=measurementIndex,magnitude=magnitude,unit=unit)
+    newMeasurementRow <- c(scenario=scenarioIndex,measurement=measurementIndex,magnitude=magnitude,unit=unit,weight=weight)
     measurementResults <- lappend(measurementResults, newMeasurementRow)
   }
 }
@@ -141,6 +142,7 @@ measurementTable <- data.frame(measurementTable)
 measurementTable <- transform(measurementTable,scenario = as.numeric(as.character(measurementTable$scenario)))
 measurementTable <- transform(measurementTable,measurement = as.numeric(as.character(measurementTable$measurement)))
 measurementTable <- transform(measurementTable,magnitude = as.numeric(as.character(measurementTable$magnitude)))
+measurementTable <- transform(measurementTable,weight = as.numeric(as.character(measurementTable$weight)))
 
 scenarioTable <- transform(scenarioTable,Measurements = as.numeric(as.character(scenarioTable$Measurements)))
 scenarioTable <- transform(scenarioTable,AvailableProcessors = as.numeric(as.character(scenarioTable$AvailableProcessors)))
@@ -180,11 +182,13 @@ benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario"
 print("BenchmarkTable Execution Times")
 sqldf('SELECT scenario,magnitude,unit,AllParameters FROM benchmarkTable')
 
-benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
+benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude/weight) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
 print("BenchmarkTable Average Execution Time")
 benchmarkTableAvg
 #str(benchmarkTableAvg)
-#summary(benchmarkTable)
+
+print("Summary of benchmarkTable")
+summary(benchmarkTable)
 
 # Generate Bar chart of average data
 title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
