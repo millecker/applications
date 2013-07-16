@@ -1,3 +1,5 @@
+package at.illecker.hama.rootbeer.examples.pagerank.gpu;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,212 +16,179 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.pagerank.gpu;
-
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hama.HamaConfiguration;
-import org.apache.hama.bsp.BSP;
-import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.bsp.BSPJobClient;
-import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.ClusterStatus;
-import org.apache.hama.bsp.FileOutputFormat;
-import org.apache.hama.bsp.NullInputFormat;
+import org.apache.hama.bsp.HashPartitioner;
+import org.apache.hama.bsp.SequenceFileInputFormat;
+import org.apache.hama.bsp.TextArrayWritable;
 import org.apache.hama.bsp.TextOutputFormat;
-import org.apache.hama.bsp.sync.SyncException;
-
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.apache.hama.graph.AverageAggregator;
+import org.apache.hama.graph.Edge;
+import org.apache.hama.graph.GraphJob;
+import org.apache.hama.graph.Vertex;
+import org.apache.hama.graph.VertexInputReader;
 
 /**
- * @author PiEstimator Monte Carlo computation of pi
- *         http://de.wikipedia.org/wiki/Monte-Carlo-Algorithmus
+ * @author Real pagerank with dangling node contribution from
+ *         https://github.com/apache
+ *         /hama/blob/trunk/examples/src/main/java/org/apache
+ *         /hama/examples/PageRank.java
  * 
- *         Generate random points in the square [-1,1] X [-1,1]. The fraction of
- *         these that lie in the unit disk x^2 + y^2 <= 1 will be approximately
- *         pi/4.
+ *         100000 nodes / 1000000 edges (8 cores 8GB mem) using 8 bsp tasks:
+ * 
+ *         pagerank Hama 0.6.2: 98.794 secs - Hama 0.5.0: 84.925secs
+ * 
  */
 
-public class PageRankGpu extends
-    BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
+public class PageRankGpu {
   private static final Log LOG = LogFactory.getLog(PageRankGpu.class);
-  private static final Path TMP_OUTPUT = new Path(
-      "output/hama/rootbeer/examples/piestimatorGPU-"
-          + System.currentTimeMillis());
-  private static final long kernelCount = 4;
-  private static final long iterations = 10000;
-  // Long.MAX = 9223372036854775807
 
-  private String m_masterTask;
-  private int m_kernelCount;
-  private long m_iterations;
-  private List<Kernel> kernels = new ArrayList<Kernel>();
+  public static class PageRankVertexGpu extends
+      Vertex<Text, NullWritable, DoubleWritable> {
 
-  @Override
-  public void bsp(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException, SyncException, InterruptedException {
+    // DAMPING_FACTOR: the probability, at any step,
+    // that the person will continue
+    static double DAMPING_FACTOR = 0.85;
+    static double MAXIMUM_CONVERGENCE_ERROR = 0.001;
 
-    Stopwatch watch = new Stopwatch();
-    watch.start();
-    Rootbeer rootbeer = new Rootbeer();
-    // rootbeer.setThreadConfig(m_blockSize, m_gridSize);
-    rootbeer.runAll(kernels);
-    watch.stop();
-
-    // Write log to dfs
-    BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
-    FileSystem fs = FileSystem.get(peer.getConfiguration());
-    FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
-        .getOutputPath(job), peer.getTaskId() + ".log"));
-
-    outStream.writeUTF("BSP=PiEstimatorGpuBSP,KernelCount=" + m_kernelCount
-        + ",Iterations=" + m_iterations + ",GPUTime="
-        + watch.elapsedTimeMillis() + "ms\n");
-    List<StatsRow> stats = rootbeer.getStats();
-    for (StatsRow row : stats) {
-      outStream.writeUTF("  StatsRow:\n");
-      outStream.writeUTF("    init time: " + row.getInitTime() + "\n");
-      outStream.writeUTF("    serial time: " + row.getSerializationTime()
-          + "\n");
-      outStream.writeUTF("    exec time: " + row.getExecutionTime() + "\n");
-      outStream.writeUTF("    deserial time: " + row.getDeserializationTime()
-          + "\n");
-      outStream.writeUTF("    num blocks: " + row.getNumBlocks() + "\n");
-      outStream.writeUTF("    num threads: " + row.getNumThreads() + "\n");
-    }
-    outStream.close();
-
-    // Send result to MasterTask
-    for (int i = 0; i < m_kernelCount; i++) {
-      peer.send(m_masterTask,
-          new DoubleWritable(((PageRankKernel) kernels.get(i)).result));
-    }
-    peer.sync();
-  }
-
-  @Override
-  public void setup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException {
-
-    this.m_kernelCount = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.kernelCount"));
-    this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-        "piestimator.iterations"));
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-
-    for (int i = 0; i < m_kernelCount; i++) {
-      kernels.add(new PageRankKernel(m_iterations));
-    }
-  }
-
-  @Override
-  public void cleanup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException {
-
-    if (peer.getPeerName().equals(m_masterTask)) {
-
-      double pi = 0.0;
-
-      int numMessages = peer.getNumCurrentMessages();
-
-      DoubleWritable received;
-      while ((received = peer.getCurrentMessage()) != null) {
-        pi += received.get();
+    @Override
+    public void setup(Configuration conf) {
+      String val = conf.get("hama.pagerank.alpha");
+      if (val != null) {
+        DAMPING_FACTOR = Double.parseDouble(val);
       }
-
-      pi = pi / numMessages;
-      peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (numMessages * m_iterations)
-          // + (peer.getNumPeers() * m_kernelCount * m_iterations)
-          + " points is"), new DoubleWritable(pi));
-    }
-  }
-
-  static void printOutput(BSPJob job) throws IOException {
-    FileSystem fs = FileSystem.get(job.getConfiguration());
-    FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
-        System.out.println("File " + files[i].getPath());
-        FSDataInputStream in = fs.open(files[i].getPath());
-        IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
-        in.close();
+      val = conf.get("hama.graph.max.convergence.error");
+      if (val != null) {
+        MAXIMUM_CONVERGENCE_ERROR = Double.parseDouble(val);
       }
     }
-    // fs.delete(FileOutputFormat.getOutputPath(job), true);
-  }
 
-  public static void main(String[] args) throws InterruptedException,
-      IOException, ClassNotFoundException {
-    // BSP job configuration
-    HamaConfiguration conf = new HamaConfiguration();
+    @Override
+    public void compute(Iterable<DoubleWritable> messages) throws IOException {
+      // initialize this vertex to 1 / count of global vertices in this
+      // graph
+      if (this.getSuperstepCount() == 0) {
+        this.setValue(new DoubleWritable(1.0 / this.getNumVertices()));
 
-    BSPJob job = new BSPJob(conf);
-    // Set the job name
-    job.setJobName("Rootbeer GPU PiEstimatior");
-    // set the BSP class which shall be executed
-    job.setBspClass(PageRankGpu.class);
-    // help Hama to locale the jar to be distributed
-    job.setJarByClass(PageRankGpu.class);
+      } else if (this.getSuperstepCount() >= 1) {
 
-    job.setInputFormat(NullInputFormat.class);
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(DoubleWritable.class);
-    job.setOutputFormat(TextOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+        /* DO AT GPU */
+        double sum = 0;
+        for (DoubleWritable msg : messages) {
+          sum += msg.get();
+        }
+        double alpha = (1.0d - DAMPING_FACTOR) / this.getNumVertices();
+        this.setValue(new DoubleWritable(alpha + (sum * DAMPING_FACTOR)));
+        /* DO AT GPU */
 
-    job.set("bsp.child.java.opts", "-Xmx4G");
+      }
 
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
-
-    if (args.length > 0) {
-      if (args.length == 3) {
-        job.setNumBspTask(Integer.parseInt(args[0]));
-        job.set("piestimator.kernelCount", args[1]);
-        job.set("piestimator.iterations", args[2]);
-      } else {
-        System.out.println("Wrong argument size!");
-        System.out.println("    Argument1=NumBspTask");
-        System.out.println("    Argument2=hellorootbeer.kernelCount");
-        System.out.println("    Argument2=hellorootbeer.iterations");
+      // if we have not reached our global error yet, then proceed.
+      DoubleWritable globalError = getLastAggregatedValue(0);
+      if (globalError != null && this.getSuperstepCount() > 2
+          && MAXIMUM_CONVERGENCE_ERROR > globalError.get()) {
+        voteToHalt();
         return;
       }
-    } else {
-      job.setNumBspTask(cluster.getMaxTasks());
-      job.set("piestimator.kernelCount", "" + PageRankGpu.kernelCount);
-      job.set("piestimator.iterations", "" + PageRankGpu.iterations);
+
+      // in each superstep we are going to send a new rank to our
+      // neighbours
+      sendMessageToNeighbors(new DoubleWritable(this.getValue().get()
+          / this.getEdges().size()));
     }
-    LOG.info("NumBspTask: " + job.getNumBspTask());
-    LOG.info("KernelCount: " + job.get("piestimator.kernelCount"));
-    LOG.info("Iterations: " + job.get("piestimator.iterations"));
+
+  }
+
+  public static class PagerankSeqReader
+      extends
+      VertexInputReader<Text, TextArrayWritable, Text, NullWritable, DoubleWritable> {
+    @Override
+    public boolean parseVertex(Text key, TextArrayWritable value,
+        Vertex<Text, NullWritable, DoubleWritable> vertex) throws Exception {
+      vertex.setVertexID(key);
+
+      for (Writable v : value.get()) {
+        vertex.addEdge(new Edge<Text, NullWritable>((Text) v, null));
+      }
+
+      return true;
+    }
+  }
+
+  public static GraphJob createJob(String[] args, HamaConfiguration conf)
+      throws IOException {
+    GraphJob job = new GraphJob(conf, PageRankGpu.class);
+    job.setJobName("Pagerank GPU");
+
+    job.setVertexClass(PageRankVertexGpu.class);
+    job.setInputPath(new Path(args[0]));
+    job.setOutputPath(new Path(args[1]));
+
+    // set the defaults
+    job.setMaxIteration(30);
+    job.set("hama.pagerank.alpha", "0.85");
+    // reference vertices to itself, because we don't have a dangling node
+    // contribution here
+    job.set("hama.graph.self.ref", "true");
+    job.set("hama.graph.max.convergence.error", "0.001");
+
+    if (args.length == 3) {
+      job.setNumBspTask(Integer.parseInt(args[2]));
+    } else {
+      job.setNumBspTask(1);
+    }
+
+    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+    LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
+    LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
+    LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
+    LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
+
+    // error
+    job.setAggregatorClass(AverageAggregator.class);
+
+    // Vertex reader
+    job.setVertexInputReaderClass(PagerankSeqReader.class);
+
+    job.setVertexIDClass(Text.class);
+    job.setVertexValueClass(DoubleWritable.class);
+    job.setEdgeValueClass(NullWritable.class);
+
+    job.setInputFormat(SequenceFileInputFormat.class);
+
+    job.setPartitioner(HashPartitioner.class);
+    job.setOutputFormat(TextOutputFormat.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(DoubleWritable.class);
+    return job;
+  }
+
+  private static void printUsage() {
+    System.out.println("Usage: <input> <output> [tasks]");
+    System.exit(-1);
+  }
+
+  public static void main(String[] args) throws IOException,
+      InterruptedException, ClassNotFoundException {
+    if (args.length < 2)
+      printUsage();
+
+    HamaConfiguration conf = new HamaConfiguration(new Configuration());
+    GraphJob pageJob = createJob(args, conf);
 
     long startTime = System.currentTimeMillis();
-    if (job.waitForCompletion(true)) {
-      printOutput(job);
+    if (pageJob.waitForCompletion(true)) {
       System.out.println("Job Finished in "
           + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
     }
   }
-
 }

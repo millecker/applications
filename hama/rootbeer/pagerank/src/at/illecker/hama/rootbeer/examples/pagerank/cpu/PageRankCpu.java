@@ -50,7 +50,7 @@ import org.apache.hama.graph.VertexInputReader;
  */
 
 public class PageRankCpu {
-  private static final Log LOG = LogFactory.getLog(PageRankVertexCpu.class);
+  private static final Log LOG = LogFactory.getLog(PageRankCpu.class);
 
   public static class PageRankVertexCpu extends
       Vertex<Text, NullWritable, DoubleWritable> {
@@ -81,14 +81,12 @@ public class PageRankCpu {
 
       } else if (this.getSuperstepCount() >= 1) {
 
-        /* DO AT GPU */
         double sum = 0;
         for (DoubleWritable msg : messages) {
           sum += msg.get();
         }
         double alpha = (1.0d - DAMPING_FACTOR) / this.getNumVertices();
         this.setValue(new DoubleWritable(alpha + (sum * DAMPING_FACTOR)));
-        /* DO AT GPU */
 
       }
 
@@ -152,7 +150,7 @@ public class PageRankCpu {
     LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
-   
+
     // error
     job.setAggregatorClass(AverageAggregator.class);
 
