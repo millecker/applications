@@ -18,6 +18,8 @@ package at.illecker.hama.rootbeer.examples.pagerank.cpu;
  */
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
@@ -48,6 +50,7 @@ import org.apache.hama.graph.VertexInputReader;
  */
 
 public class PageRankCpu {
+  private static final Log LOG = LogFactory.getLog(PageRankVertexCpu.class);
 
   public static class PageRankVertexCpu extends
       Vertex<Text, NullWritable, DoubleWritable> {
@@ -123,42 +126,50 @@ public class PageRankCpu {
 
   public static GraphJob createJob(String[] args, HamaConfiguration conf)
       throws IOException {
-    GraphJob pageJob = new GraphJob(conf, PageRankCpu.class);
-    pageJob.setJobName("Pagerank CPU");
+    GraphJob job = new GraphJob(conf, PageRankCpu.class);
+    job.setJobName("Pagerank CPU");
 
-    pageJob.setVertexClass(PageRankVertexCpu.class);
-    pageJob.setInputPath(new Path(args[0]));
-    pageJob.setOutputPath(new Path(args[1]));
+    job.setVertexClass(PageRankVertexCpu.class);
+    job.setInputPath(new Path(args[0]));
+    job.setOutputPath(new Path(args[1]));
 
     // set the defaults
-    pageJob.setMaxIteration(30);
-    pageJob.set("hama.pagerank.alpha", "0.85");
+    job.setMaxIteration(30);
+    job.set("hama.pagerank.alpha", "0.85");
     // reference vertices to itself, because we don't have a dangling node
     // contribution here
-    pageJob.set("hama.graph.self.ref", "true");
-    pageJob.set("hama.graph.max.convergence.error", "0.001");
+    job.set("hama.graph.self.ref", "true");
+    job.set("hama.graph.max.convergence.error", "0.001");
 
     if (args.length == 3) {
-      pageJob.setNumBspTask(Integer.parseInt(args[2]));
+      job.setNumBspTask(Integer.parseInt(args[2]));
+    } else {
+      job.setNumBspTask(1);
     }
 
+    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+    LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
+    LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
+    LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
+    LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
+   
     // error
-    pageJob.setAggregatorClass(AverageAggregator.class);
+    job.setAggregatorClass(AverageAggregator.class);
 
     // Vertex reader
-    pageJob.setVertexInputReaderClass(PagerankSeqReader.class);
+    job.setVertexInputReaderClass(PagerankSeqReader.class);
 
-    pageJob.setVertexIDClass(Text.class);
-    pageJob.setVertexValueClass(DoubleWritable.class);
-    pageJob.setEdgeValueClass(NullWritable.class);
+    job.setVertexIDClass(Text.class);
+    job.setVertexValueClass(DoubleWritable.class);
+    job.setEdgeValueClass(NullWritable.class);
 
-    pageJob.setInputFormat(SequenceFileInputFormat.class);
+    job.setInputFormat(SequenceFileInputFormat.class);
 
-    pageJob.setPartitioner(HashPartitioner.class);
-    pageJob.setOutputFormat(TextOutputFormat.class);
-    pageJob.setOutputKeyClass(Text.class);
-    pageJob.setOutputValueClass(DoubleWritable.class);
-    return pageJob;
+    job.setPartitioner(HashPartitioner.class);
+    job.setOutputFormat(TextOutputFormat.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(DoubleWritable.class);
+    return job;
   }
 
   private static void printUsage() {

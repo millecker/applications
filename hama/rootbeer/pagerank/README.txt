@@ -5,10 +5,15 @@
 # Delete input and output dir
 hadoop fs -rmr input/hama/rootbeer/examples/pagerank
 hadoop fs -rmr output/hama/rootbeer/examples/pagerank
+
 # Generate random input graph
 # HADOOP_HOME must be set to use hama-examples
-hama jar ../../../lib/hama-examples-0.6.3-SNAPSHOT.jar gen fastgen 10000 100000 \
- input/hama/rootbeer/examples/pagerank 3
+hama jar ../../../lib/hama-examples-0.6.3-SNAPSHOT.jar gen fastgen 1000 1000 \
+ input/hama/rootbeer/examples/pagerank 1
+
+# Check inputSplits defined by blocks
+# hadoop fsck /user/bafu/input/hama/rootbeer/examples/pagerank/part-00000 -blocks
+# e.g., Total blocks (validated): 8 require 8 bspTasks
 
 # Use Apache Ant to build and run example
 
