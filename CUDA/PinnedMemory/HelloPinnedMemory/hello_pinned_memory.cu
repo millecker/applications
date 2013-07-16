@@ -24,7 +24,6 @@ float *host_array;
 // device array
 float *device_array;
 
-
 __global__ void device_method(float *d_array, unsigned int n)
 {
   
