@@ -8,7 +8,7 @@
 	<!--
 	<property name="root" value="../../.." />
 	-->
-	<property name="rootbeer.version" value="rootbeer-master-trunk.jar" />
+	<property name="rootbeer.version" value="rootbeer-master-branch.jar" />
 	<property name="lib" value="lib" />
 	<property name="lib.dir" value="${root}${file.separator}${lib}" />
 	<property name="src.dir" value="src" />

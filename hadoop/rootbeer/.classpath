@@ -8,6 +8,6 @@
 	<classpathentry kind="lib" path="/applications/lib/guava-12.0.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/mahout-core-0.8-SNAPSHOT-job.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/caliper-1.0-beta-1-all.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/rootbeer-master-trunk.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/rootbeer-master-branch.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
