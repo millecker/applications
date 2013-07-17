@@ -1,5 +1,6 @@
 <project>
 	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
 	<property name="output.file" value="MatrixMultiplication" />
 	<property name="libjars.gpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
 	<property name="libjars.cpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
