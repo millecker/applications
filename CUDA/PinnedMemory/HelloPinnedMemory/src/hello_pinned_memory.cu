@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include "util/cuPrintf.cu"
 #include <stdio.h>
 
@@ -17,7 +33,7 @@ cudaError_t checkCuda(cudaError_t result)
 
 unsigned int nElements = 10;
 const unsigned int bytes = nElements * sizeof(float);
-  
+
 // host arrays
 float *host_array;
 
@@ -26,14 +42,14 @@ float *device_array;
 
 __global__ void device_method(float *d_array, unsigned int n)
 {
-  
+
   cuPrintf("Device array:\n");
   for (int i = 0; i < n; ++i) {
     cuPrintf("%f ",d_array[i]);
   }
-  
+
   modifyArray(d_array);
-  
+
   cuPrintf("Device array after modification:\n");
   for (int i = 0; i < n; ++i) {
     cuPrintf("%f ",d_array[i]);
@@ -43,7 +59,7 @@ __global__ void device_method(float *d_array, unsigned int n)
 __global__ void modifyArray(float *d_array)
 {
   host_array[0] = -1;
-    
+
   // Sync array
   checkCuda( cudaMemcpy(d_array, host_array, bytes, cudaMemcpyHostToDevice) );
 }
@@ -54,14 +70,14 @@ int main(void)
   // allocate and initialize
   checkCuda( cudaMallocHost((void**)&host_array, bytes) ); // host pinned
   checkCuda( cudaMalloc((void**)&device_array, bytes) );           // device
-  
+
   // init array
   printf("Host array:\n");
   for (int i = 0; i < nElements; ++i) {
     host_array[i] = i;
     printf("%f ",host_array[i]);
   }
-  
+
   // Sync array
   checkCuda( cudaMemcpy(device_array, host_array, bytes, cudaMemcpyHostToDevice) );
 
@@ -74,7 +90,7 @@ int main(void)
 
   // display the device's output
   cudaPrintfDisplay();
-  
+
   // clean up after cuPrintf
   cudaPrintfEnd();
 
