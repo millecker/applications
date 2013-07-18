@@ -63,8 +63,6 @@ int main(void) {
 			cudaHostAlloc((void**) &host_object, sizeof(MyClass),
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
-	printf("Host object init.\n");
-	host_object = new MyClass(1);
 	printf("Host object value: %d\n", host_object->getValue());
 
 	checkCuda(cudaHostGetDevicePointer(&device_object, host_object, 0));
