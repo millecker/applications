@@ -47,29 +47,80 @@
 class SocketServer {
 private:
 	int sock;
-	FILE* in_stream;
-	FILE* out_stream;
-	HadoopUtils::FileInStream* inStream;
-	HadoopUtils::FileOutStream* outStream;
 	bool done;
-
-	void waitForTask() {
-		while (!done) {
-			nextEvent();
-		}
-	}
-
-	void nextEvent() {
-		int32_t cmd;
-		cmd = HadoopUtils::deserializeInt(*inStream);
-	}
 
 public:
 	SocketServer() {
 		sock = -1;
+		done = false;
+
+		sock = socket(PF_INET, SOCK_STREAM, 0);
+		if (sock == -1) {
+			fprintf(stderr, "problem creating socket: %s\n", strerror(errno));
+		}
+
+		sockaddr_in addr;
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(SERVER_SOCKET_PORT);
+		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+		bind(sock, (sockaddr*) &addr, sizeof(addr));
+		listen(sock, 5);
+		printf("SocketServer is running @ port %d ...\n", SERVER_SOCKET_PORT);
+
+		do {
+			sockaddr_in partnerAddr;
+			int adrLen;
+			int partnerSock = accept(sock, (sockaddr*) &partnerAddr, (socklen_t *)&adrLen);
+
+			//HadoopUtils::FileInStream* inStream;
+			//HadoopUtils::FileOutStream* outStream;
+
+			//int32_t cmd;
+			//cmd = HadoopUtils::deserializeInt(*inStream);
+
+			//MsgLen = recv(IDPartnerSocket, Puffer, MAXPUF, 0);
+			/* tu was mit den Daten */
+			//send(IDPartnerSocket, Puffer, MsgLen, 0);
+			close(partnerSock);
+
+		} while (!done);
+
+	}
+
+	~SocketServer() {
+		fflush(stdout);
+		if (sock != -1) {
+			int result = shutdown(sock, SHUT_RDWR);
+			if (result != 0) {
+				fprintf(stderr, "problem shutting socket");
+			}
+			result = close(sock);
+			if (result != 0) {
+				fprintf(stderr, "problem closing socket");
+			}
+		}
+	}
+};
+
+/********************************************/
+/**************     CLIENT     **************/
+/********************************************/
+class SocketClient {
+private:
+	int sock;
+	FILE* in_stream;
+	FILE* out_stream;
+	HadoopUtils::FileInStream* inStream;
+	HadoopUtils::FileOutStream* outStream;
+
+public:
+	int value;
+
+	SocketClient() {
+		sock = -1;
 		in_stream = NULL;
 		out_stream = NULL;
-		done = false;
 
 		sock = socket(PF_INET, SOCK_STREAM, 0);
 		if (sock == -1) {
@@ -95,10 +146,10 @@ public:
 		outStream = new HadoopUtils::FileOutStream();
 		outStream->open(out_stream);
 
-		waitForTask();
+		printf("SocketClient is connect to port %d ...\n", SERVER_SOCKET_PORT);
 	}
 
-	~SocketServer() {
+	~SocketClient() {
 		if (in_stream != NULL) {
 			fflush(in_stream);
 		}
@@ -117,26 +168,12 @@ public:
 			}
 		}
 	}
-};
-
-/********************************************/
-/**************     CLIENT     **************/
-/********************************************/
-class SocketClient {
-public:
-	int value;
-
-	__device__ __host__ SocketClient() {
-		value = 0;
-	}
 
 	__device__ __host__ void setValue(int v) {
 		value = v;
 	}
 	__device__ __host__ int getValue() {
 		return value;
-	}
-	__device__ __host__ ~SocketClient() {
 	}
 };
 
@@ -165,6 +202,8 @@ __global__ void device_method(SocketClient *d_object) {
 }
 
 int main(void) {
+
+	SocketServer *socketServer = new SocketServer();
 
 	SocketClient *host_object;
 	SocketClient *device_object;

@@ -24,8 +24,8 @@ bin/StringUtils.o: src/hadoop/StringUtils.cc
 		$(CXX) -g -O2 -c $< -o $@	
 		
 
-run: PassingObjectToKernel
-		./bin/PassingObjectToKernel
+run: SocketCommunication
+		./bin/SocketCommunication
 
 clean:
 		rm -f bin/libhadooputils.a
