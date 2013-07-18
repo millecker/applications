@@ -19,7 +19,6 @@
 #include "MyClass.h"
 #include "util/cuPrintf.cu"
 
-// includes CUDA Runtime
 #include <cuda_runtime.h>
 
 // Convenience function for checking CUDA runtime API results
@@ -36,9 +35,9 @@ inline cudaError_t checkCuda(cudaError_t result) {
 
 __global__ void device_method(MyClass *d_object) {
 
-	int val = d_object->getValue();
-	cuPrintf("Device object value: %d\n", val);
-	d_object->setValue(++val);
+	//int val = d_object->getValue();
+	//cuPrintf("Device object value: %d\n", val);
+	//d_object->setValue(++val);
 }
 
 int main(void) {
