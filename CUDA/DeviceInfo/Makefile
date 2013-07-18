@@ -12,9 +12,12 @@ DeviceInfo: src/CUDADeviceInfo.cpp
 		$(CXX) $(CFLAGS) $< $(LDFLAGS) -g -O2 -o bin/$@
 #		nvcc $(CUDAFLAGS) -c $@.o -o $@
 
+run: DeviceInfo
+		./bin/DeviceInfo
+
 clean:
-		rm -f bin/CUDADeviceInfo
+		rm -f bin/DeviceInfo
 		rm -rf bin/DeviceInfo.dSYM
-		rm deviceQuery.txt
-		rm SdkMasterLog.csv
+		rm -f deviceQuery.txt
+		rm -f SdkMasterLog.csv
 		$(MAKE) -C ../Nvidia_OpenCL_SDK_4_2_Linux/shared clean

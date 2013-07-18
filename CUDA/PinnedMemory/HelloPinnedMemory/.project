@@ -31,7 +31,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>${workspace_loc:/PinnedMemory_HelloPinnedMemory/Debug}</value>
+					<value>${workspace_loc:/PinnedMemory_HelloPinnedMemory}</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
