@@ -8,22 +8,23 @@ LDFLAGS= -L$(CUDA_INSTALL_PATH)/lib -lcuda -lcudart
 
 all: PassingObjectToKernel
 
-PassingObjectToKernel: bin/MyClass.o bin/passing_object_to_kernel.o
-#		$(CXX) $(CFLAGS) $^ $(LDFLAGS) -o $@
-		$(NVCC) $(NVCCFLAGS) -link $^ -o $@
+PassingObjectToKernel: src/passing_object_to_kernel.cu
+#		$(CXX) $(CFLAGS) $^ $(LDFLAGS) -o bin/$@
+#		$(NVCC) $(NVCCFLAGS) -link $^ -o bin/$@
+		$(NVCC) $(NVCCFLAGS) $< -o bin/$@
 
-bin/passing_object_to_kernel.o: src/passing_object_to_kernel.cu
-		$(NVCC) $(NVCCFLAGS) --compile $< -o $@
+#bin/passing_object_to_kernel.o: src/passing_object_to_kernel.cu
+#		$(NVCC) $(NVCCFLAGS) --compile $< -o $@
 		
-bin/MyClass.o: src/MyClass.cpp
+#bin/MyClass.o: src/MyClass.cpp
 #		$(CXX) -g -O2 $(CFLAGS) $< $(LDFLAGS) -o $@
-		$(NVCC) $(NVCCFLAGS) --compile $< -o $@
+#		$(NVCC) $(NVCCFLAGS) --compile $< -o $@
 
 run: PassingObjectToKernel
 		./bin/PassingObjectToKernel
 
 clean:
-		rm -f bin/MyClass.o
-		rm -f bin/passing_object_to_kernel.o
+#		rm -f bin/MyClass.o
+#		rm -f bin/passing_object_to_kernel.o
 		rm -f bin/PassingObjectToKernel
 		rm -rf bin/PassingObjectToKernel.dSYM
