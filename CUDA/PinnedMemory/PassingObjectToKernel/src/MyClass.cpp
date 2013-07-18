@@ -14,12 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// includes CUDA Runtime
 #include <cuda_runtime.h>
 
-class MyClass
-{
+class MyClass {
 public:
 	int value;
 

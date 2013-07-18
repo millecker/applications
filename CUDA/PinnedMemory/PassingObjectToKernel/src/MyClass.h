@@ -14,16 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MYCLASS_H_
-#define MYCLASS_H_
 
 class MyClass {
 public:
-	__device__ __host__ MyClass();
-	__device__ __host__ MyClass(int v);
-	__device__ __host__ void setValue(int v);
-	__device__ __host__ int getValue();
-	__device__ __host__ virtual ~MyClass();
+	MyClass();
+	MyClass(int v);
+	void setValue(int v);
+	int getValue();
+	virtual ~MyClass();
 };
-
-#endif /* MYCLASS_H_ */
