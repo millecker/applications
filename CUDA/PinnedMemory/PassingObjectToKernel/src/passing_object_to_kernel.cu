@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 #include <stdio.h>
+#include <assert.h>
 #include "util/cuPrintf.cu"
 #include <cuda_runtime.h>
+
 
 class MyClass {
 public:
@@ -38,7 +40,6 @@ public:
 	}
 };
 
-
 // Convenience function for checking CUDA runtime API results
 // can be wrapped around any runtime API call. No-op in release builds.
 inline cudaError_t checkCuda(cudaError_t result) {
@@ -56,6 +57,7 @@ __global__ void device_method(MyClass *d_object) {
 	int val = d_object->getValue();
 	cuPrintf("Device object value: %d\n", val);
 	d_object->setValue(++val);
+	__threadfence();
 }
 
 int main(void) {
@@ -82,7 +84,7 @@ int main(void) {
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
 	// init value
-	host_object->setValue(1);
+	host_object->setValue(0);
 	printf("Host object value: %d\n", host_object->getValue());
 
 	checkCuda(cudaHostGetDevicePointer(&device_object, host_object, 0));
@@ -90,16 +92,17 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	// launch a kernel with a single thread
-	device_method<<<1, 1>>>(device_object);
+	device_method<<<16, 4>>>(device_object);
 
 	// display the device's output
 	cudaPrintfDisplay();
 	// clean up after cuPrintf
 	cudaPrintfEnd();
 
-	printf("Host object value: %d (after gpu execution)\n",
-			host_object->getValue());
+	printf("Host object value: %d (after gpu execution) (thread_num=%d)\n",
+			host_object->getValue(), 16 * 4);
+
+	assert(host_object->getValue() == 16*4);
 
 	return 0;
 }
