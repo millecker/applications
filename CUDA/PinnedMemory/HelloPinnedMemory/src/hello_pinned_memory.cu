@@ -17,82 +17,90 @@
 #include "util/cuPrintf.cu"
 #include <stdio.h>
 
+// includes CUDA Runtime
+#include <cuda_runtime.h>
+
 // Convenience function for checking CUDA runtime API results
 // can be wrapped around any runtime API call. No-op in release builds.
-inline
-cudaError_t checkCuda(cudaError_t result)
-{
+inline cudaError_t checkCuda(cudaError_t result) {
 #if defined(DEBUG) || defined(_DEBUG)
-  if (result != cudaSuccess) {
-    fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-    assert(result == cudaSuccess);
-  }
+	if (result != cudaSuccess) {
+		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+		assert(result == cudaSuccess);
+	}
 #endif
-  return result;
+	return result;
 }
 
-unsigned int nElements = 10;
-const unsigned int bytes = nElements * sizeof(float);
+__global__ void device_method(float *d_array, unsigned int n) {
 
-// host arrays
-float *host_array;
+	cuPrintf("Device array:\n");
+	for (int i = 0; i < n; ++i) {
+		cuPrintf("%.2f ", d_array[i]);
+	}
+	cuPrintf("\n");
 
-// device array
-float *device_array;
+	cuPrintf("Device method increments array elements...\n");
 
-__global__ void device_method(float *d_array, unsigned int n)
-{
-
-  cuPrintf("Device array:\n");
-  for (int i = 0; i < n; ++i) {
-    cuPrintf("%f ",d_array[i]);
-  }
-
-  modifyArray(d_array);
-
-  cuPrintf("Device array after modification:\n");
-  for (int i = 0; i < n; ++i) {
-    cuPrintf("%f ",d_array[i]);
-  }
+	for (int i = 0; i < n; ++i) {
+		d_array[i]++;
+	}
 }
 
-__global__ void modifyArray(float *d_array)
-{
-  host_array[0] = -1;
+int main(void) {
 
-  // Sync array
-  checkCuda( cudaMemcpy(d_array, host_array, bytes, cudaMemcpyHostToDevice) );
-}
+	//check if the device supports mapping host memory.
+	cudaDeviceProp prop;
+	int whichDevice;
+	checkCuda(cudaGetDevice(&whichDevice));
+	checkCuda(cudaGetDeviceProperties(&prop, whichDevice));
+	if (prop.canMapHostMemory != 1) {
+		printf("Device cannot map memory \n");
+		return 0;
+	}
 
-int main(void)
-{
+	// host arrays
+	float *host_array;
+	// device array
+	float *device_array;
 
-  // allocate and initialize
-  checkCuda( cudaMallocHost((void**)&host_array, bytes) ); // host pinned
-  checkCuda( cudaMalloc((void**)&device_array, bytes) );           // device
+	unsigned int N = 10;
+	const unsigned int size = N * sizeof(float);
 
-  // init array
-  printf("Host array:\n");
-  for (int i = 0; i < nElements; ++i) {
-    host_array[i] = i;
-    printf("%f ",host_array[i]);
-  }
+	// runtime must be placed into a state enabling to allocate zero-copy buffers.
+	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
 
-  // Sync array
-  checkCuda( cudaMemcpy(device_array, host_array, bytes, cudaMemcpyHostToDevice) );
+	// init pinned memory
+	checkCuda(
+			cudaHostAlloc((void**) &host_array, size,
+					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
+	// init array
+	printf("Host array:\n");
+	for (int i = 0; i < N; ++i) {
+		host_array[i] = i;
+		printf("%.2f ", host_array[i]);
+	}
+	printf("\n");
 
-  // initialize cuPrintf
-  cudaPrintfInit();
+	checkCuda(cudaHostGetDevicePointer(&device_array, host_array, 0));
 
-  // launch a kernel with a single thread
-  device_method<<<1,1>>>(device_array, nElements);
+	// initialize cuPrintf
+	cudaPrintfInit();
 
-  // display the device's output
-  cudaPrintfDisplay();
+	// launch a kernel with a single thread
+	device_method<<<1, 1>>>(device_array, N);
 
-  // clean up after cuPrintf
-  cudaPrintfEnd();
+	// display the device's output
+	cudaPrintfDisplay();
+	// clean up after cuPrintf
+	cudaPrintfEnd();
 
-  return 0;
+	printf("Host array after modification within kernel:\n");
+	for (int i = 0; i < N; ++i) {
+		printf("%.2f ", host_array[i]);
+	}
+	printf("\n");
+
+	return 0;
 }
