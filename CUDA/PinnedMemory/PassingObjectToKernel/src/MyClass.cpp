@@ -36,5 +36,5 @@ public:
 		return value;
 	}
 	__device__ __host__ ~MyClass() {
-	};
-}
+	}
+};
