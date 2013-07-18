@@ -25,8 +25,8 @@
 
 #include <sys/types.h>
 #include <netinet/in.h>
-
 #include <sys/socket.h>
+
 #include <iostream>
 #include <fstream>
 
@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
 #include <pthread.h>
 
 #include <cuda_runtime.h>
@@ -48,6 +49,7 @@ class SocketServer {
 private:
 	int sock;
 	bool done;
+	sockaddr_in addr;
 
 public:
 	SocketServer() {
@@ -59,33 +61,9 @@ public:
 			fprintf(stderr, "problem creating socket: %s\n", strerror(errno));
 		}
 
-		sockaddr_in addr;
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(SERVER_SOCKET_PORT);
 		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-		bind(sock, (sockaddr*) &addr, sizeof(addr));
-		listen(sock, 5);
-		printf("SocketServer is running @ port %d ...\n", SERVER_SOCKET_PORT);
-
-		do {
-			sockaddr_in partnerAddr;
-			int adrLen;
-			int partnerSock = accept(sock, (sockaddr*) &partnerAddr, (socklen_t *)&adrLen);
-
-			//HadoopUtils::FileInStream* inStream;
-			//HadoopUtils::FileOutStream* outStream;
-
-			//int32_t cmd;
-			//cmd = HadoopUtils::deserializeInt(*inStream);
-
-			//MsgLen = recv(IDPartnerSocket, Puffer, MAXPUF, 0);
-			/* tu was mit den Daten */
-			//send(IDPartnerSocket, Puffer, MsgLen, 0);
-			close(partnerSock);
-
-		} while (!done);
-
 	}
 
 	~SocketServer() {
@@ -101,6 +79,39 @@ public:
 			}
 		}
 	}
+
+	void *runSocketServer() {
+
+		bind(sock, (sockaddr*) &addr, sizeof(addr));
+		listen(sock, 5);
+		printf("SocketServer is running @ port %d ...\n", SERVER_SOCKET_PORT);
+
+		do {
+			sockaddr_in partnerAddr;
+			int adrLen;
+			int partnerSock = accept(sock, (sockaddr*) &partnerAddr,
+					(socklen_t *) &adrLen);
+
+			//HadoopUtils::FileInStream* inStream;
+			//HadoopUtils::FileOutStream* outStream;
+
+			//int32_t cmd;
+			//cmd = HadoopUtils::deserializeInt(*inStream);
+
+			//MsgLen = recv(IDPartnerSocket, Puffer, MAXPUF, 0);
+			/* tu was mit den Daten */
+			//send(IDPartnerSocket, Puffer, MsgLen, 0);
+			close(partnerSock);
+
+		} while (!done);
+
+		return 0;
+	}
+
+	static void *SocketServer_thread(void *context) {
+		return ((SocketServer *) context)->runSocketServer();
+	}
+
 };
 
 /********************************************/
@@ -204,6 +215,9 @@ __global__ void device_method(SocketClient *d_object) {
 int main(void) {
 
 	SocketServer *socketServer = new SocketServer();
+
+	pthread_t t;
+	pthread_create(&t, NULL, &SocketServer::SocketServer_thread, &socketServer);
 
 	SocketClient *host_object;
 	SocketClient *device_object;
