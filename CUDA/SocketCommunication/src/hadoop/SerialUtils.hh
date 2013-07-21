@@ -20,6 +20,7 @@
 
 #include <string>
 #include <stdint.h>
+#include <iostream>
 
 namespace HadoopUtils {
 
@@ -57,8 +58,8 @@ namespace HadoopUtils {
   #define HADOOP_ASSERT(CONDITION, MESSAGE) \
     { \
       if (!(CONDITION)) { \
-        throw HadoopUtils::Error((MESSAGE), __FILE__, __LINE__, \
-                                    __PRETTY_FUNCTION__); \
+    	  	std::cerr << "HADOOP_ASSERT " << MESSAGE << std::endl;  \
+        exit(1); \
       } \
     }
 

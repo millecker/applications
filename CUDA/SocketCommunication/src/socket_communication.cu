@@ -47,7 +47,7 @@
 /*************** MESSAGE_TYPE ***************/
 /********************************************/
 enum MESSAGE_TYPE {
-	GET_NEXT_VALUE,
+	GET_NEXT_VALUE, DONE
 };
 
 /********************************************/
@@ -70,9 +70,9 @@ public:
 		fflush(stdout);
 		if (sock != -1) {
 			int result = shutdown(sock, SHUT_RDWR);
-			if (result != 0) {
-				fprintf(stderr, "SocketServer: problem shutting socket\n");
-			}
+			//if (result != 0) {
+			//	fprintf(stderr, "SocketServer: problem shutting socket\n");
+			//}
 			result = close(sock);
 			if (result != 0) {
 				fprintf(stderr, "SocketServer: problem closing socket\n");
@@ -82,10 +82,6 @@ public:
 
 	int getPort() {
 		return port;
-	}
-
-	void setDone(bool finished) {
-		done = finished;
 	}
 
 	void *runSocketServer() {
@@ -123,38 +119,59 @@ public:
 		}
 		port = ntohs(current_addr.sin_port);
 
-		listen(sock, 5);
+		listen(sock, 1);
 
 		printf("SocketServer is running @ port %d ...\n", port);
 
-		do {
-			printf("SocketServer is waiting for clients\n");
+		sockaddr_in partnerAddr;
+		int adrLen;
+		int clientSock = accept(sock, (sockaddr*) &partnerAddr,
+				(socklen_t *) &adrLen);
 
-			sockaddr_in partnerAddr;
-			int adrLen;
-			int partnerSock = accept(sock, (sockaddr*) &partnerAddr,
-					(socklen_t *) &adrLen);
+		printf("SocketServer: Client connected.\n");
 
-			printf("SocketServer: Client connected.\n");
+		FILE* in_stream = fdopen(clientSock, "r");
+		FILE* out_stream = fdopen(clientSock, "w");
+		HadoopUtils::FileInStream* inStream = new HadoopUtils::FileInStream();
+		HadoopUtils::FileOutStream* outStream =
+				new HadoopUtils::FileOutStream();
+		inStream->open(in_stream);
+		outStream->open(out_stream);
 
-			FILE* in_stream = fdopen(sock, "r");
-			FILE* out_stream = fdopen(sock, "w");
-			HadoopUtils::FileInStream* inStream =
-					new HadoopUtils::FileInStream();
-			HadoopUtils::FileOutStream* outStream =
-					new HadoopUtils::FileOutStream();
-			inStream->open(in_stream);
-			outStream->open(out_stream);
+		while (!done) {
 
-			//int32_t cmd;
-			//cmd = HadoopUtils::deserializeInt(*inStream);
+			printf("SocketServer: wait for next command!\n");
+			int32_t cmd = HadoopUtils::deserializeInt(*inStream);
 
-			//MsgLen = recv(IDPartnerSocket, Puffer, MAXPUF, 0);
-			/* tu was mit den Daten */
-			//send(IDPartnerSocket, Puffer, MsgLen, 0);
-			close(partnerSock);
+			switch (cmd) {
 
-		} while (!done);
+			case GET_NEXT_VALUE: {
+				int32_t val = HadoopUtils::deserializeInt(*inStream);
+				HadoopUtils::serializeInt(val + 1, *outStream);
+				outStream->flush();
+				printf("SocketServer - GET_NEXT_VALUE IN=%d OUT=%d\n", val,
+						val + 1);
+				break;
+			}
+			case DONE: {
+				printf("SocketServer - DONE\n");
+				done = true;
+				break;
+			}
+
+			default:
+				fprintf(stderr, "SocketServer - Unknown binary command: %d\n",
+						cmd);
+				break;
+			}
+		}
+
+		inStream->close();
+		outStream->close();
+		close(clientSock);
+
+		delete inStream;
+		delete outStream;
 
 		printf("SocketServer stopped!\n");
 		pthread_exit(0);
@@ -164,7 +181,8 @@ public:
 		return ((SocketServer *) context)->runSocketServer();
 	}
 
-};
+}
+;
 
 /********************************************/
 /**************     CLIENT     **************/
@@ -241,28 +259,40 @@ public:
 		}
 	}
 
-	__device__ __host__ int getNextValue() {
+	__device__ __host__ int getNextValue(int val) {
 
-		HadoopUtils::serializeInt(GET_NEXT_VALUE,
-				(HadoopUtils::OutStream &) *out_stream);
-		//out_stream->flush();
+		HadoopUtils::serializeInt(GET_NEXT_VALUE, *outStream);
+		HadoopUtils::serializeInt(val, *outStream);
+		outStream->flush();
 
-		return 0;
+		int return_val = HadoopUtils::deserializeInt(*inStream);
+
+		printf("SocketClient sent GET_NEXT_VALUE OUT=%d IN=%d\n", val,
+				return_val);
+
+		return return_val;
+	}
+
+	__device__ __host__ void sendDone() {
+
+		HadoopUtils::serializeInt(DONE, *outStream);
+		outStream->flush();
+		printf("SocketClient sent DONE\n");
 	}
 };
 
 // global vars
 SocketServer socket_server;
 pthread_t t_socket_server;
+SocketClient *host_client;
 
 void sigint_handler(int s) {
-	printf("Main: caught signal %d\n", s);
+	printf("Caught signal %d\n", s);
 
-	// wait for SocketServer
-	socket_server.setDone(true);
+	host_client->sendDone();
+
 	pthread_join(t_socket_server, NULL);
-
-	exit(1);
+	exit(0);
 }
 
 /********************************************/
@@ -304,13 +334,10 @@ int main(void) {
 	pthread_create(&t_socket_server, NULL, &SocketServer::SocketServer_thread,
 			&socket_server);
 
-	SocketClient *host_client;
-	SocketClient *device_client;
-
 	// runtime must be placed into a state enabling to allocate zero-copy buffers.
 	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
 
-	// init pinned memory
+	// init host socket client as pinned memory
 	checkCuda(
 			cudaHostAlloc((void**) &host_client, sizeof(SocketClient),
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
@@ -318,9 +345,10 @@ int main(void) {
 	// connect SocketClient
 	host_client->connectSocket(socket_server.getPort());
 
-	int value = host_client->getNextValue();
+	int value = host_client->getNextValue(0);
 	printf("Host client getNextValue: %d\n", value);
 
+	SocketClient *device_client;
 	checkCuda(cudaHostGetDevicePointer(&device_client, host_client, 0));
 
 	// initialize cuPrintf
@@ -339,10 +367,10 @@ int main(void) {
 
 	//assert(host_client->getValue() == 16*4);
 
-	sleep(5);
+	sleep(2);
 
+	host_client->sendDone();
 	// wait for SocketServer
-	socket_server.setDone(true);
 	pthread_join(t_socket_server, NULL);
 
 	return 0;
