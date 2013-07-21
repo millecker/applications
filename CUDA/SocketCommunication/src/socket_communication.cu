@@ -20,6 +20,10 @@
 #include "hadoop/StringUtils.hh"
 
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <signal.h>
+
 #include <assert.h>
 #include <errno.h>
 
@@ -31,8 +35,7 @@
 #include <fstream>
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+
 #include <string.h>
 #include <strings.h>
 
@@ -40,7 +43,12 @@
 
 #include <cuda_runtime.h>
 
-#define SERVER_SOCKET_PORT 1234
+/********************************************/
+/*************** MESSAGE_TYPE ***************/
+/********************************************/
+enum MESSAGE_TYPE {
+	GET_NEXT_VALUE,
+};
 
 /********************************************/
 /***************    Server    ***************/
@@ -48,22 +56,14 @@
 class SocketServer {
 private:
 	int sock;
+	int port;
 	bool done;
-	sockaddr_in addr;
 
 public:
 	SocketServer() {
 		sock = -1;
+		port = -1;
 		done = false;
-
-		sock = socket(PF_INET, SOCK_STREAM, 0);
-		if (sock == -1) {
-			fprintf(stderr, "problem creating socket: %s\n", strerror(errno));
-		}
-
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons(SERVER_SOCKET_PORT);
-		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	}
 
 	~SocketServer() {
@@ -71,29 +71,80 @@ public:
 		if (sock != -1) {
 			int result = shutdown(sock, SHUT_RDWR);
 			if (result != 0) {
-				fprintf(stderr, "problem shutting socket");
+				fprintf(stderr, "SocketServer: problem shutting socket\n");
 			}
 			result = close(sock);
 			if (result != 0) {
-				fprintf(stderr, "problem closing socket");
+				fprintf(stderr, "SocketServer: problem closing socket\n");
 			}
 		}
 	}
 
-	void *runSocketServer() {
+	int getPort() {
+		return port;
+	}
 
-		bind(sock, (sockaddr*) &addr, sizeof(addr));
+	void setDone(bool finished) {
+		done = finished;
+	}
+
+	void *runSocketServer() {
+		printf("SocketServer started!\n");
+
+		sock = socket(PF_INET, SOCK_STREAM, 0);
+		if (sock < 0) {
+			fprintf(stderr, "SocketServer: problem creating socket: %s\n",
+					strerror(errno));
+		}
+
+		sockaddr_in addr;
+		memset((char *) &addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		// bind to a OS-assigned random port.
+		addr.sin_port = htons(0);
+		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+		int ret = bind(sock, (sockaddr*) &addr, sizeof(addr));
+		if (ret < 0) {
+			fprintf(stderr, "SocketServer: error on binding: %s\n",
+					strerror(errno));
+			return NULL;
+		}
+
+		// Get current port
+		struct sockaddr_in current_addr;
+		int current_addr_len = sizeof(current_addr);
+		ret = getsockname(sock, (sockaddr*) &current_addr,
+				(socklen_t *) &current_addr_len);
+		if (ret < 0) {
+			fprintf(stderr, "SocketServer: problem getsockname: %s\n",
+					strerror(errno));
+			return NULL;
+		}
+		port = ntohs(current_addr.sin_port);
+
 		listen(sock, 5);
-		printf("SocketServer is running @ port %d ...\n", SERVER_SOCKET_PORT);
+
+		printf("SocketServer is running @ port %d ...\n", port);
 
 		do {
+			printf("SocketServer is waiting for clients\n");
+
 			sockaddr_in partnerAddr;
 			int adrLen;
 			int partnerSock = accept(sock, (sockaddr*) &partnerAddr,
 					(socklen_t *) &adrLen);
 
-			//HadoopUtils::FileInStream* inStream;
-			//HadoopUtils::FileOutStream* outStream;
+			printf("SocketServer: Client connected.\n");
+
+			FILE* in_stream = fdopen(sock, "r");
+			FILE* out_stream = fdopen(sock, "w");
+			HadoopUtils::FileInStream* inStream =
+					new HadoopUtils::FileInStream();
+			HadoopUtils::FileOutStream* outStream =
+					new HadoopUtils::FileOutStream();
+			inStream->open(in_stream);
+			outStream->open(out_stream);
 
 			//int32_t cmd;
 			//cmd = HadoopUtils::deserializeInt(*inStream);
@@ -105,7 +156,8 @@ public:
 
 		} while (!done);
 
-		return 0;
+		printf("SocketServer stopped!\n");
+		pthread_exit(0);
 	}
 
 	static void *SocketServer_thread(void *context) {
@@ -126,26 +178,35 @@ private:
 	HadoopUtils::FileOutStream* outStream;
 
 public:
-	int value;
-
 	SocketClient() {
 		sock = -1;
 		in_stream = NULL;
 		out_stream = NULL;
+	}
+
+	void connectSocket(int port) {
+		printf("SocketClient started\n");
+
+		if (port <= 0) {
+			printf("SocketClient: invalid port number!\n");
+			return; /* Failed */
+		}
 
 		sock = socket(PF_INET, SOCK_STREAM, 0);
 		if (sock == -1) {
-			fprintf(stderr, "problem creating socket: %s\n", strerror(errno));
+			fprintf(stderr, "SocketClient: problem creating socket: %s\n",
+					strerror(errno));
 		}
 
 		sockaddr_in addr;
 		addr.sin_family = AF_INET;
-		addr.sin_port = htons(SERVER_SOCKET_PORT);
+		addr.sin_port = htons(port);
 		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
 		int res = connect(sock, (sockaddr*) &addr, sizeof(addr));
 		if (res != 0) {
-			fprintf(stderr, "problem connecting command socket: %s\n",
+			fprintf(stderr,
+					"SocketClient: problem connecting command socket: %s\n",
 					strerror(errno));
 		}
 
@@ -157,7 +218,7 @@ public:
 		outStream = new HadoopUtils::FileOutStream();
 		outStream->open(out_stream);
 
-		printf("SocketClient is connect to port %d ...\n", SERVER_SOCKET_PORT);
+		printf("SocketClient is connected to port %d ...\n", port);
 	}
 
 	~SocketClient() {
@@ -171,22 +232,38 @@ public:
 		if (sock != -1) {
 			int result = shutdown(sock, SHUT_RDWR);
 			if (result != 0) {
-				fprintf(stderr, "problem shutting socket");
+				fprintf(stderr, "SocketClient: problem shutting down socket\n");
 			}
 			result = close(sock);
 			if (result != 0) {
-				fprintf(stderr, "problem closing socket");
+				fprintf(stderr, "SocketClient: problem closing socket\n");
 			}
 		}
 	}
 
-	__device__ __host__ void setValue(int v) {
-		value = v;
-	}
-	__device__ __host__ int getValue() {
-		return value;
+	__device__ __host__ int getNextValue() {
+
+		HadoopUtils::serializeInt(GET_NEXT_VALUE,
+				(HadoopUtils::OutStream &) *out_stream);
+		//out_stream->flush();
+
+		return 0;
 	}
 };
+
+// global vars
+SocketServer socket_server;
+pthread_t t_socket_server;
+
+void sigint_handler(int s) {
+	printf("Main: caught signal %d\n", s);
+
+	// wait for SocketServer
+	socket_server.setDone(true);
+	pthread_join(t_socket_server, NULL);
+
+	exit(1);
+}
 
 /********************************************/
 /***************     CUDA     ***************/
@@ -204,52 +281,69 @@ inline cudaError_t checkCuda(cudaError_t result) {
 	return result;
 }
 
-__global__ void device_method(SocketClient *d_object) {
+__global__ void device_method(SocketClient *d_socket_client) {
 
-	int val = d_object->getValue();
-	cuPrintf("Device object value: %d\n", val);
-	d_object->setValue(++val);
-	__threadfence();
+	//d_socket_client
+
+	//int val = d_object->getValue();
+	//cuPrintf("Device object value: %d\n", val);
+	//d_object->setValue(++val);
+	//__threadfence();
 }
 
 int main(void) {
 
-	SocketServer *socketServer = new SocketServer();
+	// register SIGINT (STRG-C) handler
+	struct sigaction sigIntHandler;
+	sigIntHandler.sa_handler = sigint_handler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
 
-	pthread_t t;
-	pthread_create(&t, NULL, &SocketServer::SocketServer_thread, &socketServer);
+	// start socketServer
+	pthread_create(&t_socket_server, NULL, &SocketServer::SocketServer_thread,
+			&socket_server);
 
-	SocketClient *host_object;
-	SocketClient *device_object;
+	SocketClient *host_client;
+	SocketClient *device_client;
 
 	// runtime must be placed into a state enabling to allocate zero-copy buffers.
 	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
 
 	// init pinned memory
 	checkCuda(
-			cudaHostAlloc((void**) &host_object, sizeof(SocketClient),
+			cudaHostAlloc((void**) &host_client, sizeof(SocketClient),
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
-	// init value
-	host_object->setValue(0);
-	printf("Host object value: %d\n", host_object->getValue());
+	// connect SocketClient
+	host_client->connectSocket(socket_server.getPort());
 
-	checkCuda(cudaHostGetDevicePointer(&device_object, host_object, 0));
+	int value = host_client->getNextValue();
+	printf("Host client getNextValue: %d\n", value);
+
+	checkCuda(cudaHostGetDevicePointer(&device_client, host_client, 0));
 
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<16, 4>>>(device_object);
+	//device_method<<<1, 1>>>(device_client);
+	//device_method<<<16, 4>>>(device_client);
 
 	// display the device's output
 	cudaPrintfDisplay();
 	// clean up after cuPrintf
 	cudaPrintfEnd();
 
-	printf("Host object value: %d (after gpu execution) (thread_num=%d)\n",
-			host_object->getValue(), 16 * 4);
+	//printf("Host object value: %d (after gpu execution) (thread_num=%d)\n",
+	//		host_client->getValue(), 16 * 4);
 
-	assert(host_object->getValue() == 16*4);
+	//assert(host_client->getValue() == 16*4);
+
+	sleep(5);
+
+	// wait for SocketServer
+	socket_server.setDone(true);
+	pthread_join(t_socket_server, NULL);
 
 	return 0;
 }
