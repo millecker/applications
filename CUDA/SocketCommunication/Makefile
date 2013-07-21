@@ -8,7 +8,7 @@ LDFLAGS= -L$(CUDA_INSTALL_PATH)/lib -lcuda -lcudart
 
 all: SocketCommunication
 
-SocketCommunication: bin/libhadooputils.a src/socket_communication.cu
+SocketCommunication: bin/libhadooputils.a bin/libsocket.a src/socket_communication.cu
 #		$(CXX) $(CFLAGS) $^ $(LDFLAGS) -o bin/$@
 #		$(NVCC) $(NVCCFLAGS) -link $^ -o bin/$@
 		$(NVCC) $(NVCCFLAGS) $^ -o bin/$@
@@ -22,12 +22,24 @@ bin/SerialUtils.o: src/hadoop/SerialUtils.cc
 	
 bin/StringUtils.o: src/hadoop/StringUtils.cc
 		$(CXX) -g -O2 -c $< -o $@	
+
+
+bin/libsocket.a: bin/SocketServer.o bin/SocketClient.o
+		ar rvs $@ $^
+		rm -f $^
 		
+bin/SocketServer.o: src/socket/SocketServer.cc
+		$(CXX) -g -O2 -c $< -o $@
+	
+bin/SocketClient.o: src/socket/SocketClient.cc
+		$(CXX) -g -O2 -c $< -o $@	
+				
 
 run: SocketCommunication
 		./bin/SocketCommunication
 
 clean:
+		rm -f bin/libsocket.a
 		rm -f bin/libhadooputils.a
 		rm -f bin/SocketCommunication
 		rm -rf bin/SocketCommunication.dSYM
