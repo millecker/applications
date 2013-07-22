@@ -36,15 +36,17 @@ SocketClient socket_client;
 class KernelWrapper {
 private:
 	pthread_t t_monitor;
-	//pthread_mutex_t new_command_mutex;
+	pthread_mutex_t mutex_result_available;
+	pthread_mutex_t mutex_has_task;
 	//pthread_cond_t new_command_cv;
 	int param1;
 	bool result_available;
-	int resultInt;
+	int result_int;
 	//string resultString;
+
 public:
 	MESSAGE_TYPE command;
-	bool hasTask;
+	bool has_task;
 	int active_thread_id;
 	bool done;
 
@@ -62,9 +64,9 @@ public:
 		KernelWrapper *_this = ((KernelWrapper *) context);
 
 		while (!_this->done) {
-			if ((!_this->hasTask) && (_this->active_thread_id >= 0)
+			if ((!_this->has_task) && (_this->active_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
-				_this->hasTask = true;
+				_this->has_task = true;
 				_this->sendCommand();
 			}
 		}
@@ -80,7 +82,7 @@ public:
 			while (!socket_client.isNewResultInt) {
 				socket_client.nextEvent();
 			}
-			resultInt = socket_client.resultInt;
+			result_int = socket_client.resultInt;
 			socket_client.isNewResultInt = false;
 			result_available = true;
 			break;
@@ -96,7 +98,7 @@ public:
 	__device__ __host__ void init() {
 		active_thread_id = -1;
 		command = UNDEFINED;
-		hasTask = false;
+		has_task = false;
 		result_available = false;
 		done = false;
 	}
@@ -108,14 +110,13 @@ public:
 
 		// wait for socket communication
 		while (true) {
-			printf("getValue result_available: %s\n", (result_available) ? "true" : "false");
 			if (result_available) {
 				break;
 			}
 		}
+
 		init();
-		printf("KernelWrapper got result: %d\n", resultInt);
-		return resultInt;
+		return result_int;
 	}
 
 	__device__ __host__ void sendDone() {
@@ -152,13 +153,24 @@ inline cudaError_t checkCuda(cudaError_t result) {
 __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 	int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
-	atomicExch(&d_kernelWrapper->active_thread_id, thread_id);
+	bool accessed = false;
 
-	if (d_kernelWrapper->active_thread_id == thread_id) {
+	// getValue for each Thread
+	do {
+		atomicExch(&d_kernelWrapper->active_thread_id, thread_id);
 
-		int val = d_kernelWrapper->getValue(thread_id);
-		cuPrintf("Device object value: %d\n", val);
-	}
+		if (d_kernelWrapper->active_thread_id == thread_id) {
+			accessed = true;
+			cuPrintf("Thread %d active_thread_id: %d\n", thread_id,
+					d_kernelWrapper->active_thread_id);
+
+			int val = d_kernelWrapper->getValue(thread_id);
+			cuPrintf("Thread %d getValue: %d\n", thread_id, val);
+		}
+
+		syncthreads();
+
+	} while (!accessed);
 }
 
 int main(void) {
@@ -195,9 +207,9 @@ int main(void) {
 	h_kernelWrapper->startMonitor();
 
 	// test call host_kernelWrapper
-	h_kernelWrapper->active_thread_id = 0;
-	int value = h_kernelWrapper->getValue(0);
-	printf("Host h_kernelWrapper getValue: %d\n", value);
+	//h_kernelWrapper->active_thread_id = 0;
+	//int value = h_kernelWrapper->getValue(0);
+	//printf("Host h_kernelWrapper getValue: %d\n", value);
 
 	KernelWrapper *d_kernelWrapper;
 	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
@@ -205,7 +217,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	//device_method<<<1, 1>>>(d_kernelWrapper);
+	device_method<<<4, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	cudaPrintfDisplay();
