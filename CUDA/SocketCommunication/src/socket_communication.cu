@@ -36,19 +36,19 @@ SocketClient socket_client;
 class KernelWrapper {
 private:
 	pthread_t t_monitor;
-	pthread_mutex_t mutex_result_available;
-	pthread_mutex_t mutex_has_task;
+	//pthread_mutex_t mutex_result_available;
+	//pthread_mutex_t mutex_has_task;
 	//pthread_cond_t new_command_cv;
-	int param1;
-	bool result_available;
-	int result_int;
+	volatile int param1;
+	volatile bool result_available;
+	volatile int result_int;
 	//string resultString;
 
 public:
-	MESSAGE_TYPE command;
-	bool has_task;
-	int active_thread_id;
-	bool done;
+	volatile MESSAGE_TYPE command;
+	volatile bool has_task;
+	volatile int active_thread_id;
+	volatile bool done;
 
 	KernelWrapper() {
 		init();
@@ -61,9 +61,14 @@ public:
 	}
 
 	static void *thread(void *context) {
-		KernelWrapper *_this = ((KernelWrapper *) context);
+		volatile KernelWrapper *_this = ((KernelWrapper *) context);
 
 		while (!_this->done) {
+			//printf(
+			//		"MonitorThread has_task: %s, active_thread_id: %d, command: %d\n",
+			//		(_this->has_task) ? "true" : "false",
+			//		_this->active_thread_id, _this->command);
+
 			if ((!_this->has_task) && (_this->active_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
 				_this->has_task = true;
@@ -73,7 +78,9 @@ public:
 		return NULL;
 	}
 
-	void sendCommand() {
+	void sendCommand() volatile {
+
+		printf("MonitorThread sendCommand!\n");
 
 		switch (command) {
 
@@ -103,10 +110,11 @@ public:
 		done = false;
 	}
 
-	__device__ __host__ int getValue(int val) {
+	__device__ int getValue(int val) {
 
 		command = GET_VALUE;
 		param1 = val;
+		//__threadfence_system();
 
 		// wait for socket communication
 		while (true) {
@@ -121,6 +129,7 @@ public:
 
 	__device__ __host__ void sendDone() {
 		command = DONE;
+		done = true;
 		//init();
 	}
 };
@@ -132,7 +141,6 @@ void sigint_handler(int s) {
 
 	h_kernelWrapper->active_thread_id = 0;
 	h_kernelWrapper->sendDone();
-	h_kernelWrapper->done = true;
 
 	pthread_join(t_socket_server, NULL);
 	exit(0);
@@ -157,7 +165,9 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 	// getValue for each Thread
 	do {
-		atomicExch(&d_kernelWrapper->active_thread_id, thread_id);
+
+		atomicExch((int *) &d_kernelWrapper->active_thread_id, thread_id);
+		//__threadfence_system();
 
 		if (d_kernelWrapper->active_thread_id == thread_id) {
 			accessed = true;
@@ -224,16 +234,9 @@ int main(void) {
 	// clean up after cuPrintf
 	cudaPrintfEnd();
 
-	//printf("Host object value: %d (after gpu execution) (thread_num=%d)\n",
-	//		host_client->getValue(), 16 * 4);
-
-	//assert(host_client->getValue() == 16*4);
-
-	sleep(2);
-
 	h_kernelWrapper->active_thread_id = 0;
 	h_kernelWrapper->sendDone();
-	h_kernelWrapper->done = true;
+
 	// wait for SocketServer
 	pthread_join(t_socket_server, NULL);
 
