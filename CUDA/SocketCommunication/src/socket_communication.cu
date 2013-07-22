@@ -29,14 +29,50 @@
 #include <cuda_runtime.h>
 
 // Global vars
-SocketServer socket_server;
 pthread_t t_socket_server;
-SocketClient *host_client;
+SocketServer socket_server;
+SocketClient socket_client;
+
+class KernelWrapper {
+private:
+	MESSAGE_TYPE command;
+	int param1;
+	bool result_available;
+	int resultInt;
+	//string resultString;
+public:
+	int active_thread_id;
+
+	KernelWrapper() {
+		active_thread_id = -1;
+		result_available = false;
+	}
+	~KernelWrapper() {
+	}
+
+	__device__ __host__ int getValue(int val) {
+
+		command = GET_NEXT_VALUE;
+		param1 = val;
+
+		while (!result_available) {
+		}
+
+		//d_object->setValue(++val);
+		//__threadfence();
+
+		return resultInt;
+	}
+
+	__device__ __host__ void done() {
+		command = DONE;
+	}
+};
 
 void sigint_handler(int s) {
 	printf("Caught signal %d\n", s);
 
-	host_client->sendDone();
+	socket_client.sendDone();
 
 	pthread_join(t_socket_server, NULL);
 	exit(0);
@@ -54,14 +90,16 @@ inline cudaError_t checkCuda(cudaError_t result) {
 	return result;
 }
 
-__global__ void device_method(SocketClient *d_socket_client) {
+__global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
-	//d_socket_client
+	int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+	atomicExch(&d_kernelWrapper->active_thread_id, thread_id);
 
-	//int val = d_object->getValue();
-	//cuPrintf("Device object value: %d\n", val);
-	//d_object->setValue(++val);
-	//__threadfence();
+	if (d_kernelWrapper->active_thread_id == thread_id) {
+
+		int val = d_kernelWrapper->getValue(thread_id);
+		cuPrintf("Device object value: %d\n", val);
+	}
 }
 
 int main(void) {
@@ -73,32 +111,38 @@ int main(void) {
 	sigIntHandler.sa_flags = 0;
 	sigaction(SIGINT, &sigIntHandler, NULL);
 
-	// start socketServer
+	// start SocketServer
 	pthread_create(&t_socket_server, NULL, &SocketServer::thread,
 			&socket_server);
 
+	// wait for SocketServer to come up
+	while (socket_server.getPort() == -1) {
+	}
+
+	// connect SocketClient
+	socket_client.connectSocket(socket_server.getPort());
+
+	int value = socket_client.getNextValue(0);
+	printf("Host client getNextValue: %d\n", value);
+
+	//CUDA setup
 	// runtime must be placed into a state enabling to allocate zero-copy buffers.
 	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
 
+	KernelWrapper *h_kernelWrapper;
+	KernelWrapper *d_kernelWrapper;
+
 	// init host socket client as pinned memory
 	checkCuda(
-			cudaHostAlloc((void**) &host_client, sizeof(SocketClient),
+			cudaHostAlloc((void**) &h_kernelWrapper, sizeof(KernelWrapper),
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
-	// connect SocketClient
-	host_client->connectSocket(socket_server.getPort());
-
-	int value = host_client->getNextValue(0);
-	printf("Host client getNextValue: %d\n", value);
-
-	SocketClient *device_client;
-	checkCuda(cudaHostGetDevicePointer(&device_client, host_client, 0));
+	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
 
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	//device_method<<<1, 1>>>(device_client);
-	//device_method<<<16, 4>>>(device_client);
+	//device_method<<<1, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	cudaPrintfDisplay();
@@ -112,7 +156,7 @@ int main(void) {
 
 	sleep(2);
 
-	host_client->sendDone();
+	socket_client.sendDone();
 	// wait for SocketServer
 	pthread_join(t_socket_server, NULL);
 
