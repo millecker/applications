@@ -35,44 +35,103 @@ SocketClient socket_client;
 
 class KernelWrapper {
 private:
-	MESSAGE_TYPE command;
+	pthread_t t_monitor;
+	//pthread_mutex_t new_command_mutex;
+	//pthread_cond_t new_command_cv;
 	int param1;
 	bool result_available;
 	int resultInt;
 	//string resultString;
 public:
+	MESSAGE_TYPE command;
+	bool hasTask;
 	int active_thread_id;
+	bool done;
 
 	KernelWrapper() {
-		active_thread_id = -1;
-		result_available = false;
+		init();
 	}
 	~KernelWrapper() {
 	}
 
-	__device__ __host__ int getValue(int val) {
+	void startMonitor() {
+		pthread_create(&t_monitor, NULL, &KernelWrapper::thread, this);
+	}
 
-		command = GET_NEXT_VALUE;
-		param1 = val;
+	static void *thread(void *context) {
+		KernelWrapper *_this = ((KernelWrapper *) context);
 
-		while (!result_available) {
+		while (!_this->done) {
+			if ((!_this->hasTask) && (_this->active_thread_id >= 0)
+					&& (_this->command != UNDEFINED)) {
+				_this->hasTask = true;
+				_this->sendCommand();
+			}
+		}
+		return NULL;
+	}
+
+	void sendCommand() {
+
+		switch (command) {
+
+		case GET_VALUE: {
+			socket_client.sendCMD(GET_VALUE, param1);
+			while (!socket_client.isNewResultInt) {
+				socket_client.nextEvent();
+			}
+			resultInt = socket_client.resultInt;
+			socket_client.isNewResultInt = false;
+			result_available = true;
+			break;
+		}
+		case DONE: {
+			socket_client.sendCMD(DONE);
+			break;
 		}
 
-		//d_object->setValue(++val);
-		//__threadfence();
+		}
+	}
 
+	__device__ __host__ void init() {
+		active_thread_id = -1;
+		command = UNDEFINED;
+		hasTask = false;
+		result_available = false;
+		done = false;
+	}
+
+	__device__ __host__ int getValue(int val) {
+
+		command = GET_VALUE;
+		param1 = val;
+
+		// wait for socket communication
+		while (true) {
+			printf("getValue result_available: %s\n", (result_available) ? "true" : "false");
+			if (result_available) {
+				break;
+			}
+		}
+		init();
+		printf("KernelWrapper got result: %d\n", resultInt);
 		return resultInt;
 	}
 
-	__device__ __host__ void done() {
+	__device__ __host__ void sendDone() {
 		command = DONE;
+		//init();
 	}
 };
+
+KernelWrapper *h_kernelWrapper;
 
 void sigint_handler(int s) {
 	printf("Caught signal %d\n", s);
 
-	socket_client.sendDone();
+	h_kernelWrapper->active_thread_id = 0;
+	h_kernelWrapper->sendDone();
+	h_kernelWrapper->done = true;
 
 	pthread_join(t_socket_server, NULL);
 	exit(0);
@@ -122,21 +181,25 @@ int main(void) {
 	// connect SocketClient
 	socket_client.connectSocket(socket_server.getPort());
 
-	int value = socket_client.getNextValue(0);
-	printf("Host client getNextValue: %d\n", value);
-
 	//CUDA setup
 	// runtime must be placed into a state enabling to allocate zero-copy buffers.
 	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
 
-	KernelWrapper *h_kernelWrapper;
-	KernelWrapper *d_kernelWrapper;
-
-	// init host socket client as pinned memory
+	// allocate host_kernelWrapper as pinned memory
 	checkCuda(
 			cudaHostAlloc((void**) &h_kernelWrapper, sizeof(KernelWrapper),
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
+	// init host_kernelWrapper
+	h_kernelWrapper->init();
+	h_kernelWrapper->startMonitor();
+
+	// test call host_kernelWrapper
+	h_kernelWrapper->active_thread_id = 0;
+	int value = h_kernelWrapper->getValue(0);
+	printf("Host h_kernelWrapper getValue: %d\n", value);
+
+	KernelWrapper *d_kernelWrapper;
 	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
 
 	// initialize cuPrintf
@@ -156,7 +219,9 @@ int main(void) {
 
 	sleep(2);
 
-	socket_client.sendDone();
+	h_kernelWrapper->active_thread_id = 0;
+	h_kernelWrapper->sendDone();
+	h_kernelWrapper->done = true;
 	// wait for SocketServer
 	pthread_join(t_socket_server, NULL);
 

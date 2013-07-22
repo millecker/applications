@@ -20,6 +20,8 @@
 
 #include "../hadoop/SerialUtils.hh"
 
+using std::string;
+
 class SocketClient {
 private:
 	int sock;
@@ -29,11 +31,27 @@ private:
 	HadoopUtils::FileOutStream* outStream;
 
 public:
+	int32_t resultInt;
+	bool isNewResultInt;
+	int64_t resultLong;
+	bool isNewResultLong;
+	string resultString;
+	bool isNewResultString;
+	//vector<string> resultVector;
+	//bool isNewResultVector;
+	//bool isNewKeyValuePair;
+	//string currentKey;
+	//string currentValue;
+
 	SocketClient();
 	~SocketClient();
 	void connectSocket(int port);
-	int getNextValue(int val);
-	void sendDone();
+	void sendCMD(int32_t cmd);
+	void sendCMD(int32_t cmd, int32_t value);
+	void sendCMD(int32_t cmd, int32_t value, const string values[], int size);
+	void sendCMD(int32_t cmd, const string& value);
+	void sendCMD(int32_t cmd, const string values[], int size);
+	void nextEvent();
 };
 
 #endif

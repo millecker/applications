@@ -24,10 +24,42 @@
 #include <netinet/in.h>
 #include <errno.h>
 
+#define stringify( name ) # name
+
+using std::string;
+
+/* Only needed for debugging output */
+const char* messageTypeNames[] = { stringify(UNDEFINED), stringify(GET_VALUE),
+		stringify(DONE) };
+
 SocketClient::SocketClient() {
 	sock = -1;
 	in_stream = NULL;
 	out_stream = NULL;
+	isNewResultInt = false;
+	isNewResultString = false;
+	//isNewResultVector = false;
+	//isNewKeyValuePair = false;
+}
+
+SocketClient::~SocketClient() {
+	if (in_stream != NULL) {
+		fflush(in_stream);
+	}
+	if (out_stream != NULL) {
+		fflush(out_stream);
+	}
+	fflush(stdout);
+	if (sock != -1) {
+		int result = shutdown(sock, SHUT_RDWR);
+		//if (result != 0) {
+		//	fprintf(stderr, "SocketClient: problem shutting down socket\n");
+		//}
+		result = close(sock);
+		if (result != 0) {
+			fprintf(stderr, "SocketClient: problem closing socket\n");
+		}
+	}
 }
 
 void SocketClient::connectSocket(int port) {
@@ -66,42 +98,65 @@ void SocketClient::connectSocket(int port) {
 	printf("SocketClient is connected to port %d ...\n", port);
 }
 
-SocketClient::~SocketClient() {
-	if (in_stream != NULL) {
-		fflush(in_stream);
-	}
-	if (out_stream != NULL) {
-		fflush(out_stream);
-	}
-	fflush(stdout);
-	if (sock != -1) {
-		int result = shutdown(sock, SHUT_RDWR);
-		if (result != 0) {
-			fprintf(stderr, "SocketClient: problem shutting down socket\n");
-		}
-		result = close(sock);
-		if (result != 0) {
-			fprintf(stderr, "SocketClient: problem closing socket\n");
-		}
-	}
+void SocketClient::sendCMD(int32_t cmd) {
+	HadoopUtils::serializeInt(cmd, *outStream);
+	outStream->flush();
+	printf("SocketClient sent CMD %s\n", messageTypeNames[cmd]);
 }
 
-int SocketClient::getNextValue(int val) {
-
-	HadoopUtils::serializeInt(GET_NEXT_VALUE, *outStream);
-	HadoopUtils::serializeInt(val, *outStream);
+void SocketClient::sendCMD(int32_t cmd, int32_t value) {
+	HadoopUtils::serializeInt(cmd, *outStream);
+	HadoopUtils::serializeInt(value, *outStream);
 	outStream->flush();
-
-	int return_val = HadoopUtils::deserializeInt(*inStream);
-
-	printf("SocketClient sent GET_NEXT_VALUE OUT=%d IN=%d\n", val, return_val);
-
-	return return_val;
+	printf("SocketClient sent CMD: %s with Value: %d\n", messageTypeNames[cmd],
+			value);
 }
 
-void SocketClient::sendDone() {
-
-	HadoopUtils::serializeInt(DONE, *outStream);
+void SocketClient::sendCMD(int32_t cmd, const string& value) {
+	HadoopUtils::serializeInt(cmd, *outStream);
+	HadoopUtils::serializeString(value, *outStream);
 	outStream->flush();
-	printf("SocketClient sent DONE\n");
+	printf("SocketClient sent CMD: %s with Value: %s\n", messageTypeNames[cmd],
+			value.c_str());
+}
+
+void SocketClient::sendCMD(int32_t cmd, const string values[], int size) {
+	HadoopUtils::serializeInt(cmd, *outStream);
+	for (int i = 0; i < size; i++) {
+		HadoopUtils::serializeString(values[i], *outStream);
+		printf("SocketClient sent CMD: %s with Param%d: %s\n",
+				messageTypeNames[cmd], i + 1, values[i].c_str());
+	}
+	outStream->flush();
+}
+
+void SocketClient::sendCMD(int32_t cmd, int32_t value, const string values[],
+		int size) {
+	HadoopUtils::serializeInt(cmd, *outStream);
+	HadoopUtils::serializeInt(value, *outStream);
+	for (int i = 0; i < size; i++) {
+		HadoopUtils::serializeString(values[i], *outStream);
+		printf("SocketClient sent CMD: %s with Param%d: %s\n",
+				messageTypeNames[cmd], i + 1, values[i].c_str());
+	}
+	outStream->flush();
+}
+
+void SocketClient::nextEvent() {
+	int32_t cmd = HadoopUtils::deserializeInt(*inStream);
+
+	switch (cmd) {
+
+	case GET_VALUE: {
+		resultInt = HadoopUtils::deserializeInt(*inStream);
+		printf("SocketClient - GET_NEXT_VALUE IN=%d\n", resultInt);
+		isNewResultInt = true;
+		break;
+	}
+
+	default:
+		fprintf(stderr, "SocketClient - Unknown binary command: %d\n", cmd);
+		break;
+
+	}
 }

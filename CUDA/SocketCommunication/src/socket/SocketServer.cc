@@ -50,7 +50,7 @@ int SocketServer::getPort() {
 }
 
 void *SocketServer::runSocketServer() {
-	printf("SocketServer started!\n");
+	printf("SocketServer started\n");
 
 	sock = socket(PF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
@@ -109,8 +109,10 @@ void *SocketServer::runSocketServer() {
 
 		switch (cmd) {
 
-		case GET_NEXT_VALUE: {
+		case GET_VALUE: {
 			int32_t val = HadoopUtils::deserializeInt(*inStream);
+			// send response
+			HadoopUtils::serializeInt(GET_VALUE, *outStream);
 			HadoopUtils::serializeInt(val + 1, *outStream);
 			outStream->flush();
 			printf("SocketServer - GET_NEXT_VALUE IN=%d OUT=%d\n", val,
