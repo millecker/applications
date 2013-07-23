@@ -197,13 +197,19 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 	while (count < 100) {
 		old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
+
 		if (old == -1 || old == thread_id) {
 			//do critical section code
+			// thread won race condition
 
-			cuPrintf("Thread %d active_thread_id: %d\n", thread_id,
+			cuPrintf("Thread %d lock_thread_id: %d\n", thread_id,
 					d_kernelWrapper->lock_thread_id);
 
 			int val = d_kernelWrapper->getValue(thread_id);
+			cuPrintf("Thread %d getValue: %d\n", thread_id, val);
+
+			// exit infinite loop
+			break;
 
 		} else {
 			count++;
@@ -212,7 +218,6 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 			}
 		}
 	}
-
 	/*
 	 bool accessed = false;
 
@@ -299,13 +304,14 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	//device_method<<<4, 1>>>(d_kernelWrapper);
+	device_method<<<1, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	cudaPrintfDisplay();
 	// clean up after cuPrintf
 	cudaPrintfEnd();
 
+	// Send DONE to SocketServer
 	h_kernelWrapper->lock_thread_id = 0;
 	h_kernelWrapper->sendDone();
 
