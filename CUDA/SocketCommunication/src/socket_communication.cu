@@ -69,13 +69,14 @@ public:
 		result_available = false;
 		result_int = 0;
 
+		lock_thread_id = -1;
+
 		pthread_mutex_init(&mutex_process_command, NULL);
 
 		reset();
 	}
 
 	void reset() volatile {
-		lock_thread_id = -1;
 		command = UNDEFINED;
 		has_task = false;
 		printf("KernelWrapper reset lock_thread_id: %d, has_task: %s\n",
@@ -114,7 +115,8 @@ public:
 				_this->reset();
 				pthread_mutex_unlock(lock);
 				printf(
-						"KernelWrapper thread: %p, UNLOCKED(mutex_process_command)\n");
+						"KernelWrapper thread: %p, UNLOCKED(mutex_process_command)\n",
+						pthread_self());
 
 			}
 		}
@@ -273,7 +275,7 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
 
-		//cuPrintf("Thread %d old: %d\n", thread_id, old);
+		cuPrintf("Thread %d old: %d\n", thread_id, old);
 
 		if (old == -1 || old == thread_id) {
 			//do critical section code
@@ -285,6 +287,8 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 			int val = d_kernelWrapper->getValue(thread_id);
 			cuPrintf("Thread %d getValue: %d\n", thread_id, val);
 
+			d_kernelWrapper->lock_thread_id = -1;
+			__threadfence();
 			// exit infinite loop
 			break;
 
