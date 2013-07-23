@@ -63,7 +63,7 @@ public:
 
 		is_monitoring = false;
 		done = false;
-		has_task = false,
+		has_task = false;
 		//pthread_mutex_init(&mutex_has_task, NULL);
 
 		reset();
@@ -131,18 +131,21 @@ public:
 	}
 
 	__device__ __host__ int getValue(int val) {
-
-		command = GET_VALUE;
-		param1 = val;
-		has_task = true;
-		//__threadfence_system();
-
-		// wait for socket communication to end
-		while (!result_available) {
-		}
-
 		reset();
-		return result_int;
+		return val;
+		/*
+		 command = GET_VALUE;
+		 param1 = val;
+		 has_task = true;
+		 //__threadfence_system();
+
+		 // wait for socket communication to end
+		 while (!result_available) {
+		 }
+
+		 reset();
+		 return result_int;
+		 */
 	}
 
 	__device__ __host__ void sendDone() {
@@ -190,13 +193,14 @@ inline cudaError_t checkCuda(cudaError_t result) {
 __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 	int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
-
-	int old;
 	int count = 0;
 
 	while (count < 100) {
-		old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
+		// (old == -1 ? thread_id : old)
+		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
+
+		cuPrintf("Thread %d old: %d\n", thread_id, old);
 
 		if (old == -1 || old == thread_id) {
 			//do critical section code
@@ -213,9 +217,9 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 		} else {
 			count++;
-			if (count > 50) {
-				count = 0;
-			}
+			//if (count > 50) {
+			//	count = 0;
+			//}
 		}
 	}
 	/*
@@ -304,7 +308,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<1, 1>>>(d_kernelWrapper);
+	device_method<<<2, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	cudaPrintfDisplay();
