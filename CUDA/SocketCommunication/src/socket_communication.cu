@@ -56,6 +56,7 @@ public:
 		init();
 	}
 	~KernelWrapper() {
+		pthread_mutex_destroy(&mutex_process_command);
 	}
 
 	void init() {
@@ -81,8 +82,8 @@ public:
 				lock_thread_id, (has_task) ? "true" : "false");
 	}
 
-	void startMonitor() {
-		printf("KernelWrapper startMonitor\n");
+	void start_monitoring() {
+		printf("KernelWrapper start monitor thread\n");
 		pthread_create(&t_monitor, NULL, &KernelWrapper::thread, this);
 	}
 
@@ -99,12 +100,21 @@ public:
 			if ((_this->has_task) && (_this->lock_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
 
-				pthread_mutex_lock(
-						(pthread_mutex_t *) &_this->mutex_process_command);
+				pthread_mutex_t *lock =
+						(pthread_mutex_t *) &_this->mutex_process_command;
+				int result = pthread_mutex_trylock(lock);
+				printf(
+						"KernelWrapper thread: %p, trylock(mutex_process_command): %d mutex: %p\n",
+						pthread_self(), result, lock);
+
+				if (result != 0) {
+					pthread_mutex_lock(lock);
+				}
 				_this->processCommand();
 				_this->reset();
-				pthread_mutex_unlock(
-						(pthread_mutex_t *) &_this->mutex_process_command);
+				pthread_mutex_unlock(lock);
+				printf(
+						"KernelWrapper thread: %p, UNLOCKED(mutex_process_command)\n");
 
 			}
 		}
@@ -113,7 +123,9 @@ public:
 
 	void processCommand() volatile {
 
-		printf("KernelWrapper processCommand: %d\n", command);
+		printf(
+				"KernelWrapper processCommand: %d, lock_thread_id: %d, result_available: %s\n",
+				command, lock_thread_id, (result_available) ? "true" : "false");
 
 		switch (command) {
 
@@ -203,6 +215,8 @@ public:
 			}
 		}
 		result_available = false;
+		cuPrintf("getValue lock_thread_id: %d result_available: %s\n",
+				lock_thread_id, (result_available) ? "true" : "false");
 
 		return result_int;
 	}
@@ -314,7 +328,7 @@ int main(void) {
 
 	// init host_kernelWrapper
 	h_kernelWrapper->init();
-	h_kernelWrapper->startMonitor();
+	h_kernelWrapper->start_monitoring();
 
 	// wait for kernelWrapper monitoring
 	while (!h_kernelWrapper->is_monitoring) {
@@ -338,7 +352,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<1, 1>>>(d_kernelWrapper);
+	device_method<<<2, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	printf("\n\nTEST KernelWrapper using getValue device method!\n");
