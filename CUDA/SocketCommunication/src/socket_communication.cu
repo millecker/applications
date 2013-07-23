@@ -131,21 +131,23 @@ public:
 	}
 
 	__device__ __host__ int getValue(int val) {
+		command = GET_VALUE;
+		param1 = val;
+		has_task = true;
+		//__threadfence_system();
+
+		int timeout = 0;
+		// wait for socket communication to end
+		while (!result_available) {
+			timeout++;
+			if (timeout > 10000) {
+				result_int = val;
+				break;
+			}
+		}
+
 		reset();
-		return val;
-		/*
-		 command = GET_VALUE;
-		 param1 = val;
-		 has_task = true;
-		 //__threadfence_system();
-
-		 // wait for socket communication to end
-		 while (!result_available) {
-		 }
-
-		 reset();
-		 return result_int;
-		 */
+		return result_int;
 	}
 
 	__device__ __host__ void sendDone() {
@@ -200,8 +202,6 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
 
-		cuPrintf("Thread %d old: %d\n", thread_id, old);
-
 		if (old == -1 || old == thread_id) {
 			//do critical section code
 			// thread won race condition
@@ -217,43 +217,11 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 		} else {
 			count++;
-			//if (count > 50) {
-			//	count = 0;
-			//}
+			if (count > 50) {
+				count = 0;
+			}
 		}
 	}
-	/*
-	 bool accessed = false;
-
-	 // getValue for each Thread
-	 do {
-
-	 // wait for possible old task
-	 while (d_kernelWrapper->has_task) {
-	 }
-
-	 atomicExch((int *) &d_kernelWrapper->active_thread_id, thread_id);
-	 //__threadfence_system();
-
-	 if (d_kernelWrapper->active_thread_id == thread_id) {
-	 accessed = true;
-	 cuPrintf("Thread %d active_thread_id: %d\n", thread_id,
-	 d_kernelWrapper->active_thread_id);
-
-	 cuPrintf("Thread %d task_accepted: %s\n", thread_id,
-	 (d_kernelWrapper->task_accepted) ? "true" : "false");
-
-	 d_kernelWrapper->has_task = true;
-	 int val = d_kernelWrapper->getValue(thread_id);
-	 d_kernelWrapper->has_task = false;
-
-	 cuPrintf("Thread %d getValue: %d\n", thread_id, val);
-	 }
-
-	 syncthreads();
-
-	 } while (!accessed);
-	 */
 }
 
 int main(void) {
@@ -301,6 +269,7 @@ int main(void) {
 		int value = h_kernelWrapper->getValue(i);
 		printf("Host h_kernelWrapper getValue: %d\n", value);
 	}
+	sleep(3);
 
 	KernelWrapper *d_kernelWrapper;
 	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
@@ -308,7 +277,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<2, 1>>>(d_kernelWrapper);
+	device_method<<<4, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	cudaPrintfDisplay();
