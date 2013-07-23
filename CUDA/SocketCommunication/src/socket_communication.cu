@@ -48,7 +48,6 @@ private:
 public:
 	volatile MESSAGE_TYPE command;
 	volatile bool has_task;
-	volatile bool task_accepted;
 	volatile int lock_thread_id;
 	volatile bool done;
 	volatile bool is_monitoring;
@@ -64,6 +63,7 @@ public:
 
 		is_monitoring = false;
 		done = false;
+		has_task = false,
 		//pthread_mutex_init(&mutex_has_task, NULL);
 
 		reset();
@@ -80,14 +80,13 @@ public:
 		while (!_this->done) {
 			_this->is_monitoring = true;
 			//printf(
-			//		"KernelWrapper MonitorThread has_task: %s, task_accepted: %s, lock_thread_id: %d, command: %d\n",
-			//		(_this->has_task) ? "true" : "false",
-			//		(_this->task_accepted) ? "true" : "false",
-			//		_this->lock_thread_id, _this->command);
+			//		"KernelWrapper MonitorThread has_task: %s, lock_thread_id: %d, command: %d\n",
+			//		(_this->has_task) ? "true" : "false", _this->lock_thread_id,
+			//		_this->command);
 
-			if ((!_this->has_task) && (_this->lock_thread_id >= 0)
+			if ((_this->has_task) && (_this->lock_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
-				_this->task_accepted = true;
+				_this->has_task = false;
 				_this->sendCommand();
 			}
 		}
@@ -106,11 +105,19 @@ public:
 			result_int = socket_client.resultInt;
 			socket_client.isNewResultInt = false;
 			result_available = true;
+
+			// wait for consuming result
+			while (result_available) {
+			}
 			break;
 		}
 		case DONE: {
 			socket_client.sendCMD(DONE);
 			result_available = true;
+
+			// wait for consuming result
+			while (result_available) {
+			}
 			break;
 		}
 
@@ -120,25 +127,15 @@ public:
 	__device__ __host__ void reset() {
 		lock_thread_id = -1;
 		command = UNDEFINED;
-		has_task = false;
-		task_accepted = false;
 		result_available = false;
 	}
 
 	__device__ __host__ int getValue(int val) {
 
-		// wait for wrapper thread to end
-		while (has_task) {
-		}
-
 		command = GET_VALUE;
 		param1 = val;
 		has_task = true;
 		//__threadfence_system();
-
-		// wait for wrapper thread to accept
-		while (!task_accepted) {
-		}
 
 		// wait for socket communication to end
 		while (!result_available) {
@@ -151,15 +148,11 @@ public:
 	__device__ __host__ void sendDone() {
 		command = DONE;
 		has_task = true;
+		//__threadfence_system();
 
-		// wait for wrapper thread to accept
-		while (!task_accepted) {
-		}
-
-		printf(
-				"KernelWrapper::sendDone: has_task: %s, task_accepted: %s, lock_thread_id: %d, command: %d\n",
-				(has_task) ? "true" : "false",
-				(task_accepted) ? "true" : "false", lock_thread_id, command);
+		//printf(
+		//		"KernelWrapper::sendDone: has_task: %s, lock_thread_id: %d, command: %d\n",
+		//		(has_task) ? "true" : "false", lock_thread_id, command);
 
 		// wait for socket communication to end
 		while (!result_available) {
@@ -167,7 +160,6 @@ public:
 
 		reset();
 		done = true;
-		return;
 	}
 };
 
@@ -295,9 +287,11 @@ int main(void) {
 			(h_kernelWrapper->is_monitoring) ? "true" : "false");
 
 	// test call host_kernelWrapper
-	//h_kernelWrapper->active_thread_id = 0;
-	//int value = h_kernelWrapper->getValue(0);
-	//printf("Host h_kernelWrapper getValue: %d\n", value);
+	for (int i = 0; i < 5; i++) {
+		h_kernelWrapper->lock_thread_id = i;
+		int value = h_kernelWrapper->getValue(i);
+		printf("Host h_kernelWrapper getValue: %d\n", value);
+	}
 
 	KernelWrapper *d_kernelWrapper;
 	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
