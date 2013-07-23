@@ -103,21 +103,17 @@ public:
 
 				pthread_mutex_t *lock =
 						(pthread_mutex_t *) &_this->mutex_process_command;
-				int result = pthread_mutex_trylock(lock);
-				printf(
-						"KernelWrapper thread: %p, trylock(mutex_process_command): %d mutex: %p\n",
-						pthread_self(), result, lock);
 
-				if (result != 0) {
-					pthread_mutex_lock(lock);
-				}
+				pthread_mutex_lock(lock);
+				printf(
+						"KernelWrapper thread: %p, LOCKED(mutex_process_command)\n",
+						pthread_self());
 				_this->processCommand();
 				_this->reset();
 				pthread_mutex_unlock(lock);
 				printf(
 						"KernelWrapper thread: %p, UNLOCKED(mutex_process_command)\n",
 						pthread_self());
-
 			}
 		}
 		return NULL;
@@ -149,7 +145,6 @@ public:
 				printf(
 						"KernelWrapper wait for consuming result! result_int: %d, result_available: %s\n",
 						result_int, (result_available) ? "true" : "false");
-
 			}
 
 			printf("KernelWrapper consumed result: %d\n", result_int);
@@ -187,6 +182,7 @@ public:
 		}
 		result_available = false;
 
+		lock_thread_id = -1;
 		return result_int;
 	}
 
@@ -217,9 +213,13 @@ public:
 			}
 		}
 		result_available = false;
+
 		cuPrintf("getValue lock_thread_id: %d result_available: %s\n",
 				lock_thread_id, (result_available) ? "true" : "false");
 
+		lock_thread_id = -1;
+		//__threadfence_system();
+		__threadfence();
 		return result_int;
 	}
 
@@ -271,7 +271,7 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 	int count = 0;
 
 	while (count < 100) {
-		// (old == -1 ? thread_id : old)
+		// (lock_thread_id == -1 ? thread_id : lock_thread_id)
 		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
 
@@ -287,8 +287,11 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 			int val = d_kernelWrapper->getValue(thread_id);
 			cuPrintf("Thread %d getValue: %d\n", thread_id, val);
 
-			d_kernelWrapper->lock_thread_id = -1;
-			__threadfence();
+			//d_kernelWrapper->lock_thread_id = -1;
+			//atomicExch((int *) &d_kernelWrapper, -1);
+			//__threadfence_system();
+			//__threadfence();
+
 			// exit infinite loop
 			break;
 
@@ -348,6 +351,8 @@ int main(void) {
 		printf("Host h_kernelWrapper[%d] getValue: %d\n", i, value);
 		assert(rand_value+1 == value);
 	}
+
+	// sleep before GPU execution
 	sleep(2);
 
 	KernelWrapper *d_kernelWrapper;
