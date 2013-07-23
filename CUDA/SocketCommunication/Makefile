@@ -8,7 +8,7 @@ LDFLAGS= -L$(CUDA_INSTALL_PATH)/lib -lcuda -lcudart
 
 all: SocketCommunication
 
-SocketCommunication: bin/libhadooputils.a bin/libsocket.a src/socket_communication.cu
+SocketCommunication: bin/libhadooputils.a bin/libsynchronized.a bin/libsocket.a src/socket_communication.cu
 #		$(CXX) $(CFLAGS) $^ $(LDFLAGS) -o bin/$@
 #		$(NVCC) $(NVCCFLAGS) -link $^ -o bin/$@
 		$(NVCC) $(NVCCFLAGS) $^ -o bin/$@
@@ -33,7 +33,18 @@ bin/SocketServer.o: src/socket/SocketServer.cc
 	
 bin/SocketClient.o: src/socket/SocketClient.cc
 		$(CXX) -g -O2 -c $< -o $@	
-				
+
+
+bin/libsynchronized.a: bin/Mutex.o bin/Lock.o
+		ar rvs $@ $^
+		rm -f $^
+		
+bin/Mutex.o: src/synchronized/Mutex.cc
+		$(CXX) -g -O2 -c $< -o $@
+	
+bin/Lock.o: src/synchronized/Lock.cc
+		$(CXX) -g -O2 -c $< -o $@
+
 
 run: SocketCommunication
 		./bin/SocketCommunication

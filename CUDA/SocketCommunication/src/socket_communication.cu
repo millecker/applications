@@ -20,6 +20,9 @@
 #include "socket/SocketServer.hh"
 #include "socket/SocketClient.hh"
 
+#include "synchronized/Lock.hh"
+#include "synchronized/Mutex.hh"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -29,6 +32,8 @@
 
 #include <cuda_runtime.h>
 
+#define synchronized(M)  for(Lock M##_lock = M; M##_lock; M##_lock.setUnlock())
+
 // Global vars
 pthread_t t_socket_server;
 SocketServer socket_server;
@@ -37,6 +42,7 @@ SocketClient socket_client;
 class KernelWrapper {
 private:
 	pthread_t t_monitor;
+	Mutex mutex_process_command;
 	//pthread_mutex_t mutex_result_available;
 	//pthread_mutex_t mutex_has_task;
 
@@ -98,8 +104,13 @@ public:
 
 			if ((_this->has_task) && (_this->lock_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
-				_this->processCommand();
-				_this->reset();
+
+				Mutex m = _this->mutex_process_command;
+				synchronized(m)
+				{
+					_this->processCommand();
+					_this->reset();
+				}
 			}
 		}
 		return NULL;
@@ -246,7 +257,7 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
 
-		cuPrintf("Thread %d old: %d\n", thread_id, old);
+		//cuPrintf("Thread %d old: %d\n", thread_id, old);
 
 		if (old == -1 || old == thread_id) {
 			//do critical section code
