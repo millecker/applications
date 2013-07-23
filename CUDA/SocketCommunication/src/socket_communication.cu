@@ -200,12 +200,12 @@ public:
 		//__threadfence_system();
 
 		// wait for socket communication to end
-		int count = 0;
+		int timeout = 0;
 		while (!result_available) {
 			//cuPrintf(
 			//		"getValue wait for socket communication to end! lock_thread_id: %d\n",
 			//		 lock_thread_id);
-			if (++count > 10000) {
+			if (++timeout > 10000) {
 				cuPrintf(
 						"getValue TIMEOUT wait for socket communication to end! lock_thread_id: %d\n",
 						lock_thread_id);
@@ -269,13 +269,21 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 	int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
 	int count = 0;
+	int timeout = 0;
 
 	while (count < 100) {
+
+		if (++timeout > 10000) {
+			cuPrintf("device_method TIMEOUT! lock_thread_id: %d\n",
+					d_kernelWrapper->lock_thread_id);
+			break;
+		}
+
 		// (lock_thread_id == -1 ? thread_id : lock_thread_id)
 		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
 
-		cuPrintf("Thread %d old: %d\n", thread_id, old);
+		// cuPrintf("Thread %d old: %d\n", thread_id, old);
 
 		if (old == -1 || old == thread_id) {
 			//do critical section code
