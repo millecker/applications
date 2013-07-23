@@ -31,12 +31,12 @@ private:
 	HadoopUtils::FileOutStream* outStream;
 
 public:
-	int32_t resultInt;
-	bool isNewResultInt;
-	int64_t resultLong;
-	bool isNewResultLong;
-	string resultString;
-	bool isNewResultString;
+	volatile int32_t resultInt;
+	volatile bool isNewResultInt;
+	volatile int64_t resultLong;
+	volatile bool isNewResultLong;
+	volatile string resultString;
+	volatile bool isNewResultString;
 	//vector<string> resultVector;
 	//bool isNewResultVector;
 	//bool isNewKeyValuePair;

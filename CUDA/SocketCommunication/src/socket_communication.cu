@@ -39,11 +39,11 @@ private:
 	pthread_t t_monitor;
 	//pthread_mutex_t mutex_result_available;
 	//pthread_mutex_t mutex_has_task;
-	//pthread_cond_t new_command_cv;
+
 	volatile int param1;
 	volatile bool result_available;
 	volatile int result_int;
-	//string resultString;
+	//volatile string resultString;
 
 public:
 	volatile MESSAGE_TYPE command;
@@ -64,9 +64,21 @@ public:
 		is_monitoring = false;
 		done = false;
 		has_task = false;
-		//pthread_mutex_init(&mutex_has_task, NULL);
+
+		result_available = false;
+		result_int = 0;
+
+		//pthread_mutex_init(&mutex_result_available, NULL);
 
 		reset();
+	}
+
+	void reset() {
+		lock_thread_id = -1;
+		command = UNDEFINED;
+		has_task = false;
+		printf("KernelWrapper reset lock_thread_id: %d, has_task: %s\n",
+				lock_thread_id, (has_task) ? "true" : "false");
 	}
 
 	void startMonitor() {
@@ -81,19 +93,21 @@ public:
 			_this->is_monitoring = true;
 			//printf(
 			//		"KernelWrapper MonitorThread has_task: %s, lock_thread_id: %d, command: %d\n",
-			//		(_this->has_task) ? "true" : "false", _this->lock_thread_id,
-			//		_this->command);
+			//		(_this->has_task) ? "true" : "false",
+			//		_this->lock_thread_id, _this->command);
 
 			if ((_this->has_task) && (_this->lock_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
-				_this->has_task = false;
-				_this->sendCommand();
+				_this->processCommand();
+				_this->reset();
 			}
 		}
 		return NULL;
 	}
 
-	void sendCommand() {
+	void processCommand() {
+
+		printf("KernelWrapper processCommand: %d\n", command);
 
 		switch (command) {
 
@@ -102,55 +116,86 @@ public:
 			while (!socket_client.isNewResultInt) {
 				socket_client.nextEvent();
 			}
-			result_int = socket_client.resultInt;
 			socket_client.isNewResultInt = false;
+
+			result_int = socket_client.resultInt;
 			result_available = true;
 
-			// wait for consuming result
+			printf("KernelWrapper got result: %d result_available: %s\n",
+					result_int, (result_available) ? "true" : "false");
+
+			// block until result was consumed
 			while (result_available) {
+				printf(
+						"KernelWrapper wait for consuming result! result_int: %d, result_available: %s\n",
+						result_int, (result_available) ? "true" : "false");
+
 			}
+
+			printf("KernelWrapper consumed result: %d\n", result_int);
+
 			break;
 		}
 		case DONE: {
 			socket_client.sendCMD(DONE);
 			result_available = true;
-
-			// wait for consuming result
+			// block until result was consumed
 			while (result_available) {
 			}
+
 			break;
 		}
 
 		}
 	}
 
-	__device__ __host__ void reset() {
-		lock_thread_id = -1;
-		command = UNDEFINED;
-		result_available = false;
-	}
+	/*
+	 int getValue(int thread_id, int val) {
+	 printf("getValue thread_id: %d val: %d\n", thread_id, val);
 
-	__device__ __host__ int getValue(int val) {
+	 while (has_task) {
+	 }
+	 lock_thread_id = thread_id;
+
+	 printf("getValue has_task=false lock_thread_id: %d val: %d\n",
+	 lock_thread_id, val);
+	 return getValue(val);
+	 }
+	 */
+
+	//__host__
+	__device__ int getValue(int val) {
+
+		cuPrintf("getValue lock_thread_id: %d val: %d\n", lock_thread_id, val);
+
+		while (has_task) {
+		}
+
 		command = GET_VALUE;
 		param1 = val;
 		has_task = true;
 		//__threadfence_system();
 
-		int timeout = 0;
 		// wait for socket communication to end
+		int count = 0;
 		while (!result_available) {
-			timeout++;
-			if (timeout > 10000) {
-				result_int = val;
+			//cuPrintf(
+			//		"getValue wait for socket communication to end! lock_thread_id: %d\n",
+			//		 lock_thread_id);
+			if (++count > 10000) {
+				cuPrintf(
+						"getValue TIMEOUT wait for socket communication to end! lock_thread_id: %d\n",
+						lock_thread_id);
 				break;
 			}
 		}
+		result_available = false;
 
-		reset();
 		return result_int;
 	}
 
 	__device__ __host__ void sendDone() {
+
 		command = DONE;
 		has_task = true;
 		//__threadfence_system();
@@ -163,7 +208,6 @@ public:
 		while (!result_available) {
 		}
 
-		reset();
 		done = true;
 	}
 };
@@ -201,6 +245,8 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 		// (old == -1 ? thread_id : old)
 		int old = atomicCAS((int *) &d_kernelWrapper->lock_thread_id, -1,
 				thread_id);
+
+		cuPrintf("Thread %d old: %d\n", thread_id, old);
 
 		if (old == -1 || old == thread_id) {
 			//do critical section code
@@ -263,21 +309,21 @@ int main(void) {
 	printf("KernelWrapper is_monitoring: %s\n",
 			(h_kernelWrapper->is_monitoring) ? "true" : "false");
 
-	// test call host_kernelWrapper
-	for (int i = 0; i < 5; i++) {
-		h_kernelWrapper->lock_thread_id = i;
-		int value = h_kernelWrapper->getValue(i);
-		printf("Host h_kernelWrapper getValue: %d\n", value);
-	}
-	sleep(3);
-
+	// test call host_kernelWrapper getValue
+	/*
+	 for (int i = 0; i < 5; i++) {
+	 int value = h_kernelWrapper->getValue(i, i);
+	 printf("Host h_kernelWrapper[%d] getValue: %d\n", i, value);
+	 }
+	 sleep(2);
+	 */
 	KernelWrapper *d_kernelWrapper;
 	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
 
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<4, 1>>>(d_kernelWrapper);
+	device_method<<<2, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	cudaPrintfDisplay();

@@ -38,6 +38,9 @@ bin/SocketClient.o: src/socket/SocketClient.cc
 run: SocketCommunication
 		./bin/SocketCommunication
 
+debug: SocketCommunication
+		sudo ddd --debugger cuda-gdb ./bin/SocketCommunication
+
 clean:
 		rm -f bin/libsocket.a
 		rm -f bin/libhadooputils.a
