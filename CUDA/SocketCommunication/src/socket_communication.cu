@@ -20,9 +20,6 @@
 #include "socket/SocketServer.hh"
 #include "socket/SocketClient.hh"
 
-#include "synchronized/Lock.hh"
-#include "synchronized/Mutex.hh"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -32,8 +29,6 @@
 
 #include <cuda_runtime.h>
 
-#define synchronized(M)  for(Lock M##_lock = M; M##_lock; M##_lock.setUnlock())
-
 // Global vars
 pthread_t t_socket_server;
 SocketServer socket_server;
@@ -42,8 +37,7 @@ SocketClient socket_client;
 class KernelWrapper {
 private:
 	pthread_t t_monitor;
-	Mutex mutex_process_command;
-	//pthread_mutex_t mutex_result_available;
+	pthread_mutex_t mutex_process_command;
 	//pthread_mutex_t mutex_has_task;
 
 	volatile int param1;
@@ -74,12 +68,12 @@ public:
 		result_available = false;
 		result_int = 0;
 
-		//pthread_mutex_init(&mutex_result_available, NULL);
+		pthread_mutex_init(&mutex_process_command, NULL);
 
 		reset();
 	}
 
-	void reset() {
+	void reset() volatile {
 		lock_thread_id = -1;
 		command = UNDEFINED;
 		has_task = false;
@@ -93,7 +87,7 @@ public:
 	}
 
 	static void *thread(void *context) {
-		KernelWrapper *_this = ((KernelWrapper *) context);
+		volatile KernelWrapper *_this = ((KernelWrapper *) context);
 
 		while (!_this->done) {
 			_this->is_monitoring = true;
@@ -105,18 +99,19 @@ public:
 			if ((_this->has_task) && (_this->lock_thread_id >= 0)
 					&& (_this->command != UNDEFINED)) {
 
-				Mutex m = _this->mutex_process_command;
-				synchronized(m)
-				{
-					_this->processCommand();
-					_this->reset();
-				}
+				pthread_mutex_lock(
+						(pthread_mutex_t *) &_this->mutex_process_command);
+				_this->processCommand();
+				_this->reset();
+				pthread_mutex_unlock(
+						(pthread_mutex_t *) &_this->mutex_process_command);
+
 			}
 		}
 		return NULL;
 	}
 
-	void processCommand() {
+	void processCommand() volatile {
 
 		printf("KernelWrapper processCommand: %d\n", command);
 
@@ -160,27 +155,34 @@ public:
 		}
 	}
 
-	/*
-	 int getValue(int thread_id, int val) {
-	 printf("getValue thread_id: %d val: %d\n", thread_id, val);
-
-	 while (has_task) {
-	 }
-	 lock_thread_id = thread_id;
-
-	 printf("getValue has_task=false lock_thread_id: %d val: %d\n",
-	 lock_thread_id, val);
-	 return getValue(val);
-	 }
-	 */
-
-	//__host__
-	__device__ int getValue(int val) {
-
-		cuPrintf("getValue lock_thread_id: %d val: %d\n", lock_thread_id, val);
+	// Host Method
+	int getValue(int thread_id, int val) {
 
 		while (has_task) {
 		}
+		lock_thread_id = thread_id;
+
+		printf("\ngetValue has_task=false lock_thread_id: %d val: %d\n",
+				lock_thread_id, val);
+
+		command = GET_VALUE;
+		param1 = val;
+		has_task = true;
+
+		while (!result_available) {
+		}
+		result_available = false;
+
+		return result_int;
+	}
+
+	// Device Method
+	// lock_thread_id was already set
+	__device__ int getValue(int val) {
+
+		while (has_task) {
+		}
+		cuPrintf("getValue lock_thread_id: %d val: %d\n", lock_thread_id, val);
 
 		command = GET_VALUE;
 		param1 = val;
@@ -321,26 +323,30 @@ int main(void) {
 			(h_kernelWrapper->is_monitoring) ? "true" : "false");
 
 	// test call host_kernelWrapper getValue
-	/*
-	 for (int i = 0; i < 5; i++) {
-	 int value = h_kernelWrapper->getValue(i, i);
-	 printf("Host h_kernelWrapper[%d] getValue: %d\n", i, value);
-	 }
-	 sleep(2);
-	 */
+	printf("\n\nTEST KernelWrapper using getValue host method!\n");
+	for (int i = 0; i < 5; i++) {
+		int rand_value = rand() % 100; //in the range 0 to 99;
+		int value = h_kernelWrapper->getValue(i, rand_value);
+		printf("Host h_kernelWrapper[%d] getValue: %d\n", i, value);
+		assert(rand_value+1 == value);
+	}
+	sleep(2);
+
 	KernelWrapper *d_kernelWrapper;
 	checkCuda(cudaHostGetDevicePointer(&d_kernelWrapper, h_kernelWrapper, 0));
 
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<2, 1>>>(d_kernelWrapper);
+	device_method<<<1, 1>>>(d_kernelWrapper);
 
 	// display the device's output
+	printf("\n\nTEST KernelWrapper using getValue device method!\n");
 	cudaPrintfDisplay();
 	// clean up after cuPrintf
 	cudaPrintfEnd();
 
+	printf("\n\nSend DONE and Exit\n");
 	// Send DONE to SocketServer
 	h_kernelWrapper->lock_thread_id = 0;
 	h_kernelWrapper->sendDone();
