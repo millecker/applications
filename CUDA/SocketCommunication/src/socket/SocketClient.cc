@@ -20,9 +20,11 @@
 
 #include "../hadoop/SerialUtils.hh"
 
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <errno.h>
 
 #define stringify( name ) # name
 
