@@ -167,6 +167,7 @@ public:
 	// Host Method
 	int getValue(int thread_id, int val) {
 
+		// wait for possible old task to end
 		while (has_task) {
 		}
 		lock_thread_id = thread_id;
@@ -190,7 +191,15 @@ public:
 	// lock_thread_id was already set
 	__device__ int getValue(int val) {
 
+		int timeout = 0;
+		// wait for possible old task to end
 		while (has_task) {
+			if (++timeout > 10000) {
+				cuPrintf(
+						"getValue TIMEOUT wait forold task to end! lock_thread_id: %d\n",
+						lock_thread_id);
+				break;
+			}
 		}
 		cuPrintf("getValue lock_thread_id: %d val: %d\n", lock_thread_id, val);
 
@@ -199,8 +208,8 @@ public:
 		has_task = true;
 		//__threadfence_system();
 
+		timeout = 0;
 		// wait for socket communication to end
-		int timeout = 0;
 		while (!result_available) {
 			//cuPrintf(
 			//		"getValue wait for socket communication to end! lock_thread_id: %d\n",
@@ -217,7 +226,7 @@ public:
 		cuPrintf("getValue lock_thread_id: %d result_available: %s\n",
 				lock_thread_id, (result_available) ? "true" : "false");
 
-		lock_thread_id = -1;
+		//lock_thread_id = -1;
 		//__threadfence_system();
 		__threadfence();
 		return result_int;
@@ -289,16 +298,16 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 			//do critical section code
 			// thread won race condition
 
-			cuPrintf("Thread %d lock_thread_id: %d\n", thread_id,
+			cuPrintf("Thread %d GOT LOCK lock_thread_id: %d\n", thread_id,
 					d_kernelWrapper->lock_thread_id);
 
 			int val = d_kernelWrapper->getValue(thread_id);
 			cuPrintf("Thread %d getValue: %d\n", thread_id, val);
 
-			//d_kernelWrapper->lock_thread_id = -1;
+			d_kernelWrapper->lock_thread_id = -1;
 			//atomicExch((int *) &d_kernelWrapper, -1);
 			//__threadfence_system();
-			//__threadfence();
+			__threadfence();
 
 			// exit infinite loop
 			break;
