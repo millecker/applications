@@ -38,7 +38,7 @@ class KernelWrapper {
 private:
 	pthread_t t_monitor;
 	pthread_mutex_t mutex_process_command;
-	//pthread_mutex_t mutex_has_task;
+	//pthread_mutex_t mutex_result_available;
 
 	volatile int param1;
 	volatile bool result_available;
@@ -57,6 +57,7 @@ public:
 	}
 	~KernelWrapper() {
 		pthread_mutex_destroy(&mutex_process_command);
+		//pthread_mutex_destroy(&mutex_result_available);
 	}
 
 	void init() {
@@ -72,6 +73,7 @@ public:
 		lock_thread_id = -1;
 
 		pthread_mutex_init(&mutex_process_command, NULL);
+		//pthread_mutex_init(&mutex_result_available, NULL);
 
 		reset();
 	}
@@ -79,8 +81,10 @@ public:
 	void reset() volatile {
 		command = UNDEFINED;
 		has_task = false;
-		printf("KernelWrapper reset lock_thread_id: %d, has_task: %s\n",
-				lock_thread_id, (has_task) ? "true" : "false");
+		printf(
+				"KernelWrapper reset lock_thread_id: %d, has_task: %s, result_available: %s\n",
+				lock_thread_id, (has_task) ? "true" : "false",
+				(result_available) ? "true" : "false");
 	}
 
 	void start_monitoring() {
@@ -135,7 +139,9 @@ public:
 			socket_client.isNewResultInt = false;
 
 			result_int = socket_client.resultInt;
-			result_available = true;
+
+			//pthread_mutex_lock((pthread_mutex_t *) &mutex_result_available);
+			result_available = true; // dieses statement zieht nicht!!!
 
 			printf("KernelWrapper got result: %d result_available: %s\n",
 					result_int, (result_available) ? "true" : "false");
@@ -146,6 +152,7 @@ public:
 						"KernelWrapper wait for consuming result! result_int: %d, result_available: %s\n",
 						result_int, (result_available) ? "true" : "false");
 			}
+			//pthread_mutex_unlock((pthread_mutex_t *) &mutex_result_available);
 
 			printf("KernelWrapper consumed result: %d\n", result_int);
 
@@ -196,39 +203,49 @@ public:
 		while (has_task) {
 			if (++timeout > 10000) {
 				cuPrintf(
-						"getValue TIMEOUT wait forold task to end! lock_thread_id: %d\n",
+						"getValue TIMEOUT wait for old task to end! lock_thread_id: %d\n",
 						lock_thread_id);
 				break;
 			}
 		}
-		cuPrintf("getValue lock_thread_id: %d val: %d\n", lock_thread_id, val);
+		cuPrintf("getValue has_task=false lock_thread_id: %d val: %d\n",
+				lock_thread_id, val);
 
 		command = GET_VALUE;
 		param1 = val;
 		has_task = true;
-		//__threadfence_system();
+		__threadfence_system();
+		//__threadfence();
 
 		timeout = 0;
 		// wait for socket communication to end
 		while (!result_available) {
+			__threadfence_system();
+			//__threadfence();
 			//cuPrintf(
 			//		"getValue wait for socket communication to end! lock_thread_id: %d\n",
 			//		 lock_thread_id);
-			if (++timeout > 10000) {
+			if (++timeout > 30000) {
 				cuPrintf(
 						"getValue TIMEOUT wait for socket communication to end! lock_thread_id: %d\n",
 						lock_thread_id);
 				break;
 			}
 		}
+		cuPrintf(
+				"getValue lock_thread_id: %d, result_int: %d, result_available: %s (before result_available = false)\n",
+				lock_thread_id, result_int,
+				(result_available) ? "true" : "false");
+
 		result_available = false;
+		__threadfence_system();
+		//__threadfence();
 
-		cuPrintf("getValue lock_thread_id: %d result_available: %s\n",
-				lock_thread_id, (result_available) ? "true" : "false");
+		cuPrintf(
+				"getValue lock_thread_id: %d, result_int: %d, result_available: %s\n",
+				lock_thread_id, result_int,
+				(result_available) ? "true" : "false");
 
-		//lock_thread_id = -1;
-		//__threadfence_system();
-		__threadfence();
 		return result_int;
 	}
 
@@ -282,7 +299,7 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 	while (count < 100) {
 
-		if (++timeout > 10000) {
+		if (++timeout > 100000) {
 			cuPrintf("device_method TIMEOUT! lock_thread_id: %d\n",
 					d_kernelWrapper->lock_thread_id);
 			break;
@@ -306,8 +323,8 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 
 			d_kernelWrapper->lock_thread_id = -1;
 			//atomicExch((int *) &d_kernelWrapper, -1);
-			//__threadfence_system();
-			__threadfence();
+			__threadfence_system();
+			//__threadfence();
 
 			// exit infinite loop
 			break;
