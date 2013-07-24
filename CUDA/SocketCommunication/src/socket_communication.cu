@@ -395,7 +395,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<2, 1>>>(d_kernelWrapper);
+	device_method<<<8, 1>>>(d_kernelWrapper);
 
 	// display the device's output
 	printf("\n\nTEST KernelWrapper using getValue device method!\n");
