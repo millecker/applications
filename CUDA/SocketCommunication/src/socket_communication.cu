@@ -278,6 +278,8 @@ void sigint_handler(int s) {
 
 		pthread_join(t_socket_server, NULL);
 	}
+
+	checkCuda(cudaFreeHost(h_kernelWrapper));
 	exit(0);
 }
 
@@ -410,6 +412,8 @@ int main(void) {
 
 	// wait for SocketServer
 	pthread_join(t_socket_server, NULL);
+
+	checkCuda(cudaFreeHost(h_kernelWrapper));
 
 	return 0;
 }
