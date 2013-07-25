@@ -66,7 +66,7 @@ float rand_float_range(float low, float high) {
 // not a uniform distribution
 void random_number_generator(float* array, int size) {
 	for (int i = 0; i < size; i++) {
-		array[i] = rand_float_range(0, 1);
+		array[i] = rand_float_range(-1, 1);
 	}
 }
 
