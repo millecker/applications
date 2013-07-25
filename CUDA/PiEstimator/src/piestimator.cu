@@ -33,7 +33,7 @@ inline cudaError_t checkCuda(cudaError_t result) {
 
 /**
  * Device function
- */__global__ void device_method(int n, float *d_inside, float *d_x, float *d_y) {
+ */__global__ void device_method(float *d_x, float *d_y, int *d_inside, int n) {
 
 	unsigned block_id = blockIdx.y * gridDim.x + blockIdx.x;
 	int thread_id = threadIdx.x + block_id * blockDim.x;
@@ -66,12 +66,13 @@ float rand_float_range(float low, float high) {
 // not a uniform distribution
 void random_number_generator(float* array, int size) {
 	for (int i = 0; i < size; i++) {
-		array[i] = 2 * rand_float_range(0, 1) - 1;
+		array[i] = rand_float_range(0, 1);
 	}
 }
 
-void vector_sum(float* result, float* array, int size) {
+void vector_sum(int* result, int* array, int size) {
 	for (int i = 0; i < size; i++) {
+		//printf("h_inside[%d]=%d\n", i, array[i]);
 		*result += array[i];
 	}
 }
@@ -86,9 +87,10 @@ int main(void) {
 	checkCuda(cudaGetDeviceProperties(&devProp, 0));
 
 	unsigned maxbytes = devProp.totalGlobalMem / 3;
+	//because we need 3 arrays (h_x, h_y, h_inside)
 	unsigned max_samples = maxbytes / sizeof(float);
-	// Does GPU support 2e6 samples?
-	int n = 2e6;
+	// Does GPU support sample size?
+	int n = 2e8;
 	if (n > max_samples) {
 		n = max_samples;
 	}
@@ -97,7 +99,7 @@ int main(void) {
 	// random scattering of (x,y) points
 	float *h_x = NULL;
 	float *h_y = NULL;
-	float *h_inside = NULL;
+	int *h_inside = NULL;
 	unsigned bytes = sizeof(float) * n;
 
 	// allocate memory
@@ -109,7 +111,7 @@ int main(void) {
 			cudaHostAlloc(&h_y, bytes,
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 	checkCuda(
-			cudaHostAlloc(&h_inside, bytes,
+			cudaHostAlloc(&h_inside, sizeof(int) * n,
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
 	// fill with random numbers
@@ -117,6 +119,10 @@ int main(void) {
 	random_number_generator(h_x, n);
 	random_number_generator(h_y, n);
 	printf("Filled x and y float array with random numbers\n");
+
+	for (int i=0; i<n; i++) {
+		h_inside[i] = 0;
+	}
 
 	// setup GPU parameters
 	dim3 threads(256);
@@ -128,13 +134,13 @@ int main(void) {
 
 	float *d_x = NULL;
 	float *d_y = NULL;
-	float *d_inside = NULL;
+	int *d_inside = NULL;
 	checkCuda(cudaHostGetDevicePointer(&d_x, h_x, 0));
 	checkCuda(cudaHostGetDevicePointer(&d_y, h_y, 0));
 	checkCuda(cudaHostGetDevicePointer(&d_inside, h_inside, 0));
 
 	printf("Run computation on GPU\n");
-	device_method<<<blocks, threads>>>(n, d_inside, d_x, d_y);
+	device_method<<<blocks, threads>>>(d_x, d_y, d_inside, n);
 
 #ifdef DEBUG // For debugging purposes
 // Check for CUDA runtime errors
@@ -143,11 +149,12 @@ int main(void) {
 #endif
 
 	// count how many fell inside
-	float h_result;
-	vector_sum(&h_result, h_inside, n);
+	int hits = 0;
+	vector_sum(&hits, h_inside, n);
+	printf("hits: %d\n", hits);
 
 	// approximate PI
-	float pi = 4.0f * h_result / n;
+	float pi = 4.0f * hits / n;
 	printf("pi: %f\n", pi);
 
 	checkCuda(cudaFreeHost(h_x));
