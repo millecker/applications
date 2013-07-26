@@ -6,17 +6,22 @@ CUDA_INSTALL_PATH=/usr/local/cuda
 CFLAGS= -I$(CUDA_INSTALL_PATH)/include
 LDFLAGS= -L$(CUDA_INSTALL_PATH)/lib -lcuda -lcudart 
 
-all: PiEstimator
+all: PiEstimator PiEstimatorOptimized
 
 PiEstimator: src/piestimator.cu
 #		$(CXX) $(CFLAGS) $^ $(LDFLAGS) -o bin/$@
 #		$(NVCC) $(NVCCFLAGS) -link $^ -o bin/$@
 		$(NVCC) $(NVCCFLAGS) $^ -o bin/$@
 
+PiEstimatorOptimized: src/piestimator_optimized.cu
+		$(NVCC) $(NVCCFLAGS) $^ -o bin/$@
 
-run: PiEstimator
-		./bin/PiEstimator
+
+run: PiEstimatorOptimized
+		./bin/PiEstimatorOptimized
 
 clean:
 		rm -f bin/PiEstimator
 		rm -rf bin/PiEstimator.dSYM
+		rm -f bin/PiEstimatorOptimized
+		rm -rf bin/PiEstimatorOptimized.dSYM
