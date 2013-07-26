@@ -47,13 +47,15 @@ __device__ inline void getPoint(double &x, double &y, curandState &state) {
 }
 
 // RNG init kernel
-__global__ void initRNG(curandState * const rngStates,
+__global__ void initRNG(curandState * const rngStates, int n,
 		const unsigned int seed) {
 	// Determine thread ID
 	unsigned int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
 
-	// Initialise the RNG
-	curand_init(seed, thread_id, 0, &rngStates[thread_id]);
+	if (thread_id < n) {
+		// Initialise the RNG
+		curand_init(seed, thread_id, 0, &rngStates[thread_id]);
+	}
 }
 
 // Compute on Iteration
@@ -109,9 +111,9 @@ int main(void) {
 
 	unsigned maxbytes = devProp.totalGlobalMem;
 	//because we need 3 arrays (h_x, h_y, h_inside)
-	unsigned max_samples = maxbytes / sizeof(int);
+	unsigned max_samples = maxbytes / (sizeof(int) + sizeof(curandState));
 	// Does GPU support sample size?
-	int n = 2e8;
+	int n = 2e6;
 	if (n > max_samples) {
 		n = max_samples;
 	}
@@ -125,14 +127,18 @@ int main(void) {
 		blocks.x = divup(blocks.x, blocks.y);
 	}
 
+	printf("Threads.x: %d, Blocks.x: %d, Blocks.y: %d\n", threads.x, blocks.x,
+			blocks.y);
+
+	// set to pinned memory
+	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
+
 	// Allocate memory for RNG states
 	curandState *h_rngStates = 0;
 	curandState *d_rngStates = 0;
 	checkCuda(
-			cudaHostAlloc(&d_rngStates,
-					blocks.x * threads.x * sizeof(curandState),
+			cudaHostAlloc(&h_rngStates, sizeof(curandState) * n,
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
-
 	checkCuda(cudaHostGetDevicePointer(&d_rngStates, h_rngStates, 0));
 
 	// Allocate hits array
@@ -150,7 +156,7 @@ int main(void) {
 
 	printf("Init RNG\n");
 	unsigned int seed = (unsigned) time(0);
-	initRNG<<<blocks, threads>>>(d_rngStates, seed);
+	initRNG<<<blocks, threads>>>(d_rngStates, n, seed);
 
 	printf("Run computation on GPU\n");
 	device_method<<<blocks, threads>>>(d_hits, n, d_rngStates);
