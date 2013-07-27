@@ -1,6 +1,6 @@
 <project>
 	<property name="root" value="../../.." />
-	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	<property name="output.file" value="PiEstimator" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="${lib}${file.separator}${rootbeer.version}" />
