@@ -16,6 +16,8 @@
 	<property name="rootbeer" value="${lib.dir}${file.separator}${rootbeer.version}" />
 	<property name="rootbeer.home" value=".rootbeer" />
 	<property name="rootbeer.args" value="" />
+	<!-- -nodoubles and -norecursion are required for GeForce GT 330M (1.2), because 2.0 compatibility -->
+    <!-- <property name="rootbeer.args" value="-nodoubles -norecursion" /> --> 
 	<property name="rootbeer.java.arg.xmx" value="-Xmx4G" />
 	<property name="bench.java.arg.xmx" value="-Xmx4G -javaagent:${lib.dir}${file.separator}allocation-instrumenter-2.1.jar" />
 
