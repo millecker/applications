@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.piestimator;
+package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -42,7 +41,6 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
@@ -62,31 +60,36 @@ public class PiEstimatorGpuBSP extends
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/GPU-"
           + System.currentTimeMillis());
-  private static final long kernelCount = 4;
-  private static final long iterations = 1000;
+
+  private static final long totalIterations = 100000000L;
   // Long.MAX = 9223372036854775807
 
+  private static final int maxGridSize = 65535; // gridSize = amount of blocks
+  private static final int maxBlockSize = 512; // 256 // blockSize = amount of
+                                               // threads
+
   private String m_masterTask;
-  private int m_kernelCount;
-  private long m_iterations;
-  private List<Kernel> kernels = new ArrayList<Kernel>();
+  private long m_totalIterations;
+  private int m_calculationsPerThread;
+  private int m_gridSize;
+  private int m_blockSize;
 
   @Override
   public void setup(
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException {
 
-    this.m_kernelCount = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.kernelCount"));
-    this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-        "piestimator.iterations"));
+    this.m_totalIterations = Long.parseLong(peer.getConfiguration().get(
+        "piestimator.totaliterations"));
+    this.m_calculationsPerThread = Integer.parseInt(peer.getConfiguration()
+        .get("piestimator.calculationsperthread"));
+    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
+        "piestimator.gridSize"));
+    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
+        "piestimator.blockSize"));
 
     // Choose one as a master
     this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-
-    for (int i = 0; i < m_kernelCount; i++) {
-      kernels.add(new PiEstimatorKernel(m_iterations));
-    }
   }
 
   @Override
@@ -94,11 +97,14 @@ public class PiEstimatorGpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
+    PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread);
+    Rootbeer rootbeer = new Rootbeer();
+    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
+
+    // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
     watch.start();
-    Rootbeer rootbeer = new Rootbeer();
-    // rootbeer.setThreadConfig(m_blockSize, m_gridSize);
-    rootbeer.runAll(kernels);
+    rootbeer.runAll(kernel);
     watch.stop();
 
     // Write log to dfs
@@ -107,9 +113,8 @@ public class PiEstimatorGpuBSP extends
     FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
         .getOutputPath(job), peer.getTaskId() + ".log"));
 
-    outStream.writeChars("BSP=PiEstimatorGpuBSP,KernelCount=" + m_kernelCount
-        + ",Iterations=" + m_iterations + ",GPUTime="
-        + watch.elapsedTimeMillis() + "ms\n");
+    outStream.writeChars("BSP=PiEstimatorGpuBSP,Iterations="
+        + m_totalIterations + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
     List<StatsRow> stats = rootbeer.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
@@ -124,11 +129,19 @@ public class PiEstimatorGpuBSP extends
     }
     outStream.close();
 
-    // Send result to MasterTask
-    for (int i = 0; i < m_kernelCount; i++) {
-      peer.send(m_masterTask,
-          new DoubleWritable(((PiEstimatorKernel) kernels.get(i)).result));
+    // Get GPU results
+    long hits = 0;
+    long count = 0;
+    List<Result> resultList = kernel.resultList.getList();
+    for (Result result : resultList) {
+      hits += result.hit;
+      count++;
     }
+    double result = 4.0 * hits / count;
+
+    // Send result to MasterTask
+    peer.send(m_masterTask, new DoubleWritable(result));
+
     peer.sync();
   }
 
@@ -150,9 +163,17 @@ public class PiEstimatorGpuBSP extends
 
       pi = pi / numMessages;
       peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (numMessages * m_iterations)
-          // + (peer.getNumPeers() * m_kernelCount * m_iterations)
-          + " points is"), new DoubleWritable(pi));
+          + (numMessages * m_totalIterations) + " points is"),
+          new DoubleWritable(pi));
+    }
+  }
+
+  static long divup(long x, long y) {
+    if (x % y != 0) {
+      // round up
+      return ((x + y - 1) / y);
+    } else {
+      return x / y;
     }
   }
 
@@ -195,25 +216,43 @@ public class PiEstimatorGpuBSP extends
     ClusterStatus cluster = jobClient.getClusterStatus(true);
 
     if (args.length > 0) {
-      if (args.length == 3) {
+      if (args.length == 2) {
         job.setNumBspTask(Integer.parseInt(args[0]));
-        job.set("piestimator.kernelCount", args[1]);
-        job.set("piestimator.iterations", args[2]);
+        job.set("piestimator.totaliterations", args[1]);
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
-        System.out.println("    Argument2=kernelCount");
-        System.out.println("    Argument3=iterations");
+        System.out.println("    Argument2=iterations");
         return;
       }
     } else {
       job.setNumBspTask(cluster.getMaxTasks());
-      job.set("piestimator.kernelCount", "" + PiEstimatorGpuBSP.kernelCount);
-      job.set("piestimator.iterations", "" + PiEstimatorGpuBSP.iterations);
+      job.set("piestimator.totaliterations", ""
+          + PiEstimatorGpuBSP.totalIterations);
     }
     LOG.info("NumBspTask: " + job.getNumBspTask());
-    LOG.info("KernelCount: " + job.get("piestimator.kernelCount"));
-    LOG.info("Iterations: " + job.get("piestimator.iterations"));
+    long totalIterations = Long.parseLong(job
+        .get("piestimator.totaliterations"));
+    LOG.info("TotalIterations: " + totalIterations);
+
+    // Setup GPU config
+    int blockSize = maxBlockSize;
+    int gridSize = (int) divup(totalIterations, blockSize);
+    int calculations = 1;
+
+    if (gridSize > maxGridSize) {
+      // maxTotalIterations = 33553920;
+      calculations = (int) divup(gridSize, maxGridSize);
+      gridSize = maxGridSize;
+    }
+    LOG.info("BlockSize: " + blockSize);
+    LOG.info("GridSize: " + gridSize);
+    LOG.info("CalculationsPerBlock: " + calculations);
+    LOG.info("TotalCalculations: " + blockSize * gridSize * calculations);
+
+    job.set("piestimator.calculationsperthread", "" + calculations);
+    job.set("piestimator.gridSize", "" + gridSize);
+    job.set("piestimator.blockSize", "" + blockSize);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {

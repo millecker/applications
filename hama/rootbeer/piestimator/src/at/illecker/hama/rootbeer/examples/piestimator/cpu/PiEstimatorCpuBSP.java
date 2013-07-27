@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.piestimator;
+package at.illecker.hama.rootbeer.examples.piestimator.cpu;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ public class PiEstimatorCpuBSP extends
           + System.currentTimeMillis());
   private static final long threadCount = Runtime.getRuntime()
       .availableProcessors();
-  private static final long iterations = 1000;
+  private static final long iterations = 100000000L;
   // Long.MAX = 9223372036854775807
 
   private String m_masterTask;

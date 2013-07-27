@@ -14,41 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.rootbeer.examples.piestimator;
+package at.illecker.hama.rootbeer.examples.piestimator.cpu;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-
-public class PiEstimatorKernel implements Kernel {
-
+public class PiEstimatorCpuThread implements Runnable {
+  private Thread m_thread;
   private long m_iterations;
-  public double result = 0;
+  public double result;
 
-  public PiEstimatorKernel(long iterations) {
+  public PiEstimatorCpuThread(long iterations) {
     m_iterations = iterations;
+
+    m_thread = new Thread(this);
+    m_thread.setDaemon(true);
+    m_thread.start();
   }
 
-  public void gpuMethod() {
+  @Override
+  public void run() {
     long in = 0;
-    
-    //TODO
-    // loop not valid for one kernel!!!
     for (long i = 0; i < m_iterations; i++) {
-      
       double x = 2.0 * Math.random() - 1.0;
       double y = 2.0 * Math.random() - 1.0;
       
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
         in++;
       }
-      
     }
     result = 4.0 * in / m_iterations;
   }
 
-  public static void main(String[] args) {
-    // Dummy constructor invocation
-    // to keep kernel constructor in
-    // rootbeer transformation
-    new PiEstimatorKernel(0);
+  public void join() {
+    try {
+      m_thread.join();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
   }
 }
