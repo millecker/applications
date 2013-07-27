@@ -17,6 +17,7 @@
 package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -41,6 +42,7 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
+import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
@@ -97,14 +99,16 @@ public class PiEstimatorGpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
-    PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread);
+    List<Kernel> kernels = new ArrayList<Kernel>();
+    kernels.add(new PiEstimatorKernel(m_calculationsPerThread));
     Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
+    rootbeer.setThreadConfig(m_blockSize, m_gridSize);// m_blockSize *
+                                                      // m_gridSize);
 
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.runAll(kernels);
     watch.stop();
 
     // Write log to dfs
@@ -132,7 +136,7 @@ public class PiEstimatorGpuBSP extends
     // Get GPU results
     long hits = 0;
     long count = 0;
-    List<Result> resultList = kernel.resultList.getList();
+    List<Result> resultList = ((PiEstimatorKernel)kernels.get(0)).resultList.getList();
     for (Result result : resultList) {
       hits += result.hit;
       count++;
