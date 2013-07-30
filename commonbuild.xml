@@ -63,6 +63,10 @@
 	<path id="master-classpath">
 		<fileset dir="${lib.dir}">
 			<include name="*.jar" />
+			<exclude name="rootbeer-*.jar" />
+		</fileset>
+		<fileset dir="${lib.dir}">
+			<include name="${rootbeer.version}" />
 		</fileset>
 		<pathelement path="${build.dir}" />
 	</path>
