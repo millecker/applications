@@ -16,13 +16,17 @@
  */
 package at.illecker.hama.rootbeer.examples.piestimator.cpu;
 
+import at.illecker.hama.rootbeer.examples.piestimator.gpu.LinearCongruentialRandomGenerator;
+
 public class PiEstimatorCpuThread implements Runnable {
   private Thread m_thread;
   private long m_iterations;
   public double result;
+  private LinearCongruentialRandomGenerator m_lcg;
 
-  public PiEstimatorCpuThread(long iterations) {
+  public PiEstimatorCpuThread(long iterations, long seed) {
     m_iterations = iterations;
+    m_lcg = new LinearCongruentialRandomGenerator(seed);
 
     m_thread = new Thread(this);
     m_thread.setDaemon(true);
@@ -33,9 +37,9 @@ public class PiEstimatorCpuThread implements Runnable {
   public void run() {
     long in = 0;
     for (long i = 0; i < m_iterations; i++) {
-      double x = 2.0 * Math.random() - 1.0;
-      double y = 2.0 * Math.random() - 1.0;
-      
+      double x = 2.0 * m_lcg.nextDouble() - 1.0;
+      double y = 2.0 * m_lcg.nextDouble() - 1.0;
+
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
         in++;
       }

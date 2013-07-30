@@ -88,8 +88,9 @@ public class PiEstimatorCpuBSP extends
       throws IOException, SyncException, InterruptedException {
 
     List<PiEstimatorCpuThread> threads = new ArrayList<PiEstimatorCpuThread>();
+    long seed = System.currentTimeMillis();
     for (int i = 0; i < m_threadCount; ++i) {
-      PiEstimatorCpuThread thread = new PiEstimatorCpuThread(iterations);
+      PiEstimatorCpuThread thread = new PiEstimatorCpuThread(iterations, seed);
       threads.add(thread);
     }
 
