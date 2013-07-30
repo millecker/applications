@@ -16,7 +16,12 @@
  */
 package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
+import java.util.List;
+
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
+import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorKernel implements Kernel {
 
@@ -43,14 +48,52 @@ public class PiEstimatorKernel implements Kernel {
         result.hit = 0;
       }
       resultList.add(result);
-
     }
   }
 
   public static void main(String[] args) {
-    // Dummy constructor invocation
-    // to keep kernel constructor in
-    // rootbeer transformation
-    new PiEstimatorKernel(0, 0);
+
+    int m_calculationsPerThread = 1;
+    int m_blockSize = 1;
+    int m_gridSize = 1;
+
+    PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
+        System.currentTimeMillis());
+    Rootbeer rootbeer = new Rootbeer();
+    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
+
+    // Run GPU Kernels
+    Stopwatch watch = new Stopwatch();
+    watch.start();
+    rootbeer.runAll(kernel);
+    watch.stop();
+
+    System.out.println("PiEstimatorKernel,GPUTime=" + watch.elapsedTimeMillis()
+        + "ms\n");
+    List<StatsRow> stats = rootbeer.getStats();
+    for (StatsRow row : stats) {
+      System.out.println("  StatsRow:\n");
+      System.out.println("    init time: " + row.getInitTime() + "\n");
+      System.out.println("    serial time: " + row.getSerializationTime()
+          + "\n");
+      System.out.println("    exec time: " + row.getExecutionTime() + "\n");
+      System.out.println("    deserial time: " + row.getDeserializationTime()
+          + "\n");
+      System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
+      System.out.println("    num threads: " + row.getNumThreads() + "\n");
+    }
+
+    // Get GPU results
+    long hits = 0;
+    long count = 0;
+    List<Result> resultList = kernel.resultList.getList();
+    for (Result result : resultList) {
+      System.out.println("Result[" + count + "]: result.hit=" + result.hit);
+      hits += result.hit;
+      count++;
+    }
+    double result = 4.0 * hits / count;
+
+    System.out.println("Pi: " + result);
   }
 }
