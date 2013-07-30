@@ -21,18 +21,20 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 public class PiEstimatorKernel implements Kernel {
 
   private long iterations;
+  private LinearCongruentialRandomGenerator lcg;
   public ResultList resultList;
 
-  public PiEstimatorKernel(long iterations) {
+  public PiEstimatorKernel(long iterations, long seed) {
     this.iterations = iterations;
+    this.lcg = new LinearCongruentialRandomGenerator(seed);
     this.resultList = new ResultList();
   }
 
   public void gpuMethod() {
 
     for (int i = 0; i < iterations; i++) {
-      double x = 2.0 * Math.random() - 1.0; // value between -1 and 1
-      double y = 2.0 * Math.random() - 1.0; // value between -1 and 1
+      double x = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
+      double y = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
 
       Result result = new Result();
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
@@ -49,6 +51,6 @@ public class PiEstimatorKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new PiEstimatorKernel(0);
+    new PiEstimatorKernel(0, 0);
   }
 }

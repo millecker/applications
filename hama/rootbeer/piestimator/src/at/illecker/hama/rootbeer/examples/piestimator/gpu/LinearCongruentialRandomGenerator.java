@@ -17,36 +17,44 @@
 package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
 /*
- * LinearCongruentialRandomGenerator from [1]
+ * LinearCongruentialRandomGenerator (LCG) from [1]
+ *  
+ * X_k+1 = (a * X_k + c) % m
+ *  
+ * a is the "multiplier" (0 < a < m)
+ * c is the "increment" (0 < c < m)
+ * c = 0 in this implementation!
+ * X_0 is the seed
+ * 
+ * m is a prime number (or power of a prime number) 
  *  
  * [1] - Press, W. H., et al. Numerical Recipes in C, 2nd Ed Cambridge University Press, 1992
  * http://www.nr.com
  */
 public class LinearCongruentialRandomGenerator {
 
-  private long initSeed; // Initial random seed value
-  private long currentSeed; // Current random seed value
+  private long seed; // Current random seed value
 
-  // max_mutliplier is a pre-computed scaling factor
+  // maxMultiplier is a pre-computed scaling factor
   // necessary for converting a random long into a uniform value on on
   // the open interval (0,1)
   private double maxMultiplier;
 
-  // Define the constants for the Park & Miller algorithm
-  private final long a = 16807; // 7^5
-  private final long m = 2147483647; // 2^32 - 1
+  // Define the constants for the Park & Miller algorithm [2]
+  // [2] http://en.wikipedia.org/wiki/Lehmer_RNG
+  private static final long a = 16807; // 7^5
+  private static long m = 2147483647; // 2^31 - 1
 
-  // Schrage's algorithm constants
-  private final long q = 127773;
-  private final long r = 2836;
+  // Schrage's algorithm constants [3]
+  // [3] http://dl.acm.org/citation.cfm?id=355828
+  private static long q = 127773;
+  private static long r = 2836;
 
   public LinearCongruentialRandomGenerator(final long seed) {
-    this.initSeed = seed;
-    this.currentSeed = seed;
+    this.seed = seed;
 
-    if (this.initSeed == 0) {
-      this.initSeed = 1;
-      this.currentSeed = 1;
+    if (this.seed == 0) {
+      this.seed = 1;
     }
 
     this.maxMultiplier = 1.0 / (1.0 + (m - 1));
@@ -56,36 +64,24 @@ public class LinearCongruentialRandomGenerator {
   }
 
   public void setSeed(long newSeed) {
-    this.currentSeed = newSeed;
+    this.seed = newSeed;
   }
 
-  public long getSeed(long newSeed) {
-    return this.currentSeed;
+  public long getSeed() {
+    return this.seed;
   }
 
-  public void resetSeed(long newSeed) {
-    this.currentSeed = initSeed;
-  }
-
-  /*
-   * Linear congruential generators (LCG) 
-   * X_k+1 = a * X_k % n
-   * 
-   * n is a prime number (or power of a prime number) 
-   * g has high multiplicative order modulo n 
-   * x0 (the initial seed) is co-prime to n
-   */
   private long nextLong() {
     long k = 0;
 
-    k = this.currentSeed / q;
-    this.currentSeed = a * (this.currentSeed - k * q) - r * k;
+    k = this.seed / q;
+    this.seed = a * (this.seed - k * q) - r * k;
 
-    if (this.currentSeed < 0) {
-      this.currentSeed += m;
+    if (this.seed < 0) {
+      this.seed += m;
     }
 
-    return this.currentSeed;
+    return this.seed;
   }
 
   public double nextDouble() {

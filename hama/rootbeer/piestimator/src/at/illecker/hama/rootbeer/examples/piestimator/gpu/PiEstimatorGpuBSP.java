@@ -99,16 +99,15 @@ public class PiEstimatorGpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
-    List<Kernel> kernels = new ArrayList<Kernel>();
-    kernels.add(new PiEstimatorKernel(m_calculationsPerThread));
+    PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
+        System.currentTimeMillis());
     Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(m_blockSize, m_gridSize);// m_blockSize *
-                                                      // m_gridSize);
+    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernels);
+    rootbeer.runAll(kernel);
     watch.stop();
 
     // Write log to dfs
@@ -136,7 +135,7 @@ public class PiEstimatorGpuBSP extends
     // Get GPU results
     long hits = 0;
     long count = 0;
-    List<Result> resultList = ((PiEstimatorKernel)kernels.get(0)).resultList.getList();
+    List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
       hits += result.hit;
       count++;
