@@ -190,12 +190,15 @@ rm(scenarioInstrumentSpec)
 rm(scenarioProperties)
 rm(scenarioRun)
 
+# add weighted magnitude
+measurementTable["weighted_magnitude"] <- NA
+measurementTable$weighted_magnitude <- measurementTable$magnitude / measurementTable$weight
 
 benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario", all.x=TRUE)
 #benchmarkTable <- sqldf('SELECT * FROM measurementTable JOIN scenarioTable USING(scenario)')
 
 cat("Info: BenchmarkTable Execution Times\n")
-sqldf('SELECT scenario,magnitude,unit,weight,AllParameters FROM benchmarkTable')
+sqldf('SELECT scenario,magnitude,unit,weight,weighted_magnitude,AllParameters FROM benchmarkTable')
 
 benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude/weight) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
 cat("BenchmarkTable Average Execution Time avg(magnitude/weight)\n")
@@ -230,7 +233,7 @@ cat(message)
 # Generate Box plot
 #benchmarkTable
 #str(benchmarkTable)
-ggplot(benchmarkTable, aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
+ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scenario))) + 
   geom_boxplot(outlier.colour = "red", outlier.size = 5) +
   xlab(xaxisDesc) +
   ylab(yaxisDesc) +
