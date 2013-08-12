@@ -298,12 +298,18 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 	int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
 	int count = 0;
 	int timeout = 0;
+	bool done = false;
 
 	while (count < 100) {
 
 		if (++timeout > 100000) {
 			cuPrintf("device_method TIMEOUT! lock_thread_id: %d\n",
 					d_kernelWrapper->lock_thread_id);
+			break;
+		}
+
+		__syncthreads();
+		if (done) {
 			break;
 		}
 
@@ -329,7 +335,7 @@ __global__ void device_method(KernelWrapper *d_kernelWrapper) {
 			//__threadfence();
 
 			// exit infinite loop
-			break;
+			done = true; // finished work
 
 		} else {
 			count++;
@@ -397,7 +403,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
-	device_method<<<8, 1>>>(d_kernelWrapper);
+	device_method<<<1, 8>>>(d_kernelWrapper);
 
 	// display the device's output
 	printf("\n\nTEST KernelWrapper using getValue device method!\n");

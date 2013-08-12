@@ -124,7 +124,7 @@ int main(void) {
 	 Maximum sizes of each dimension of a grid:     2147483647 x 65535 x 65535
 	 */
 	int blocks = 10; //65535;
-	int threads = 1024;
+	int threads = 512;
 
 	//check if the device supports mapping host memory.
 	cudaDeviceProp prop;
