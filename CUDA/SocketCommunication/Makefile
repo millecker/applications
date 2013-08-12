@@ -1,6 +1,7 @@
 NVCC = nvcc
 NVCCFLAGS = -g -O2 -m64 \
- -gencode arch=compute_20,code=sm_20
+ -gencode arch=compute_20,code=sm_20 \
+ -gencode arch=compute_35,code=sm_35
 #-gencode arch=compute_12,code=sm_12 
 CXX=g++
 CUDA_INSTALL_PATH=/usr/local/cuda

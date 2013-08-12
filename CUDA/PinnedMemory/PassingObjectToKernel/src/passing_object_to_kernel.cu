@@ -57,7 +57,8 @@ __global__ void device_method(MyClass *d_object) {
 	int val = d_object->getValue();
 	cuPrintf("Device object value: %d\n", val);
 	d_object->setValue(++val);
-	__threadfence();
+	//__threadfence();
+	__threadfence_system();
 }
 
 int main(void) {
@@ -92,6 +93,7 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
+	// blocks, threads
 	device_method<<<16, 4>>>(device_object);
 
 	// display the device's output
