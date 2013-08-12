@@ -269,6 +269,16 @@ public:
 
 KernelWrapper *h_kernelWrapper;
 
+// Convenience function for checking CUDA runtime API results
+// can be wrapped around any runtime API call. No-op in release builds.
+inline cudaError_t checkCuda(cudaError_t result) {
+	if (result != cudaSuccess) {
+		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+		assert(result == cudaSuccess);
+	}
+	return result;
+}
+
 void sigint_handler(int s) {
 	printf("Caught signal %d\n", s);
 
@@ -281,16 +291,6 @@ void sigint_handler(int s) {
 
 	checkCuda(cudaFreeHost(h_kernelWrapper));
 	exit(0);
-}
-
-// Convenience function for checking CUDA runtime API results
-// can be wrapped around any runtime API call. No-op in release builds.
-inline cudaError_t checkCuda(cudaError_t result) {
-	if (result != cudaSuccess) {
-		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-		assert(result == cudaSuccess);
-	}
-	return result;
 }
 
 __global__ void device_method(KernelWrapper *d_kernelWrapper) {

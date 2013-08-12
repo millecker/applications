@@ -19,13 +19,14 @@
 #include "util/cuPrintf.cu"
 #include <cuda_runtime.h>
 
-
 class MyClass {
 public:
-	int value;
+	volatile int value;
+	volatile int lock_thread_id;
 
 	__device__ __host__ MyClass() {
 		value = 0;
+		lock_thread_id = -1;
 	}
 	__device__ __host__ MyClass(int v) {
 		value = v;
@@ -54,14 +55,76 @@ inline cudaError_t checkCuda(cudaError_t result) {
 
 __global__ void device_method(MyClass *d_object) {
 
-	int val = d_object->getValue();
-	cuPrintf("Device object value: %d\n", val);
-	d_object->setValue(++val);
-	//__threadfence();
-	__threadfence_system();
+	int thread_id = threadIdx.x + blockIdx.x * blockDim.x;
+	int count = 0;
+	int timeout = 0;
+	bool done = false;
+
+	while (count < 100) {
+
+		if (++timeout > 100000) {
+			//cuPrintf(
+			//		"device_method TIMEOUT! thread_id: %d, lock_thread_id: %d\n",
+			//		thread_id, d_object->lock_thread_id);
+			break;
+		}
+
+		__syncthreads();
+		if (done) {
+			break;
+		}
+
+		int old = atomicCAS((int *) &d_object->lock_thread_id, -1, thread_id);
+
+		if (old == -1 || old == thread_id) {
+
+			// Atomic block begin - critical section
+			//cuPrintf("Thread %d GOT LOCK lock_thread_id: %d\n", thread_id,
+			//		d_object->lock_thread_id);
+
+			int val = d_object->getValue();
+			//cuPrintf("Device object value: %d\n", val);
+			d_object->setValue(++val);
+
+			//atomicExch((int *) &d_object->lock_thread_id, -1);
+			d_object->lock_thread_id = -1;
+
+			//__threadfence_system();
+			//__threadfence_block();
+			//__threadfence();
+			//threadfence();
+
+			done = true; // finished work
+
+			//cuPrintf("Thread %d LEAVE LOCK lock_thread_id: %d\n", thread_id,
+			//		d_object->lock_thread_id);
+
+			// Atomic block end - critical section
+
+		} else {
+			//cuPrintf("Thread %d lock_thread_id: %d\n", thread_id, old);
+
+			count++;
+			if (count > 50) {
+				count = 0;
+			}
+		}
+	}
+
 }
 
 int main(void) {
+
+	/*
+	 Total number of registers available per block: 65536
+	 Warp size:                                     32
+	 Maximum number of threads per multiprocessor:  2048
+	 Maximum number of threads per block:           1024
+	 Maximum sizes of each dimension of a block:    1024 x 1024 x 64
+	 Maximum sizes of each dimension of a grid:     2147483647 x 65535 x 65535
+	 */
+	int blocks = 10; //65535;
+	int threads = 1024;
 
 	//check if the device supports mapping host memory.
 	cudaDeviceProp prop;
@@ -84,8 +147,10 @@ int main(void) {
 			cudaHostAlloc((void**) &host_object, sizeof(MyClass),
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
-	// init value
+	// init value and lock
 	host_object->setValue(0);
+	host_object->lock_thread_id = -1;
+
 	printf("Host object value: %d\n", host_object->getValue());
 
 	checkCuda(cudaHostGetDevicePointer(&device_object, host_object, 0));
@@ -93,18 +158,30 @@ int main(void) {
 	// initialize cuPrintf
 	cudaPrintfInit();
 
+	// create cuda event handles
+	cudaEvent_t start, stop;
+	checkCuda(cudaEventCreate(&start));
+	checkCuda(cudaEventCreate(&stop));
+	float gpu_time = 0.0f;
+
+	cudaEventRecord(start, 0);
 	// blocks, threads
-	device_method<<<16, 4>>>(device_object);
+	// add<<<(N + M -1) / M, M>>>(d_a,d_b,d_c,N);
+	device_method<<<blocks, threads>>>(device_object);
+
+	cudaEventRecord(stop, 0);
 
 	// display the device's output
 	cudaPrintfDisplay();
 	// clean up after cuPrintf
 	cudaPrintfEnd();
 
+	checkCuda(cudaEventElapsedTime(&gpu_time, start, stop));
+	printf("time spent executing by the GPU: %.2f\n", gpu_time);
 	printf("Host object value: %d (after gpu execution) (thread_num=%d)\n",
-			host_object->getValue(), 16 * 4);
+			host_object->getValue(), blocks * threads);
 
-	assert(host_object->getValue() == 16*4);
+	assert(host_object->getValue() == blocks * threads);
 
 	return 0;
 }
