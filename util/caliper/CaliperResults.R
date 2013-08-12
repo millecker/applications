@@ -19,6 +19,7 @@ if (is.na(args[1])) {
 # Load result file
 caliperJsonFile <- args[1]
 #caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13:37:02Z.json"
+#caliperJsonFile <- "results/test.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -38,6 +39,7 @@ for (scenarioIndex in 1:length(caliperResult)) {
   
   # Scenario ID
   scenarioId <- scenario[1]
+  
   # Add id
   scenarioTableRow <- data.frame(scenarioTableRow,data.frame(id=scenarioId))
 
@@ -50,11 +52,24 @@ for (scenarioIndex in 1:length(caliperResult)) {
   scenarioInstrumentSpec <- scenario[3]
   # Add Instrument className
   scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Instrument=scenarioInstrumentSpec$instrumentSpec$className))
-  # Add measurements
-  scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Measurements=scenarioInstrumentSpec$instrumentSpec$options$measurements))
+  # Add measurements if not null
+  if (is.null(scenarioInstrumentSpec$instrumentSpec$options$measurements)) {
+    message <- paste("Warning: Scenario",scenarioId,"does not contain instrumentSpec measurements information. Skipping this scenario!\n")
+    cat(message)
+    next; # skip scenario continue
+    # scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Measurements=0))  
+  } else {
+    scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Measurements=scenarioInstrumentSpec$instrumentSpec$options$measurements))  
+  }
   # Add warmup
-  scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Warmup=scenarioInstrumentSpec$instrumentSpec$options$warmup))
-
+  if (is.null(scenarioInstrumentSpec$instrumentSpec$options$warmup)) {
+    message <- paste("Warning: Scenario",scenarioId,"does not contain instrumentSpec warmup information!\n")
+    cat(message)
+    scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Warmup=0))
+  } else {
+    scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Warmup=scenarioInstrumentSpec$instrumentSpec$options$warmup))
+  }
+  
   # Scenario properties
   scenarioProperties <- scenario[4]$scenario
   
@@ -103,7 +118,7 @@ for (scenarioIndex in 1:length(caliperResult)) {
   }
   scenarioTableRow <- data.frame(scenarioTableRow,data.frame(AllParameters=allParameters))
   
-  # Add scenarioTableRow to  scenarioTable
+  # Add scenarioTableRow to scenarioTable
   if (is.null(scenarioTable)) {
     scenarioTable <- scenarioTableRow
   } else {
@@ -179,15 +194,15 @@ rm(scenarioRun)
 benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario", all.x=TRUE)
 #benchmarkTable <- sqldf('SELECT * FROM measurementTable JOIN scenarioTable USING(scenario)')
 
-print("BenchmarkTable Execution Times")
-sqldf('SELECT scenario,magnitude,unit,AllParameters FROM benchmarkTable')
+cat("Info: BenchmarkTable Execution Times\n")
+sqldf('SELECT scenario,magnitude,unit,weight,AllParameters FROM benchmarkTable')
 
 benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude/weight) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
-print("BenchmarkTable Average Execution Time")
+cat("BenchmarkTable Average Execution Time avg(magnitude/weight)\n")
 benchmarkTableAvg
 #str(benchmarkTableAvg)
 
-print("Summary of benchmarkTable")
+cat("Info: Summary of benchmarkTable\n")
 summary(benchmarkTable)
 
 # Generate Bar chart of average data
@@ -208,8 +223,8 @@ ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario)))
 outputfile <- paste(caliperJsonFile,"_avg_barplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
 
-message <- paste("Saved Benchmark Barplot in",outputfile)
-print(message)
+message <- paste("Info: Saved Benchmark Barplot in",outputfile,"\n")
+cat(message)
 
 
 # Generate Box plot
@@ -225,8 +240,8 @@ ggplot(benchmarkTable, aes(x=AllParameters,y=magnitude,fill=factor(scenario))) +
 outputfile <- paste(caliperJsonFile,"_boxplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
 
-message <- paste("Saved Benchmark Boxplot in",outputfile)
-print(message)
+message <- paste("Info: Saved Benchmark Boxplot in",outputfile,"\n")
+cat(message)
 
 # Delete temporary created plot file
 unlink("Rplots.pdf")
