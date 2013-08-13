@@ -20,28 +20,38 @@ import java.util.List;
 
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorKernel implements Kernel {
 
   private long iterations;
-  private LinearCongruentialRandomGenerator lcg;
+  private long seed;
   public ResultList resultList;
 
   public PiEstimatorKernel(long iterations, long seed) {
     this.iterations = iterations;
-    this.lcg = new LinearCongruentialRandomGenerator(seed);
+    this.seed = seed;
     this.resultList = new ResultList();
   }
 
   public void gpuMethod() {
+
+    int threadId = RootbeerGpu.getThreadIdxx() + RootbeerGpu.getBlockIdxx()
+        * RootbeerGpu.getBlockDimx();
+
+    LinearCongruentialRandomGenerator lcg = new LinearCongruentialRandomGenerator(
+        seed / threadId);
 
     for (int i = 0; i < iterations; i++) {
       double x = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
       double y = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
 
       Result result = new Result();
+      result.x = x;
+      result.y = y;
+      result.threadId = threadId;
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
         result.hit = 1;
       } else {
@@ -54,8 +64,8 @@ public class PiEstimatorKernel implements Kernel {
   public static void main(String[] args) {
 
     int m_calculationsPerThread = 1;
-    int m_blockSize = 1;
-    int m_gridSize = 1;
+    int m_blockSize = 512; // threads
+    int m_gridSize = 256; // blocks
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
         System.currentTimeMillis());
@@ -88,7 +98,8 @@ public class PiEstimatorKernel implements Kernel {
     long count = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
-      System.out.println("Result[" + count + "]: result.hit=" + result.hit);
+      // System.out.println("Result[" + count + "]: threadId=" + result.threadId
+      // + " result.hit=" + result.hit + " x=" + result.x + " y=" + result.y);
       hits += result.hit;
       count++;
     }

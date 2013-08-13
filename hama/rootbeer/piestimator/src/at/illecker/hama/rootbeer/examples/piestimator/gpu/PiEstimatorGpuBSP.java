@@ -63,12 +63,12 @@ public class PiEstimatorGpuBSP extends
       "output/hama/rootbeer/examples/piestimator/GPU-"
           + System.currentTimeMillis());
 
-  private static final long totalIterations = 100000000L;
+  private static final long totalIterations = 1000000000L;
   // Long.MAX = 9223372036854775807
 
   private static final int maxGridSize = 65535; // gridSize = amount of blocks
   private static final int maxBlockSize = 512; // 256 // blockSize = amount of
-                                               // threads
+  // threads
 
   private String m_masterTask;
   private long m_totalIterations;
@@ -81,17 +81,20 @@ public class PiEstimatorGpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException {
 
-    this.m_totalIterations = Long.parseLong(peer.getConfiguration().get(
-        "piestimator.totaliterations"));
-    this.m_calculationsPerThread = Integer.parseInt(peer.getConfiguration()
-        .get("piestimator.calculationsperthread"));
-    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.gridSize"));
-    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.blockSize"));
-
     // Choose one as a master
     this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+
+    this.m_totalIterations = Long.parseLong(peer.getConfiguration().get(
+        "piestimator.totaliterations"));
+
+    this.m_calculationsPerThread = Integer.parseInt(peer.getConfiguration()
+        .get("piestimator.calculationsperthread"));
+
+    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
+        "piestimator.gridSize"));
+
+    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
+        "piestimator.blockSize"));
   }
 
   @Override

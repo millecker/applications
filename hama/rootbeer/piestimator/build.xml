@@ -10,7 +10,10 @@
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/piestimator/gpu" />
 	<property name="rootbeer.classes" value="PiEstimatorKernel.class,ResultList.class,Result.class,LinearCongruentialRandomGenerator.class" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.gpu.PiEstimatorKernel" />
+	<!--
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.gpu.PiEstimatorGpuBSP" />
+	-->
 	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.cpu.PiEstimatorCpuBSP" />
 	<property name="bench.class" value="" />
 	<property name="program" value="hama" />
