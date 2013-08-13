@@ -23,6 +23,6 @@ ant run-gpu-nemu [-DnumBspTask=1 -Diterations=100000000]
 ant run-gpu-jemu [-DnumBspTask=1 -Diterations=100000000]
 
 # Submit CPU Task to Hama
-ant run-cpu [-DnumBspTask=1 -DkernelCount=1 -Diterations=100000000]
+ant run-cpu [-DnumBspTask=1 -Diterations=100000000]
 
 ###############################################################################

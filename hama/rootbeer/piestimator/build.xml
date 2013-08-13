@@ -15,7 +15,7 @@
 	<property name="bench.class" value="" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask kernelCount iterations" />
+	<property name="application.args" value="numBspTask iterations" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>

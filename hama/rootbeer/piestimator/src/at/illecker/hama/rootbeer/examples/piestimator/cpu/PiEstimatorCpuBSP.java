@@ -17,13 +17,10 @@
 package at.illecker.hama.rootbeer.examples.piestimator.cpu;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -42,7 +39,7 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
 
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import at.illecker.hama.rootbeer.examples.piestimator.gpu.LinearCongruentialRandomGenerator;
 
 /**
  * @author PiEstimator Monte Carlo computation of pi
@@ -54,161 +51,161 @@ import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
  */
 
 public class PiEstimatorCpuBSP extends
-    BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
-  private static final Log LOG = LogFactory.getLog(PiEstimatorCpuBSP.class);
-  private static final Path TMP_OUTPUT = new Path(
-      "output/hama/rootbeer/examples/piestimator/CPU-"
-          + System.currentTimeMillis());
-  private static final long threadCount = Runtime.getRuntime()
-      .availableProcessors();
-  private static final long iterations = 100000000L;
-  // Long.MAX = 9223372036854775807
+		BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
+	private static final Log LOG = LogFactory.getLog(PiEstimatorCpuBSP.class);
+	private static final Path TMP_OUTPUT = new Path(
+			"output/hama/rootbeer/examples/piestimator/CPU-"
+					+ System.currentTimeMillis());
+	private static final long iterations = 1000000000L;
+	// Long.MAX = 9223372036854775807
 
-  private String m_masterTask;
-  private int m_threadCount;
-  private long m_iterations;
+	private String m_masterTask;
+	private long m_iterations;
 
-  @Override
-  public void setup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException {
+	@Override
+	public void setup(
+			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException {
 
-    this.m_threadCount = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.threadCount"));
-    this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-        "piestimator.iterations"));
+		// Choose one as a master
+		this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-  }
+		this.m_iterations = Long.parseLong(peer.getConfiguration().get(
+				"piestimator.iterations"));
+	}
 
-  @Override
-  public void bsp(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException, SyncException, InterruptedException {
+	@Override
+	public void bsp(
+			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException, SyncException, InterruptedException {
 
-    List<PiEstimatorCpuThread> threads = new ArrayList<PiEstimatorCpuThread>();
-    long seed = System.currentTimeMillis();
-    for (int i = 0; i < m_threadCount; ++i) {
-      PiEstimatorCpuThread thread = new PiEstimatorCpuThread(iterations, seed);
-      threads.add(thread);
-    }
+		//Stopwatch watch = new Stopwatch();
+		//watch.start();
 
-    Stopwatch watch = new Stopwatch();
-    watch.start();
-    for (int i = 0; i < m_threadCount; ++i) {
-      PiEstimatorCpuThread thread = threads.get(i);
-      thread.join();
-    }
-    watch.stop();
+		long seed = System.currentTimeMillis();
+		LinearCongruentialRandomGenerator m_lcg = new LinearCongruentialRandomGenerator(
+				seed);
 
-    // Write log to dfs
-    BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
-    FileSystem fs = FileSystem.get(peer.getConfiguration());
-    FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
-        .getOutputPath(job), peer.getTaskId() + ".log"));
+		long in = 0;
+		for (long i = 0; i < m_iterations; i++) {
+			double x = 2.0 * m_lcg.nextDouble() - 1.0;
+			double y = 2.0 * m_lcg.nextDouble() - 1.0;
 
-    outStream.writeChars("BSP=PiEstimatorCpuBSP,ThreadCount=" + m_threadCount
-        + ",Iterations=" + m_iterations + ",CPUTime="
-        + watch.elapsedTimeMillis() + "ms\n");
-    outStream.close();
+			if ((Math.sqrt(x * x + y * y) < 1.0)) {
+				in++;
+			}
+		}
 
-    // Send result to MasterTask
-    for (int i = 0; i < m_threadCount; i++) {
-      peer.send(m_masterTask, new DoubleWritable(threads.get(i).result));
-    }
-    peer.sync();
-  }
+		double intermediate_results = 4.0 * in / m_iterations;
+		//watch.stop();
 
-  @Override
-  public void cleanup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException {
+		// Write log to dfs
+		/*
+		BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
+		FileSystem fs = FileSystem.get(peer.getConfiguration());
+		FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
+				.getOutputPath(job), peer.getTaskId() + ".log"));
 
-    if (peer.getPeerName().equals(m_masterTask)) {
+		outStream.writeChars("BSP=PiEstimatorCpuBSP,Iterations=" + m_iterations
+				+ ",CPUTime=" + watch.elapsedTimeMillis() + "ms\n");
+		outStream.close();
+		*/
+		
+		// Send result to MasterTask
+		peer.send(m_masterTask, new DoubleWritable(intermediate_results));
+		peer.sync();
+	}
 
-      double pi = 0.0;
+	@Override
+	public void cleanup(
+			BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+			throws IOException {
 
-      int numMessages = peer.getNumCurrentMessages();
+		if (peer.getPeerName().equals(m_masterTask)) {
 
-      DoubleWritable received;
-      while ((received = peer.getCurrentMessage()) != null) {
-        pi += received.get();
-      }
+			double pi = 0.0;
 
-      pi = pi / numMessages;
-      peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (numMessages * m_iterations)
-          // + (peer.getNumPeers() * m_threadCount * m_iterations)
-          + " points is"), new DoubleWritable(pi));
-    }
-  }
+			int numMessages = peer.getNumCurrentMessages();
 
-  static void printOutput(BSPJob job) throws IOException {
-    FileSystem fs = FileSystem.get(job.getConfiguration());
-    FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
-        System.out.println("File " + files[i].getPath());
-        FSDataInputStream in = fs.open(files[i].getPath());
-        IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
-        in.close();
-      }
-    }
-    // fs.delete(FileOutputFormat.getOutputPath(job), true);
-  }
+			DoubleWritable received;
+			while ((received = peer.getCurrentMessage()) != null) {
+				pi += received.get();
+			}
 
-  public static void main(String[] args) throws InterruptedException,
-      IOException, ClassNotFoundException {
-    // BSP job configuration
-    HamaConfiguration conf = new HamaConfiguration();
+			pi = pi / numMessages;
+			peer.write(new Text("Estimated value of PI(3,14159265) using "
+					+ (numMessages * m_iterations)
+					// + (peer.getNumPeers() * m_threadCount * m_iterations)
+					+ " points is"), new DoubleWritable(pi));
+		}
+	}
 
-    BSPJob job = new BSPJob(conf);
-    // Set the job name
-    job.setJobName("Rootbeer CPU PiEstimatior");
-    // set the BSP class which shall be executed
-    job.setBspClass(PiEstimatorCpuBSP.class);
-    // help Hama to locale the jar to be distributed
-    job.setJarByClass(PiEstimatorCpuBSP.class);
+	static void printOutput(BSPJob job) throws IOException {
+		FileSystem fs = FileSystem.get(job.getConfiguration());
+		FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].getLen() > 0) {
+				System.out.println("File " + files[i].getPath());
+				FSDataInputStream in = fs.open(files[i].getPath());
+				IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
+				in.close();
+			}
+		}
+		// fs.delete(FileOutputFormat.getOutputPath(job), true);
+	}
 
-    job.setInputFormat(NullInputFormat.class);
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(DoubleWritable.class);
-    job.setOutputFormat(TextOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+	public static void main(String[] args) throws InterruptedException,
+			IOException, ClassNotFoundException {
+		// BSP job configuration
+		HamaConfiguration conf = new HamaConfiguration();
 
-    job.set("bsp.child.java.opts", "-Xmx4G");
+		BSPJob job = new BSPJob(conf);
+		// Set the job name
+		job.setJobName("Rootbeer CPU PiEstimatior");
+		// set the BSP class which shall be executed
+		job.setBspClass(PiEstimatorCpuBSP.class);
+		// help Hama to locale the jar to be distributed
+		job.setJarByClass(PiEstimatorCpuBSP.class);
 
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
+		job.setInputFormat(NullInputFormat.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(DoubleWritable.class);
+		job.setOutputFormat(TextOutputFormat.class);
+		FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
 
-    if (args.length > 0) {
-      if (args.length == 3) {
-        job.setNumBspTask(Integer.parseInt(args[0]));
-        job.set("piestimator.threadCount", args[1]);
-        job.set("piestimator.iterations", args[2]);
-      } else {
-        System.out.println("Wrong argument size!");
-        System.out.println("    Argument1=numBspTask");
-        System.out.println("    Argument2=kernelCount");
-        System.out.println("    Argument3=iterations");
-        return;
-      }
-    } else {
-      job.setNumBspTask(cluster.getMaxTasks());
-      job.set("piestimator.threadCount", "" + PiEstimatorCpuBSP.threadCount);
-      job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.iterations);
-    }
-    LOG.info("NumBspTask: " + job.getNumBspTask());
-    LOG.info("ThreadCount: " + job.get("piestimator.threadCount"));
-    LOG.info("Iterations: " + job.get("piestimator.iterations"));
+		job.set("bsp.child.java.opts", "-Xmx4G");
 
-    long startTime = System.currentTimeMillis();
-    if (job.waitForCompletion(true)) {
-      printOutput(job);
-      System.out.println("Job Finished in "
-          + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
-    }
-  }
+		BSPJobClient jobClient = new BSPJobClient(conf);
+		ClusterStatus cluster = jobClient.getClusterStatus(true);
 
+		if (args.length > 0) {
+			if (args.length == 2) {
+				job.setNumBspTask(Integer.parseInt(args[0]));
+				String totalIterations = args[2];
+				job.set("piestimator.iterations",
+						"" + Long.parseLong(totalIterations)
+								/ job.getNumBspTask());
+			} else {
+				System.out.println("Wrong argument size!");
+				System.out.println("    Argument1=numBspTask");
+				System.out.println("    Argument3=iterations");
+				return;
+			}
+		} else {
+			job.setNumBspTask(cluster.getMaxTasks());
+			job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.iterations
+					/ job.getNumBspTask());
+		}
+		LOG.info("NumBspTask: " + job.getNumBspTask());
+		LOG.info("IterationsTotal: " + PiEstimatorCpuBSP.iterations);
+		LOG.info("IterationsPerBspTask: " + job.get("piestimator.iterations"));
+
+		long startTime = System.currentTimeMillis();
+		if (job.waitForCompletion(true)) {
+			printOutput(job);
+			System.out.println("Job Finished in "
+					+ (System.currentTimeMillis() - startTime) / 1000.0
+					+ " seconds");
+		}
+	}
 }
