@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
-
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
@@ -36,21 +35,12 @@ inline cudaError_t checkCuda(cudaError_t result) {
  * Device functions
  */
 
-__device__ inline void getPoint(float &x, float &y, curandState &state) {
-	x = curand_uniform(&state);
-	y = curand_uniform(&state);
-}
-
-__device__ inline void getPoint(double &x, double &y, curandState &state) {
-	x = curand_uniform_double(&state);
-	y = curand_uniform_double(&state);
-}
-
 // RNG init kernel
-__global__ void initRNG(curandState * const rngStates, int n,
+__global__ void initRNG(curandState* rngStates, int n,
 		const unsigned int seed) {
-	// Determine thread ID
-	unsigned int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+
+	unsigned block_id = blockIdx.y * gridDim.x + blockIdx.x;
+	int thread_id = threadIdx.x + block_id * blockDim.x;
 
 	if (thread_id < n) {
 		// Initialise the RNG
@@ -58,7 +48,7 @@ __global__ void initRNG(curandState * const rngStates, int n,
 	}
 }
 
-// Compute on Iteration
+// Compute kernel
 __global__ void device_method(int *d_hits, int n,
 		curandState * const rngStates) {
 
@@ -69,12 +59,12 @@ __global__ void device_method(int *d_hits, int n,
 
 		// Initialise the RNG
 		curandState localState = rngStates[thread_id];
-		float x;
-		float y;
-		getPoint(x, y, localState);
+		float x = curand_uniform(&localState);
+		float y = curand_uniform(&localState);
 
-		x = -1 + ((x / RAND_MAX) * 2);
-		y = -1 + ((y / RAND_MAX) * 2);
+		// A + rnd_number * (B-A);
+		x = -1 + (x * 2); // from -1 to 1
+		y = -1 + (y * 2); // from -1 to 1
 
 		if (sqrt(x * x + y * y) <= 1) {
 			d_hits[thread_id] = 1;
@@ -110,7 +100,7 @@ int main(void) {
 	checkCuda(cudaGetDeviceProperties(&devProp, 0));
 
 	unsigned maxbytes = devProp.totalGlobalMem;
-	//because we need 3 arrays (h_x, h_y, h_inside)
+	//max samples depending on hints and curandStates array
 	unsigned max_samples = maxbytes / (sizeof(int) + sizeof(curandState));
 	// Does GPU support sample size?
 	int n = 2e6;
@@ -129,6 +119,11 @@ int main(void) {
 
 	printf("Threads.x: %d, Blocks.x: %d, Blocks.y: %d\n", threads.x, blocks.x,
 			blocks.y);
+
+	struct timespec total_start;
+	struct timespec total_stop;
+
+	clock_gettime(CLOCK_MONOTONIC, &total_start);
 
 	// set to pinned memory
 	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
@@ -151,30 +146,56 @@ int main(void) {
 	for (int i = 0; i < n; i++) {
 		h_hits[i] = 0;
 	}
-
 	checkCuda(cudaHostGetDevicePointer(&d_hits, h_hits, 0));
 
-	printf("Init RNG\n");
+	// create cuda event handles
+	cudaEvent_t rng_start, rng_stop;
+	cudaEvent_t gpu_start, gpu_stop;
+	float gpu_rng_time = 0.0f;
+	float gpu_time = 0.0f;
+	checkCuda(cudaEventCreate(&rng_start));
+	checkCuda(cudaEventCreate(&rng_stop));
+	checkCuda(cudaEventCreate(&gpu_start));
+	checkCuda(cudaEventCreate(&gpu_stop));
+
+	printf("Run RNG gerneration on GPU\n");
 	unsigned int seed = (unsigned) time(0);
+	cudaEventRecord(rng_start, 0);
 	initRNG<<<blocks, threads>>>(d_rngStates, n, seed);
+	cudaEventRecord(rng_stop, 0);
+
+	checkCuda(cudaDeviceSynchronize());
+	checkCuda(cudaGetLastError());
 
 	printf("Run computation on GPU\n");
+	cudaEventRecord(gpu_start, 0);
 	device_method<<<blocks, threads>>>(d_hits, n, d_rngStates);
+	cudaEventRecord(gpu_stop, 0);
 
-#ifdef DEBUG // For debugging purposes
-// Check for CUDA runtime errors
-	CUDA(cudaDeviceSynchronize());
-	CUDA(cudaGetLastError());
-#endif
+	checkCuda(cudaDeviceSynchronize());
+	checkCuda(cudaGetLastError());
 
+	printf("Counting hits\n");
 	// count how many fell inside
 	int hits = 0;
 	vector_sum(&hits, h_hits, n);
 	printf("hits: %d\n", hits);
 
+	printf("Calculating PI\n");
 	// approximate PI
 	float pi = 4.0f * hits / n;
 	printf("pi: %f\n", pi);
+
+	checkCuda(cudaEventElapsedTime(&gpu_rng_time, rng_start, rng_stop));
+	checkCuda(cudaEventElapsedTime(&gpu_time, gpu_start, gpu_stop));
+
+	clock_gettime(CLOCK_MONOTONIC, &total_stop);
+	double total_time = (total_stop.tv_sec - total_start.tv_sec) * 1000000.0f
+			+ (total_stop.tv_nsec - total_start.tv_nsec) / 1000.0f;
+	printf("gpu rng time: %.2f ms\n", gpu_rng_time);
+	printf("gpu computation time: %.2f ms\n", gpu_time);
+	printf("total time: %.2f ms (%ld sec)\n", total_time,
+			(total_stop.tv_sec - total_start.tv_sec));
 
 	checkCuda(cudaFreeHost(h_hits));
 

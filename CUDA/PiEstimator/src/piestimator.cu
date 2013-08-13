@@ -91,7 +91,7 @@ int main(void) {
 	//because we need 3 arrays (h_x, h_y, h_inside)
 	unsigned max_samples = maxbytes / sizeof(float);
 	// Does GPU support sample size?
-	int n = 2e8;
+	int n = 2e6;
 	if (n > max_samples) {
 		n = max_samples;
 	}
@@ -139,6 +139,8 @@ int main(void) {
 		blocks.y = divup(blocks.x, 65535);
 		blocks.x = divup(blocks.x, blocks.y);
 	}
+	printf("Threads.x: %d, Blocks.x: %d, Blocks.y: %d\n", threads.x, blocks.x,
+			blocks.y);
 
 	float *d_x = NULL;
 	float *d_y = NULL;

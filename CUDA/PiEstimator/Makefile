@@ -20,8 +20,8 @@ PiEstimatorOptimized: src/piestimator_optimized.cu
 		$(NVCC) $(NVCCFLAGS) $^ -o bin/$@
 
 
-run: PiEstimatorOptimized
-		./bin/PiEstimatorOptimized
+run: PiEstimator
+		./bin/PiEstimator
 
 clean:
 		rm -f bin/PiEstimator
