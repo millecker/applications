@@ -17,8 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/time.h>
 #include <time.h>
-
 #include <cuda_runtime.h>
 
 // Convenience function for checking CUDA runtime API results
@@ -33,7 +33,8 @@ inline cudaError_t checkCuda(cudaError_t result) {
 
 /**
  * Device function
- */__global__ void device_method(float *d_x, float *d_y, int *d_inside, int n) {
+ */
+__global__ void device_method(float *d_x, float *d_y, int *d_inside, int n) {
 
 	unsigned block_id = blockIdx.y * gridDim.x + blockIdx.x;
 	int thread_id = threadIdx.x + block_id * blockDim.x;
@@ -96,6 +97,11 @@ int main(void) {
 	}
 	printf("Using %d samples to estimate pi\n", n);
 
+	struct timespec total_start;
+	struct timespec total_stop;
+
+	clock_gettime(CLOCK_MONOTONIC, &total_start);
+
 	// random scattering of (x,y) points
 	float *h_x = NULL;
 	float *h_y = NULL;
@@ -115,12 +121,14 @@ int main(void) {
 					cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
 	// fill with random numbers
+	printf("Start filling x and y float arrays with random numbers\n");
 	srand((unsigned) time(0));
 	random_number_generator(h_x, n);
 	random_number_generator(h_y, n);
-	printf("Filled x and y float array with random numbers\n");
+	printf("End filling x and y float arrays with random numbers\n");
 
-	for (int i=0; i<n; i++) {
+	// init hits array
+	for (int i = 0; i < n; i++) {
 		h_inside[i] = 0;
 	}
 
@@ -140,22 +148,39 @@ int main(void) {
 	checkCuda(cudaHostGetDevicePointer(&d_inside, h_inside, 0));
 
 	printf("Run computation on GPU\n");
+	// create cuda event handles
+	cudaEvent_t gpu_start, gpu_stop;
+	float gpu_time = 0.0f;
+	checkCuda(cudaEventCreate(&gpu_start));
+	checkCuda(cudaEventCreate(&gpu_stop));
+
+	cudaEventRecord(gpu_start, 0);
 	device_method<<<blocks, threads>>>(d_x, d_y, d_inside, n);
+	cudaEventRecord(gpu_stop, 0);
 
-#ifdef DEBUG // For debugging purposes
-// Check for CUDA runtime errors
-	CUDA(cudaDeviceSynchronize());
-	CUDA(cudaGetLastError());
-#endif
+	// Check for CUDA runtime errors
+	checkCuda(cudaDeviceSynchronize());
+	checkCuda(cudaGetLastError());
 
+	printf("Counting hits\n");
 	// count how many fell inside
 	int hits = 0;
 	vector_sum(&hits, h_inside, n);
 	printf("hits: %d\n", hits);
 
+	printf("Calculating PI\n");
 	// approximate PI
 	float pi = 4.0f * hits / n;
 	printf("pi: %f\n", pi);
+
+	checkCuda(cudaEventElapsedTime(&gpu_time, gpu_start, gpu_stop));
+
+	clock_gettime(CLOCK_MONOTONIC, &total_stop);
+	double total_time = (total_stop.tv_sec - total_start.tv_sec) * 1000000.0f
+			+ (total_stop.tv_nsec - total_start.tv_nsec) / 1000.0f;
+	printf("gpu time: %.2f ms\n", gpu_time);
+	printf("total time: %.2f ms (%ld sec)\n", total_time,
+			(total_stop.tv_sec - total_start.tv_sec));
 
 	checkCuda(cudaFreeHost(h_x));
 	checkCuda(cudaFreeHost(h_y));
