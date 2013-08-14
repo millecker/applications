@@ -6,7 +6,10 @@
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/hellorootbeer" />
 	<property name="rootbeer.classes" value="HelloRootbeerKernel.class" />
+	<!--
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerGpuBSP" />
+	-->
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerKernel" />
 	<property name="cpu.class" value="" />
 	<property name="bench.class" value="" />
 	<property name="program" value="hama" />

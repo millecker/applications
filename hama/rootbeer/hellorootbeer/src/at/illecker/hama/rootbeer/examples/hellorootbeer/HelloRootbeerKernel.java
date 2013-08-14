@@ -16,7 +16,12 @@
  */
 package at.illecker.hama.rootbeer.examples.hellorootbeer;
 
+import java.util.List;
+
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
+import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class HelloRootbeerKernel implements Kernel {
 
@@ -35,6 +40,39 @@ public class HelloRootbeerKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new HelloRootbeerKernel(0);
+    // new HelloRootbeerKernel(0);
+
+    int blockSize = 512; // threads
+    int gridSize = 128; // blocks
+
+    if (args.length > 0) {
+      gridSize = Integer.parseInt(args[0]);
+    }
+
+    HelloRootbeerKernel kernel = new HelloRootbeerKernel(0);
+    Rootbeer rootbeer = new Rootbeer();
+    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
+
+    // Run GPU Kernels
+    Stopwatch watch = new Stopwatch();
+    watch.start();
+    rootbeer.runAll(kernel);
+    watch.stop();
+
+    System.out.println("HelloRootbeerKernel,GPUTime="
+        + watch.elapsedTimeMillis() + "ms\n");
+
+    List<StatsRow> stats = rootbeer.getStats();
+    for (StatsRow row : stats) {
+      System.out.println("  StatsRow:\n");
+      System.out.println("    init time: " + row.getInitTime() + "\n");
+      System.out.println("    serial time: " + row.getSerializationTime()
+          + "\n");
+      System.out.println("    exec time: " + row.getExecutionTime() + "\n");
+      System.out.println("    deserial time: " + row.getDeserializationTime()
+          + "\n");
+      System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
+      System.out.println("    num threads: " + row.getNumThreads() + "\n");
+    }
   }
 }
