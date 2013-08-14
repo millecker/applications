@@ -56,7 +56,7 @@ public class PiEstimatorCpuBSP extends
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/CPU-"
           + System.currentTimeMillis());
-  private static final long iterations = 1000000000L;
+  private static final long totalIterations = 1000000L;
   // Long.MAX = 9223372036854775807
 
   private String m_masterTask;
@@ -79,35 +79,21 @@ public class PiEstimatorCpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
-    // Stopwatch watch = new Stopwatch();
-    // watch.start();
-
     long seed = System.currentTimeMillis();
     LinearCongruentialRandomGenerator m_lcg = new LinearCongruentialRandomGenerator(
         seed);
 
-    long in = 0;
+    long hits = 0;
     for (long i = 0; i < m_iterations; i++) {
       double x = 2.0 * m_lcg.nextDouble() - 1.0;
       double y = 2.0 * m_lcg.nextDouble() - 1.0;
 
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
-        in++;
+        hits++;
       }
     }
 
-    double intermediate_results = 4.0 * in / m_iterations;
-    // watch.stop();
-
-    // Write log to dfs
-    /*
-     * BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
-     * FileSystem fs = FileSystem.get(peer.getConfiguration());
-     * FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
-     * .getOutputPath(job), peer.getTaskId() + ".log"));
-     * outStream.writeChars("BSP=PiEstimatorCpuBSP,Iterations=" + m_iterations +
-     * ",CPUTime=" + watch.elapsedTimeMillis() + "ms\n"); outStream.close();
-     */
+    double intermediate_results = 4.0 * hits / m_iterations;
 
     // Send result to MasterTask
     peer.send(m_masterTask, new DoubleWritable(intermediate_results));
@@ -178,23 +164,23 @@ public class PiEstimatorCpuBSP extends
 
     if (args.length > 0) {
       if (args.length == 2) {
-        job.setNumBspTask(Integer.parseInt(args[0]));
-        String totalIterations = args[2];
+        int numBspTask = Integer.parseInt(args[0]);
+        job.setNumBspTask(numBspTask);
+        String totalIterations = args[1];
         job.set("piestimator.iterations", "" + Long.parseLong(totalIterations)
-            / job.getNumBspTask());
+            / numBspTask);
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
-        System.out.println("    Argument3=iterations");
+        System.out.println("    Argument3=totalIterations");
         return;
       }
     } else {
       job.setNumBspTask(cluster.getMaxTasks());
-      job.set("piestimator.iterations",
-          "" + PiEstimatorCpuBSP.iterations / job.getNumBspTask());
+      job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.totalIterations
+          / job.getNumBspTask());
     }
     LOG.info("NumBspTask: " + job.getNumBspTask());
-    LOG.info("IterationsTotal: " + PiEstimatorCpuBSP.iterations);
     LOG.info("IterationsPerBspTask: " + job.get("piestimator.iterations"));
 
     long startTime = System.currentTimeMillis();

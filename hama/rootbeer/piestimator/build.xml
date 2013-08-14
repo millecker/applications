@@ -4,16 +4,17 @@
 	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	-->
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<property name="rootbeer.args" value="-maxrregcount 32 -64bit" />
 	<property name="output.file" value="PiEstimator" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="${lib}${file.separator}${rootbeer.version}" />
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/piestimator/gpu" />
 	<property name="rootbeer.classes" value="PiEstimatorKernel.class,ResultList.class,Result.class,LinearCongruentialRandomGenerator.class" />
-	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.gpu.PiEstimatorKernel" />
 	<!--
-	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.gpu.PiEstimatorGpuBSP" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.gpu.PiEstimatorKernel" />
 	-->
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.gpu.PiEstimatorGpuBSP" />
 	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.piestimator.cpu.PiEstimatorCpuBSP" />
 	<property name="bench.class" value="" />
 	<property name="program" value="hama" />

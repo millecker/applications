@@ -64,12 +64,13 @@ public class PiEstimatorKernel implements Kernel {
     // ptxas info : Used 34 registers, 24 bytes smem, 380 bytes cmem[0], 88
     // bytes cmem[2]
 
-    // Only 75% occupancy possible
-    // BlockSize = 768
+    // use -maxrregcount 32
+
+    // BlockSize = 128
     // GridSize = 14
 
-    int calculationsPerThread = 10;
-    int blockSize = 768; // threads
+    int calculationsPerThread = 500;
+    int blockSize = 128; // threads
     int gridSize = 14; // blocks
 
     if (args.length > 0) {
