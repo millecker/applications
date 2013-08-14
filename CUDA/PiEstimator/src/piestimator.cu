@@ -91,7 +91,7 @@ int main(void) {
 	//because we need 3 arrays (h_x, h_y, h_inside)
 	unsigned max_samples = maxbytes / sizeof(float);
 	// Does GPU support sample size?
-	int n = 2e6;
+	int n = 2e8;
 	if (n > max_samples) {
 		n = max_samples;
 	}
@@ -133,7 +133,7 @@ int main(void) {
 	}
 
 	// setup GPU parameters
-	dim3 threads(256);
+	dim3 threads(512);
 	dim3 blocks(divup(n, threads.x));
 	if (blocks.x > 65535) {
 		blocks.y = divup(blocks.x, 65535);
