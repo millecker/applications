@@ -49,9 +49,6 @@ public class PiEstimatorKernel implements Kernel {
       double y = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
 
       Result result = new Result();
-      // result.x = x;
-      // result.y = y;
-      // result.threadId = threadId;
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
         result.hit = 1;
       } else {
@@ -63,12 +60,22 @@ public class PiEstimatorKernel implements Kernel {
 
   public static void main(String[] args) {
 
-    int calculationsPerThread = 1;
-    int blockSize = 512; // threads
-    int gridSize = 128; // blocks
+    // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
+    // ptxas info : Used 34 registers, 24 bytes smem, 380 bytes cmem[0], 88
+    // bytes cmem[2]
+
+    // Only 75% occupancy possible
+    // BlockSize = 768
+    // GridSize = 14
+
+    int calculationsPerThread = 10;
+    int blockSize = 768; // threads
+    int gridSize = 14; // blocks
 
     if (args.length > 0) {
-      gridSize = Integer.parseInt(args[0]);
+      calculationsPerThread = Integer.parseInt(args[0]);
+      blockSize = Integer.parseInt(args[1]);
+      gridSize = Integer.parseInt(args[2]);
     }
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(calculationsPerThread,
@@ -83,7 +90,10 @@ public class PiEstimatorKernel implements Kernel {
     watch.stop();
 
     System.out.println("PiEstimatorKernel,GPUTime=" + watch.elapsedTimeMillis()
-        + "ms\n");
+        + "ms");
+    System.out.println("PiEstimatorKernel,Samples=" + calculationsPerThread
+        * blockSize * gridSize);
+
     List<StatsRow> stats = rootbeer.getStats();
     for (StatsRow row : stats) {
       System.out.println("  StatsRow:\n");

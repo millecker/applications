@@ -18,8 +18,4 @@ package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
 public class Result {
   public int hit = 0;
-  // public int threadId = -1;
-  // public double x = 0;
-  // public double y = 0;
-  // public long seed = 0;
 }

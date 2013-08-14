@@ -1,15 +1,13 @@
 <project>
 	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
 	<property name="output.file" value="HelloRootbeer" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/hellorootbeer" />
 	<property name="rootbeer.classes" value="HelloRootbeerKernel.class" />
-	<!--
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerGpuBSP" />
-	-->
-	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.hellorootbeer.HelloRootbeerKernel" />
 	<property name="cpu.class" value="" />
 	<property name="bench.class" value="" />
 	<property name="program" value="hama" />
