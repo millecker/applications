@@ -49,9 +49,9 @@ public class PiEstimatorKernel implements Kernel {
       double y = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
 
       Result result = new Result();
-      result.x = x;
-      result.y = y;
-      result.threadId = threadId;
+      // result.x = x;
+      // result.y = y;
+      // result.threadId = threadId;
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
         result.hit = 1;
       } else {
@@ -63,14 +63,18 @@ public class PiEstimatorKernel implements Kernel {
 
   public static void main(String[] args) {
 
-    int m_calculationsPerThread = 1;
-    int m_blockSize = 512; // threads
-    int m_gridSize = 256; // blocks
+    int calculationsPerThread = 1;
+    int blockSize = 512; // threads
+    int gridSize = 128; // blocks
 
-    PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
+    if (args.length > 0) {
+      gridSize = Integer.parseInt(args[0]);
+    }
+
+    PiEstimatorKernel kernel = new PiEstimatorKernel(calculationsPerThread,
         System.currentTimeMillis());
     Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
+    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
 
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
