@@ -58,12 +58,13 @@ public class PiEstimatorGpuBSP extends
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/GPU-"
           + System.currentTimeMillis());
-  private static final long totalIterations = 1000000L;
+  private static final long totalIterations = 896000000L;
   // Long.MAX = 9223372036854775807
 
-  private static final int gridSize = 14; // gridSize = amount of blocks and
-                                          // multiprocessors
-  private static final int blockSize = 128; // blockSize = amount of threads
+  // gridSize = amount of blocks and multiprocessors
+  private static final int gridSize = 14;
+  // blockSize = amount of threads
+  private static final int blockSize = 128;
   // threads
 
   private String m_masterTask;
@@ -130,15 +131,23 @@ public class PiEstimatorGpuBSP extends
       outStream.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
       outStream.writeChars("    num threads: " + row.getNumThreads() + "\n");
     }
-    outStream.close();
 
     // Get GPU results
-    long hits = 0;
+    long totalHits = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
-      hits += result.hit;
+      totalHits += result.hits;
     }
-    double intermediate_results = 4.0 * hits / resultList.size();
+    double intermediate_results = 4.0 * totalHits
+        / (m_calculationsPerThread * resultList.size());
+
+    outStream.writeChars("totalHits: " + totalHits + "\n");
+    outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
+        + "\n");
+    outStream.writeChars("results: " + resultList.size() + "\n");
+    outStream.writeChars("calculationsTotal: " + m_calculationsPerThread
+        * resultList.size() + "\n");
+    outStream.close();
 
     // Send result to MasterTask
     peer.send(m_masterTask, new DoubleWritable(intermediate_results));

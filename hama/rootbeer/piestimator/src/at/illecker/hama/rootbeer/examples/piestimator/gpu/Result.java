@@ -17,5 +17,5 @@
 package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
 public class Result {
-  public int hit = 0;
+  public long hits = 0;
 }

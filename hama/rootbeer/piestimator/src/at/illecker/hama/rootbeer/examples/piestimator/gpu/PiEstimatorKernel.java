@@ -44,32 +44,32 @@ public class PiEstimatorKernel implements Kernel {
     LinearCongruentialRandomGenerator lcg = new LinearCongruentialRandomGenerator(
         seed / threadId);
 
+    long hits = 0;
     for (int i = 0; i < iterations; i++) {
       double x = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
       double y = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
 
-      Result result = new Result();
       if ((Math.sqrt(x * x + y * y) < 1.0)) {
-        result.hit = 1;
-      } else {
-        result.hit = 0;
+        hits++;
       }
-      resultList.add(result);
     }
+    Result result = new Result();
+    result.hits = hits;
+    resultList.add(result);
   }
 
   public static void main(String[] args) {
 
     // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
-    // ptxas info : Used 34 registers, 24 bytes smem, 380 bytes cmem[0], 88
-    // bytes cmem[2]
+    // Used 35 registers, 24 bytes smem, 380 bytes cmem[0], 88 bytes cmem[2]
 
-    // use -maxrregcount 32
+
+    // using -maxrregcount 32
 
     // BlockSize = 128
     // GridSize = 14
 
-    int calculationsPerThread = 500;
+    int calculationsPerThread = 500000;
     int blockSize = 128; // threads
     int gridSize = 14; // blocks
 
@@ -109,17 +109,19 @@ public class PiEstimatorKernel implements Kernel {
     }
 
     // Get GPU results
-    long hits = 0;
-    long count = 0;
+    long totalHits = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
-      // System.out.println("Result[" + count + "]: threadId=" + result.threadId
-      // + " result.hit=" + result.hit + " x=" + result.x + " y=" + result.y);
-      hits += result.hit;
-      count++;
+      totalHits += result.hits;
     }
-    double result = 4.0 * hits / count;
+    double result = 4.0 * totalHits
+        / (calculationsPerThread * resultList.size());
 
     System.out.println("Pi: " + result);
+    System.out.println("totalHits: " + totalHits);
+    System.out.println("calculationsPerThread: " + calculationsPerThread);
+    System.out.println("results: " + resultList.size());
+    System.out.println("calculationsTotal: " + calculationsPerThread
+        * resultList.size());
   }
 }

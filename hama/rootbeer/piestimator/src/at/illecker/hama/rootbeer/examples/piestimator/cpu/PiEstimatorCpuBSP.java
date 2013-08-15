@@ -56,7 +56,7 @@ public class PiEstimatorCpuBSP extends
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/CPU-"
           + System.currentTimeMillis());
-  private static final long totalIterations = 1000000L;
+  private static final long totalIterations = 896000000L;
   // Long.MAX = 9223372036854775807
 
   private String m_masterTask;
@@ -181,7 +181,9 @@ public class PiEstimatorCpuBSP extends
           / job.getNumBspTask());
     }
     LOG.info("NumBspTask: " + job.getNumBspTask());
-    LOG.info("IterationsPerBspTask: " + job.get("piestimator.iterations"));
+    long totalIterations = Long.parseLong(job.get("piestimator.iterations"));
+    LOG.info("TotalIterations: " + totalIterations * job.getNumBspTask());
+    LOG.info("IterationsPerBspTask: " + totalIterations);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
