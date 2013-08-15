@@ -46,6 +46,7 @@
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="" />
 	<property name="rootbeer.class" value="" />
+	<property name="kernel.class" value="" />
 	<property name="gpu.class" value="" />
 	<property name="cpu.class" value="" />
 	<property name="bench.class" value="" />
@@ -179,16 +180,18 @@
 			</sequential>
 		</for>
 		<echo>Exclude rootbeer classes: ${rootbeer.exclude.classes}</echo>
+		<!-- set empty if its not available -->
+		<property name="{jar.main.class}" value="" />
 		<jar destfile="${output.file-jar}">
 			<zipfileset dir="${build.dir}" excludes="${rootbeer.exclude.classes}" />
 			<zipgroupfileset dir="." includes="${output.file-rb-gpu-jar}" />
 			<!-- include .rootbeer folder for cudalibs -->
 			<zipfileset dir="${user.home}${file.separator}${rootbeer.home}" prefix="${rootbeer.home}" />
 			<manifest>
-				<attribute name="Main-Class" value="${gpu.class}" />
+				<attribute name="Main-Class" value="${jar.main.class}" />
 			</manifest>
 		</jar>
-		<echo>Main-Class: ${gpu.class}</echo>
+		<echo>Main-Class: ${jar.main.class}</echo>
 		<echo>Included rootbeer folder: ${user.home}${file.separator}${rootbeer.home}</echo>
 	</target>
 
@@ -244,7 +247,9 @@
 			</condition>
 		</fail>
 		<delete file="${output.file-rb-jar}" />
-		<antcall target="-jar-gpu-combine" />
+		<antcall target="-jar-gpu-combine">
+			<param name="jar.main.class" value="${jar.main.class}" />
+		</antcall>
 		<delete file="${output.file-rb-gpu-jar}" />
 		<!-- Default: include libraries, if was not set before-->
 		<property name="jar-gpu.include.libs" value="true" />
@@ -398,6 +403,7 @@
 				<antcall target="jar-gpu">
 					<param name="rootbeer.arg" value="${rootbeer.args}" />
 					<param name="jar-gpu.include.libs" value="true" />
+					<param name="jar.main.class" value="${gpu.class}" />
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
@@ -433,6 +439,7 @@
 				<antcall target="jar-gpu">
 					<param name="rootbeer.arg" value="-nemu ${rootbeer.args}" />
 					<param name="jar-gpu.include.libs" value="true" />
+					<param name="jar.main.class" value="${gpu.class}" />
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
@@ -468,6 +475,7 @@
 				<antcall target="jar-gpu">
 					<param name="rootbeer.arg" value="-jemu ${rootbeer.args}" />
 					<param name="jar-gpu.include.libs" value="true" />
+					<param name="jar.main.class" value="${gpu.class}" />
 				</antcall>
 				<antcall target="-run-program">
 					<param name="program.bin" value="${program}" />
@@ -529,6 +537,34 @@
 					<param name="program.bin" value="java" />
 					<param name="program.bin.args" value="${bench.java.arg.xmx} -jar" />
 					<param name="application.main.jar" value="${output.file-bench-jar}" />
+				</antcall>
+			</else>
+		</if>
+	</target>
+	
+	<!-- ****************************************************************** -->
+	<!-- TARGET run-kernel                                                  -->
+	<!-- Run Kernel jar                                                     -->
+	<!-- ****************************************************************** -->
+	<target name="run-kernel">
+		<echo>RUN Kernel for ${output.file}</echo>
+		<if>
+			<equals arg1="${kernel.class}" arg2="" />
+			<then>
+				<echo>Missing Kernel class {kernel.class} specification in build.xml!</echo>
+				<echo>No Kernel implementation available!</echo>
+			</then>
+			<else>
+				<antcall target="clean" />
+				<antcall target="jar-gpu">
+					<param name="rootbeer.arg" value="${rootbeer.args}" />
+					<param name="jar-gpu.include.libs" value="true" />
+					<param name="jar.main.class" value="${kernel.class}" />
+				</antcall>
+				<antcall target="-run-program">
+					<param name="program.bin" value="java" />
+					<param name="program.bin.args" value="-Xmx4G -jar" />
+					<param name="application.main.jar" value="${output.file-gpu-jar}" />
 				</antcall>
 			</else>
 		</if>
