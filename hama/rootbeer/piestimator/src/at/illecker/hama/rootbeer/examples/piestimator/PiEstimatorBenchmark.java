@@ -60,7 +60,6 @@ public class PiEstimatorBenchmark extends Benchmark {
   private int m_blockSize;
   private int m_gridSize;
   private long m_totalIterations;
-  private int m_numBspTask;
 
   @Override
   protected void setUp() throws Exception {
@@ -110,7 +109,6 @@ public class PiEstimatorBenchmark extends Benchmark {
     m_blockSize = PiEstimatorGpuBSP.blockSize;
     m_gridSize = PiEstimatorGpuBSP.gridSize;
     m_totalIterations = m_blockSize * m_gridSize * n;
-    m_numBspTask = 1;
 
     System.out.println("Benchmark PiEstimator[blockSize=" + m_blockSize
         + ",gridSize=" + m_gridSize + "] n=" + n + ", totalSamples="
