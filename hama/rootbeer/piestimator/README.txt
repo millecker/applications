@@ -25,4 +25,11 @@ ant run-gpu-jemu [-DnumBspTask=1 -Diterations=896000000]
 # Submit CPU Task to Hama
 ant run-cpu [-DnumBspTask=1 -Diterations=896000000]
 
+# Run Benchmark
+ant run-bench -DbenchTimeLimit='--time-limit 300s' \
+  -DbenchInstrument='--instrument macro' \
+  -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
+  -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'
+  [-DbenchTrials='--trials 1']
+
 ###############################################################################

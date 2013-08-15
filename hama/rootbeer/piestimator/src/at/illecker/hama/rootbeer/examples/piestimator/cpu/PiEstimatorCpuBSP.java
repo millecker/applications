@@ -61,6 +61,7 @@ public class PiEstimatorCpuBSP extends
 
   private String m_masterTask;
   private long m_iterations;
+  private long m_calculationsPerBspTask;
 
   @Override
   public void setup(
@@ -72,6 +73,8 @@ public class PiEstimatorCpuBSP extends
 
     this.m_iterations = Long.parseLong(peer.getConfiguration().get(
         "piestimator.iterations"));
+
+    m_calculationsPerBspTask = divup(m_iterations, peer.getNumPeers());
   }
 
   @Override
@@ -84,7 +87,7 @@ public class PiEstimatorCpuBSP extends
         seed);
 
     long hits = 0;
-    for (long i = 0; i < m_iterations; i++) {
+    for (long i = 0; i < m_calculationsPerBspTask; i++) {
       double x = 2.0 * m_lcg.nextDouble() - 1.0;
       double y = 2.0 * m_lcg.nextDouble() - 1.0;
 
@@ -93,7 +96,7 @@ public class PiEstimatorCpuBSP extends
       }
     }
 
-    double intermediate_results = 4.0 * hits / m_iterations;
+    double intermediate_results = 4.0 * hits / m_calculationsPerBspTask;
 
     // Send result to MasterTask
     peer.send(m_masterTask, new DoubleWritable(intermediate_results));
@@ -118,9 +121,18 @@ public class PiEstimatorCpuBSP extends
 
       pi = pi / numMessages;
       peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (numMessages * m_iterations)
+          + (numMessages * m_calculationsPerBspTask)
           // + (peer.getNumPeers() * m_threadCount * m_iterations)
           + " points is"), new DoubleWritable(pi));
+    }
+  }
+
+  static long divup(long x, long y) {
+    if (x % y != 0) {
+      // round up
+      return ((x + y - 1) / y);
+    } else {
+      return x / y;
     }
   }
 
@@ -138,12 +150,15 @@ public class PiEstimatorCpuBSP extends
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  public static void main(String[] args) throws InterruptedException,
-      IOException, ClassNotFoundException {
-    // BSP job configuration
-    HamaConfiguration conf = new HamaConfiguration();
+  public static BSPJob createPiEstimatorCpuBSPConf(Path outPath)
+      throws IOException {
+    return createPiEstimatorCpuBSPConf(new HamaConfiguration(), outPath);
+  }
 
-    BSPJob job = new BSPJob(conf);
+  public static BSPJob createPiEstimatorCpuBSPConf(
+      HamaConfiguration initialConf, Path outPath) throws IOException {
+
+    BSPJob job = new BSPJob(initialConf);
     // Set the job name
     job.setJobName("Rootbeer CPU PiEstimatior");
     // set the BSP class which shall be executed
@@ -152,23 +167,29 @@ public class PiEstimatorCpuBSP extends
     job.setJarByClass(PiEstimatorCpuBSP.class);
 
     job.setInputFormat(NullInputFormat.class);
+
+    job.setOutputFormat(TextOutputFormat.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(DoubleWritable.class);
-    job.setOutputFormat(TextOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+    FileOutputFormat.setOutputPath(job, outPath);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
 
-    BSPJobClient jobClient = new BSPJobClient(conf);
+    return job;
+  }
+
+  public static void main(String[] args) throws InterruptedException,
+      IOException, ClassNotFoundException {
+
+    BSPJob job = createPiEstimatorCpuBSPConf(TMP_OUTPUT);
+
+    BSPJobClient jobClient = new BSPJobClient(job.getConfiguration());
     ClusterStatus cluster = jobClient.getClusterStatus(true);
 
     if (args.length > 0) {
       if (args.length == 2) {
-        int numBspTask = Integer.parseInt(args[0]);
-        job.setNumBspTask(numBspTask);
-        String totalIterations = args[1];
-        job.set("piestimator.iterations", "" + Long.parseLong(totalIterations)
-            / numBspTask);
+        job.setNumBspTask(Integer.parseInt(args[0]));
+        job.set("piestimator.iterations", args[1]);
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
@@ -177,13 +198,12 @@ public class PiEstimatorCpuBSP extends
       }
     } else {
       job.setNumBspTask(cluster.getMaxTasks());
-      job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.totalIterations
-          / job.getNumBspTask());
+      job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.totalIterations);
     }
     LOG.info("NumBspTask: " + job.getNumBspTask());
     long totalIterations = Long.parseLong(job.get("piestimator.iterations"));
-    LOG.info("TotalIterations: " + totalIterations * job.getNumBspTask());
-    LOG.info("IterationsPerBspTask: " + totalIterations);
+    LOG.info("TotalIterations: " + totalIterations);
+    LOG.info("IterationsPerBspTask: " + totalIterations / job.getNumBspTask());
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {

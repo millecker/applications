@@ -309,6 +309,7 @@
 		<antcall target="jar-gpu">
 			<param name="rootbeer.arg" value="${rootbeer.args}" />
 			<param name="jar-gpu.include.libs" value="false" />
+			<param name="jar.main.class" value="${bench.class}" />
 		</antcall>
 		<jar destfile="${output.file-bench-tmp-jar}">
 			<zipgroupfileset dir="." includes="${output.file-gpu-jar}" />

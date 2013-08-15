@@ -62,9 +62,9 @@ public class PiEstimatorGpuBSP extends
   // Long.MAX = 9223372036854775807
 
   // gridSize = amount of blocks and multiprocessors
-  private static final int gridSize = 14;
+  public static final int gridSize = 14;
   // blockSize = amount of threads
-  private static final int blockSize = 128;
+  public static final int blockSize = 128;
   // threads
 
   private String m_masterTask;
@@ -200,12 +200,15 @@ public class PiEstimatorGpuBSP extends
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  public static void main(String[] args) throws InterruptedException,
-      IOException, ClassNotFoundException {
-    // BSP job configuration
-    HamaConfiguration conf = new HamaConfiguration();
+  public static BSPJob createPiEstimatorGpuBSPConf(Path outPath)
+      throws IOException {
+    return createPiEstimatorGpuBSPConf(new HamaConfiguration(), outPath);
+  }
 
-    BSPJob job = new BSPJob(conf);
+  public static BSPJob createPiEstimatorGpuBSPConf(
+      HamaConfiguration initialConf, Path outPath) throws IOException {
+
+    BSPJob job = new BSPJob(initialConf);
     // Set the job name
     job.setJobName("Rootbeer GPU PiEstimatior");
     // set the BSP class which shall be executed
@@ -214,12 +217,21 @@ public class PiEstimatorGpuBSP extends
     job.setJarByClass(PiEstimatorGpuBSP.class);
 
     job.setInputFormat(NullInputFormat.class);
+
+    job.setOutputFormat(TextOutputFormat.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(DoubleWritable.class);
-    job.setOutputFormat(TextOutputFormat.class);
-    FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+    FileOutputFormat.setOutputPath(job, outPath);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
+
+    return job;
+  }
+
+  public static void main(String[] args) throws InterruptedException,
+      IOException, ClassNotFoundException {
+
+    BSPJob job = createPiEstimatorGpuBSPConf(TMP_OUTPUT);
 
     if (args.length > 0) {
       if (args.length == 2) {
