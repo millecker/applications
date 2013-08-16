@@ -59,7 +59,7 @@ public class PiEstimatorCpuBSP extends
 
   public static final String CONF_ITERATIONS = "piestimator.iterations";
 
-  private static final long totalIterations = 896000000L;
+  private static final long totalIterations = 1433600000L;
   // Long.MAX = 9223372036854775807
 
   private String m_masterTask;

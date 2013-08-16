@@ -64,13 +64,13 @@ public class PiEstimatorGpuBSP extends
   public static final String CONF_GRIDSIZE = "piestimator.gridSize";
   public static final String CONF_ITERATIONS = "piestimator.iterations";
 
-  private static final long totalIterations = 896000000L;
+  private static final long totalIterations = 1433600000L;
   // Long.MAX = 9223372036854775807
 
   // gridSize = amount of blocks and multiprocessors
   public static final int gridSize = 14;
   // blockSize = amount of threads
-  public static final int blockSize = 128;
+  public static final int blockSize = 1024;
 
   private String m_masterTask;
   private long m_iterations;
@@ -122,15 +122,13 @@ public class PiEstimatorGpuBSP extends
 
     // Get GPU results
     long totalHits = 0;
-    long totalHitsBlockMaster = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
       totalHits += result.hits;
-      totalHitsBlockMaster += result.blockHits;
     }
-    
+
     double intermediate_results = 4.0 * totalHits
-        / (m_calculationsPerThread * resultList.size());
+        / (m_calculationsPerThread * m_blockSize * m_gridSize);
 
     // DEBUG
     if (m_isDebuggingEnabled) {
@@ -156,12 +154,11 @@ public class PiEstimatorGpuBSP extends
       }
 
       outStream.writeChars("totalHits: " + totalHits + "\n");
-      outStream.writeChars("totalHitsBlockMaster: " + totalHitsBlockMaster + "\n");
       outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
           + "\n");
       outStream.writeChars("results: " + resultList.size() + "\n");
       outStream.writeChars("calculationsTotal: " + m_calculationsPerThread
-          * resultList.size() + "\n");
+          * m_blockSize * m_gridSize + "\n");
       outStream.close();
     }
 

@@ -61,7 +61,6 @@ public class PiEstimatorKernel implements Kernel {
     RootbeerGpu.syncthreads();
 
     // do reduction in shared memory
-    // 1-bit left shift = multiplication by two to the power 1
     // 1-bit right shift = divide by two to the power 1
     for (int s = RootbeerGpu.getBlockDimx() / 2; s > 0; s >>= 1) {
 
@@ -75,26 +74,27 @@ public class PiEstimatorKernel implements Kernel {
       RootbeerGpu.syncthreads();
     }
 
-    Result result = new Result();
-    result.hits = hits;
     if (blockThreadId == 0) {
-      result.blockHits = RootbeerGpu.getSharedLong(blockThreadId * 8);
+      Result result = new Result();
+      result.hits = RootbeerGpu.getSharedLong(blockThreadId * 8);
+      resultList.add(result);
     }
-    resultList.add(result);
   }
 
   public static void main(String[] args) {
 
     // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
-    // Used 35 registers, 24 bytes smem, 380 bytes cmem[0], 88 bytes cmem[2]
+    // ptxas info : Used 39 registers, 40984 bytes smem, 380 bytes cmem[0], 88
+    // bytes cmem[2]
 
     // using -maxrregcount 32
+    // using -shared-mem-size 1024*8 + 12 = 8192 + 12 = 8204
 
-    // BlockSize = 128
+    // BlockSize = 1024
     // GridSize = 14
 
-    int calculationsPerThread = 500000;
-    int blockSize = 128; // threads
+    int calculationsPerThread = 100000;
+    int blockSize = 1024; // threads
     int gridSize = 14; // blocks
 
     if (args.length > 0) {
@@ -138,14 +138,15 @@ public class PiEstimatorKernel implements Kernel {
     for (Result result : resultList) {
       totalHits += result.hits;
     }
+
     double result = 4.0 * totalHits
-        / (calculationsPerThread * resultList.size());
+        / (calculationsPerThread * blockSize * gridSize);
 
     System.out.println("Pi: " + result);
     System.out.println("totalHits: " + totalHits);
     System.out.println("calculationsPerThread: " + calculationsPerThread);
     System.out.println("results: " + resultList.size());
     System.out.println("calculationsTotal: " + calculationsPerThread
-        * resultList.size());
+        * blockSize * gridSize);
   }
 }

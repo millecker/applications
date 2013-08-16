@@ -4,7 +4,7 @@
 	<property name="rootbeer.version" value="rootbeer-1.0.47.jar" />
 	-->
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<property name="rootbeer.args" value="-maxrregcount 32 -64bit" />
+	<property name="rootbeer.args" value="-maxrregcount 32 -shared-mem-size 8204 -64bit" />
 	<property name="output.file" value="PiEstimator" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="${lib}${file.separator}${rootbeer.version}" />
