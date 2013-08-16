@@ -18,7 +18,7 @@ if (is.na(args[1])) {
 
 # Load result file
 caliperJsonFile <- args[1]
-#caliperJsonFile <- "results/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-15T15:36:42Z_1_bspTask.json"
+# caliperJsonFile <- "results/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13:37:02Z.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -207,14 +207,37 @@ benchmarkTableAvg
 #cat("Info: Summary of benchmarkTable\n")
 #summary(benchmarkTable)
 
-# Generate Bar chart of average data
+
 title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
                #".",benchmarkTable$MethodName[1],
                " with ",benchmarkTable$Measurements[1],
                " measurements ", sep="")
-xaxisDesc <- paste("Parameter", sep="")
-yaxisDesc <- paste("Time (",benchmarkTableAvg$unit[1],")", sep="")
 
+xaxisDesc <- paste("Parameter", sep="")
+if (!is.na(args[3])) {
+  xaxisDesc <- paste("Parameter", args[3])
+}
+
+if (is.na(args[2])) {
+  yaxisDesc <- paste("Time (",benchmarkTableAvg$unit[1],")", sep="")
+} else {
+  yaxisDesc <- paste("Time", sep="")
+  if (!is.na(args[4])) {
+    yaxisDesc <- paste("Time", args[4])
+  }
+}
+
+# Align magnitude
+if (!is.na(args[2])) {
+  power <- as.numeric(args[2])
+  benchmarkTableAvgAligned <- within(benchmarkTableAvg, magnitude <- magnitude / 10^power)
+  benchmarkTableAvg <- benchmarkTableAvgAligned
+  
+  benchmarkTableAligned <- within(benchmarkTable, weighted_magnitude  <- weighted_magnitude  / 10^power)
+  benchmarkTable <- benchmarkTableAligned
+}
+
+# Generate Bar chart of average data
 ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
   geom_bar(stat="identity",color="black") +
   xlab(xaxisDesc) +
@@ -247,20 +270,20 @@ cat(message)
 
 
 # Generate CPU + GPU plot
-if (!is.na(args[2])) {
+if (!is.na(args[5]) && args[5]=='true') {
   power <- as.numeric(args[2])
   #cat(paste("Generate geom_line plot and normalize magnitude with 10^",power,"\n",sep=""))
   
   benchmarkTableAvgSec <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
   #benchmarkTableAvgSec <- transform(benchmarkTableAvgSec,n = as.numeric(as.character(benchmarkTableAvgSec$n)))
   # benchmarkTableAvgSec
-  #str(benchmarkTableAvgSec)
+  # str(benchmarkTableAvgSec)
   #benchmarkTableAvgSec <- within(benchmarkTableAvgSec, iterations <- n * constant)
   ggplot(benchmarkTableAvgSec, aes(x=n,y=magnitude,colour=type,group=type)) + 
     geom_point(size=5) + 
     geom_line() +
-    xlab(paste("N", sep="")) +
-    ylab(paste("Time (sec)", sep="")) +
+    xlab(paste("N",args[3])) +
+    ylab(paste("Time",args[4])) +
     ggtitle(title) +
     theme(legend.position = "bottom")
   
