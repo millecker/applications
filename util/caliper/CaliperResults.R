@@ -18,8 +18,7 @@ if (is.na(args[1])) {
 
 # Load result file
 caliperJsonFile <- args[1]
-#caliperJsonFile <- "results/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13:37:02Z.json"
-#caliperJsonFile <- "results/test.json"
+#caliperJsonFile <- "results/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-15T15:36:42Z_1_bspTask.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -205,8 +204,8 @@ cat("BenchmarkTable Average Execution Time avg(magnitude/weight)\n")
 benchmarkTableAvg
 #str(benchmarkTableAvg)
 
-cat("Info: Summary of benchmarkTable\n")
-summary(benchmarkTable)
+#cat("Info: Summary of benchmarkTable\n")
+#summary(benchmarkTable)
 
 # Generate Bar chart of average data
 title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
@@ -226,7 +225,7 @@ ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario)))
 outputfile <- paste(caliperJsonFile,"_avg_barplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
 
-message <- paste("Info: Saved Benchmark Barplot in",outputfile,"\n")
+message <- paste("Info: Saved Barplot in",outputfile,"\n")
 cat(message)
 
 
@@ -243,8 +242,42 @@ ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scen
 outputfile <- paste(caliperJsonFile,"_boxplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
 
-message <- paste("Info: Saved Benchmark Boxplot in",outputfile,"\n")
+message <- paste("Info: Saved Boxplot in",outputfile,"\n")
 cat(message)
 
+
+# Generate CPU + GPU plot
+if (!is.na(args[2])) {
+  power <- as.numeric(args[2])
+  #cat(paste("Generate geom_line plot and normalize magnitude with 10^",power,"\n",sep=""))
+  
+  benchmarkTableAvgSec <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
+  #benchmarkTableAvgSec <- transform(benchmarkTableAvgSec,n = as.numeric(as.character(benchmarkTableAvgSec$n)))
+  # benchmarkTableAvgSec
+  #str(benchmarkTableAvgSec)
+  #benchmarkTableAvgSec <- within(benchmarkTableAvgSec, iterations <- n * constant)
+  ggplot(benchmarkTableAvgSec, aes(x=n,y=magnitude,colour=type,group=type)) + 
+    geom_point(size=5) + 
+    geom_line() +
+    xlab(paste("N", sep="")) +
+    ylab(paste("Time (sec)", sep="")) +
+    ggtitle(title) +
+    theme(legend.position = "bottom")
+  
+  outputfile <- paste(caliperJsonFile,"_geom_line.pdf", sep="")
+  ggsave(file=outputfile, scale=1.5)
+  message <- paste("Info: Saved GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  cat(message)
+}
+# benchmarkTableAvgSecCPU <- sqldf('SELECT scenario,n,(avg(magnitude/weight) / 1000000000) as magnitude FROM benchmarkTable WHERE type=="CPU" GROUP BY scenario')
+# ggplot(benchmarkTableAvgSecCPU, aes(x=n,y=magnitude,group=1)) + geom_point() + geom_line() 
+# outputfile <- paste(caliperJsonFile,"_cpu.pdf", sep="")
+# ggsave(file=outputfile, scale=1)
+
+# benchmarkTableAvgSecGPU <- sqldf('SELECT scenario,n,(avg(magnitude/weight) / 1000000000) as magnitude FROM benchmarkTable WHERE type=="GPU" GROUP BY scenario')
+# ggplot(benchmarkTableAvgSecGPU, aes(x=n,y=magnitude,group=1)) + geom_point() + geom_line() 
+# outputfile <- paste(caliperJsonFile,"_gpu.pdf", sep="")
+# ggsave(file=outputfile, scale=1)
+  
 # Delete temporary created plot file
 unlink("Rplots.pdf")
