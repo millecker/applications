@@ -58,6 +58,12 @@ public class PiEstimatorGpuBSP extends
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/GPU-"
           + System.currentTimeMillis());
+
+  public static final String CONF_DEBUG = "piestimator.gpu.debug";
+  public static final String CONF_BLOCKSIZE = "piestimator.blockSize";
+  public static final String CONF_GRIDSIZE = "piestimator.gridSize";
+  public static final String CONF_ITERATIONS = "piestimator.iterations";
+
   private static final long totalIterations = 896000000L;
   // Long.MAX = 9223372036854775807
 
@@ -65,13 +71,13 @@ public class PiEstimatorGpuBSP extends
   public static final int gridSize = 14;
   // blockSize = amount of threads
   public static final int blockSize = 128;
-  // threads
 
   private String m_masterTask;
   private long m_iterations;
   private long m_calculationsPerThread;
   private int m_gridSize;
   private int m_blockSize;
+  private boolean m_isDebuggingEnabled;
 
   @Override
   public void setup(
@@ -81,14 +87,17 @@ public class PiEstimatorGpuBSP extends
     // Choose one as a master
     this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 
-    this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-        "piestimator.iterations"));
+    this.m_isDebuggingEnabled = peer.getConfiguration().getBoolean(CONF_DEBUG,
+        false);
 
-    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.gridSize"));
+    this.m_iterations = Long.parseLong(peer.getConfiguration().get(
+        CONF_ITERATIONS));
 
     this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
-        "piestimator.blockSize"));
+        CONF_BLOCKSIZE));
+
+    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
+        CONF_GRIDSIZE));
 
     int threadCount = m_blockSize * m_gridSize;
 
@@ -111,27 +120,6 @@ public class PiEstimatorGpuBSP extends
     rootbeer.runAll(kernel);
     watch.stop();
 
-    // Write log to dfs
-    BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
-    FileSystem fs = FileSystem.get(peer.getConfiguration());
-    FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
-        .getOutputPath(job), peer.getTaskId() + ".log"));
-
-    outStream.writeChars("BSP=PiEstimatorGpuBSP,Iterations=" + m_iterations
-        + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
-    List<StatsRow> stats = rootbeer.getStats();
-    for (StatsRow row : stats) {
-      outStream.writeChars("  StatsRow:\n");
-      outStream.writeChars("    init time: " + row.getInitTime() + "\n");
-      outStream.writeChars("    serial time: " + row.getSerializationTime()
-          + "\n");
-      outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
-      outStream.writeChars("    deserial time: " + row.getDeserializationTime()
-          + "\n");
-      outStream.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
-      outStream.writeChars("    num threads: " + row.getNumThreads() + "\n");
-    }
-
     // Get GPU results
     long totalHits = 0;
     List<Result> resultList = kernel.resultList.getList();
@@ -141,13 +129,37 @@ public class PiEstimatorGpuBSP extends
     double intermediate_results = 4.0 * totalHits
         / (m_calculationsPerThread * resultList.size());
 
-    outStream.writeChars("totalHits: " + totalHits + "\n");
-    outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
-        + "\n");
-    outStream.writeChars("results: " + resultList.size() + "\n");
-    outStream.writeChars("calculationsTotal: " + m_calculationsPerThread
-        * resultList.size() + "\n");
-    outStream.close();
+    // DEBUG
+    if (m_isDebuggingEnabled) {
+      // Write log to dfs
+      BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
+      FileSystem fs = FileSystem.get(peer.getConfiguration());
+      FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
+          .getOutputPath(job), peer.getTaskId() + ".log"));
+
+      outStream.writeChars("BSP=PiEstimatorGpuBSP,Iterations=" + m_iterations
+          + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
+      List<StatsRow> stats = rootbeer.getStats();
+      for (StatsRow row : stats) {
+        outStream.writeChars("  StatsRow:\n");
+        outStream.writeChars("    init time: " + row.getInitTime() + "\n");
+        outStream.writeChars("    serial time: " + row.getSerializationTime()
+            + "\n");
+        outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
+        outStream.writeChars("    deserial time: "
+            + row.getDeserializationTime() + "\n");
+        outStream.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
+        outStream.writeChars("    num threads: " + row.getNumThreads() + "\n");
+      }
+
+      outStream.writeChars("totalHits: " + totalHits + "\n");
+      outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
+          + "\n");
+      outStream.writeChars("results: " + resultList.size() + "\n");
+      outStream.writeChars("calculationsTotal: " + m_calculationsPerThread
+          * resultList.size() + "\n");
+      outStream.close();
+    }
 
     // Send result to MasterTask
     peer.send(m_masterTask, new DoubleWritable(intermediate_results));
@@ -236,7 +248,7 @@ public class PiEstimatorGpuBSP extends
     if (args.length > 0) {
       if (args.length == 2) {
         job.setNumBspTask(Integer.parseInt(args[0]));
-        job.set("piestimator.iterations", args[1]);
+        job.set(CONF_ITERATIONS, args[1]);
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
@@ -245,17 +257,17 @@ public class PiEstimatorGpuBSP extends
       }
     } else {
       job.setNumBspTask(1);
-      job.set("piestimator.iterations", "" + PiEstimatorGpuBSP.totalIterations);
+      job.set(CONF_ITERATIONS, "" + PiEstimatorGpuBSP.totalIterations);
     }
-    LOG.info("NumBspTask: " + job.getNumBspTask());
-    long totalIterations = Long.parseLong(job.get("piestimator.iterations"));
-    LOG.info("TotalIterations: " + totalIterations);
 
+    LOG.info("NumBspTask: " + job.getNumBspTask());
+    LOG.info("TotalIterations: " + job.get(CONF_ITERATIONS));
     LOG.info("BlockSize: " + blockSize);
     LOG.info("GridSize: " + gridSize);
 
-    job.set("piestimator.gridSize", "" + gridSize);
-    job.set("piestimator.blockSize", "" + blockSize);
+    job.set(CONF_BLOCKSIZE, "" + blockSize);
+    job.set(CONF_GRIDSIZE, "" + gridSize);
+    job.setBoolean(CONF_DEBUG, true);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {

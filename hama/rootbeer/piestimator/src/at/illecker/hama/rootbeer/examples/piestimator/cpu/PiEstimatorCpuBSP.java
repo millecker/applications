@@ -56,6 +56,9 @@ public class PiEstimatorCpuBSP extends
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/CPU-"
           + System.currentTimeMillis());
+
+  public static final String CONF_ITERATIONS = "piestimator.iterations";
+
   private static final long totalIterations = 896000000L;
   // Long.MAX = 9223372036854775807
 
@@ -72,7 +75,7 @@ public class PiEstimatorCpuBSP extends
     this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 
     this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-        "piestimator.iterations"));
+        CONF_ITERATIONS));
 
     m_calculationsPerBspTask = divup(m_iterations, peer.getNumPeers());
   }
@@ -189,7 +192,7 @@ public class PiEstimatorCpuBSP extends
     if (args.length > 0) {
       if (args.length == 2) {
         job.setNumBspTask(Integer.parseInt(args[0]));
-        job.set("piestimator.iterations", args[1]);
+        job.set(CONF_ITERATIONS, args[1]);
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
@@ -198,10 +201,11 @@ public class PiEstimatorCpuBSP extends
       }
     } else {
       job.setNumBspTask(cluster.getMaxTasks());
-      job.set("piestimator.iterations", "" + PiEstimatorCpuBSP.totalIterations);
+      job.set(CONF_ITERATIONS, "" + PiEstimatorCpuBSP.totalIterations);
     }
+
     LOG.info("NumBspTask: " + job.getNumBspTask());
-    long totalIterations = Long.parseLong(job.get("piestimator.iterations"));
+    long totalIterations = Long.parseLong(job.get(CONF_ITERATIONS));
     LOG.info("TotalIterations: " + totalIterations);
     LOG.info("IterationsPerBspTask: " + totalIterations / job.getNumBspTask());
 
