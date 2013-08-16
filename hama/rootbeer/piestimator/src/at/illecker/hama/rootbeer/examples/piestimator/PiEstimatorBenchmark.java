@@ -40,7 +40,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class PiEstimatorBenchmark extends Benchmark {
 
-  @Param({ "5000", "10000", "50000", "100000", "200000", "300000", "400000",
+  @Param({ "10000", "20000", "50000", "100000", "200000", "300000", "400000",
       "500000", "600000", "700000", "800000", "900000", "1000000" })
   private int n;
 
@@ -118,9 +118,11 @@ public class PiEstimatorBenchmark extends Benchmark {
   @Override
   protected void tearDown() throws Exception {
 
-    // Cleanup
-    // FileSystem fs = FileSystem.get(m_conf);
     printOutput(m_conf, m_OUTPUT_DIR_PATH);
+
+    // Cleanup
+    FileSystem fs = FileSystem.get(m_conf);
+    fs.delete(m_OUTPUT_DIR_PATH, true);
   }
 
   static void printOutput(Configuration conf, Path path) throws IOException {
@@ -187,18 +189,19 @@ public class PiEstimatorBenchmark extends Benchmark {
         job = PiEstimatorGpuBSP.createPiEstimatorGpuBSPConf(
             new HamaConfiguration(m_conf), m_OUTPUT_DIR_PATH);
 
-        job.set("piestimator.blockSize", "" + m_blockSize);
-        job.set("piestimator.gridSize", "" + m_gridSize);
+        job.set(PiEstimatorGpuBSP.CONF_BLOCKSIZE, "" + m_blockSize);
+        job.set(PiEstimatorGpuBSP.CONF_GRIDSIZE, "" + m_gridSize);
         job.setNumBspTask(1);
+        job.set(PiEstimatorGpuBSP.CONF_ITERATIONS, "" + m_totalIterations);
+        job.setBoolean(PiEstimatorGpuBSP.CONF_DEBUG, false);
 
       } else {
         job = PiEstimatorCpuBSP.createPiEstimatorCpuBSPConf(
             new HamaConfiguration(m_conf), m_OUTPUT_DIR_PATH);
 
         job.setNumBspTask(8);
+        job.set(PiEstimatorCpuBSP.CONF_ITERATIONS, "" + m_totalIterations);
       }
-
-      job.set("piestimator.iterations", "" + m_totalIterations);
 
       return (job.waitForCompletion(true) ? 1 : 0);
     }
