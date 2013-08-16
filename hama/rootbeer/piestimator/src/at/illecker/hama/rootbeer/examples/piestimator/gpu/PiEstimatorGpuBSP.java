@@ -122,10 +122,13 @@ public class PiEstimatorGpuBSP extends
 
     // Get GPU results
     long totalHits = 0;
+    long totalHitsBlockMaster = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
       totalHits += result.hits;
+      totalHitsBlockMaster += result.blockHits;
     }
+    
     double intermediate_results = 4.0 * totalHits
         / (m_calculationsPerThread * resultList.size());
 
@@ -153,6 +156,7 @@ public class PiEstimatorGpuBSP extends
       }
 
       outStream.writeChars("totalHits: " + totalHits + "\n");
+      outStream.writeChars("totalHitsBlockMaster: " + totalHitsBlockMaster + "\n");
       outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
           + "\n");
       outStream.writeChars("results: " + resultList.size() + "\n");

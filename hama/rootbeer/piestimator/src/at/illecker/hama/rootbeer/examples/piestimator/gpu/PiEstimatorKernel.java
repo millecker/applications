@@ -53,8 +53,33 @@ public class PiEstimatorKernel implements Kernel {
         hits++;
       }
     }
+
+    int blockThreadId = RootbeerGpu.getThreadIdxx();
+
+    // write to shared memory
+    RootbeerGpu.setSharedLong(blockThreadId * 8, hits);
+    RootbeerGpu.syncthreads();
+
+    // do reduction in shared memory
+    // 1-bit left shift = multiplication by two to the power 1
+    // 1-bit right shift = divide by two to the power 1
+    for (int s = RootbeerGpu.getBlockDimx() / 2; s > 0; s >>= 1) {
+
+      if (blockThreadId < s) {
+        // sh_mem[ltid] += sh_mem[ltid + s];
+        long val1 = RootbeerGpu.getSharedLong(blockThreadId * 8);
+        long val2 = RootbeerGpu.getSharedLong((blockThreadId + s) * 8);
+        RootbeerGpu.setSharedLong(blockThreadId * 8, val1 + val2);
+      }
+
+      RootbeerGpu.syncthreads();
+    }
+
     Result result = new Result();
     result.hits = hits;
+    if (blockThreadId == 0) {
+      result.blockHits = RootbeerGpu.getSharedLong(blockThreadId * 8);
+    }
     resultList.add(result);
   }
 
@@ -62,7 +87,6 @@ public class PiEstimatorKernel implements Kernel {
 
     // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
     // Used 35 registers, 24 bytes smem, 380 bytes cmem[0], 88 bytes cmem[2]
-
 
     // using -maxrregcount 32
 
