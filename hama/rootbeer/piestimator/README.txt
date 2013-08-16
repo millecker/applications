@@ -29,9 +29,9 @@ ant run-cpu [-DnumBspTask=8 -Diterations=1433600000]
 ant run-kernel
 
 # Run Benchmark
-ant run-bench -DbenchTimeLimit='--time-limit 300s' \
+ant run-bench -DbenchTimeLimit='--time-limit 600s' \
   -DbenchInstrument='--instrument macro' \
-  -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
+  -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=7' \
   -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'
   [-DbenchTrials='--trials 1']
 

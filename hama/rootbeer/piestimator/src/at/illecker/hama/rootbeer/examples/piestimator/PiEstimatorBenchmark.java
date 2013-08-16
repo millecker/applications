@@ -40,9 +40,9 @@ import com.google.caliper.runner.CaliperMain;
 
 public class PiEstimatorBenchmark extends Benchmark {
 
-  @Param({ "10000", "20000", "50000", "100000", "200000", "300000", "400000",
-      "500000", "600000", "700000", "800000", "900000", "1000000" })
-  private int n;
+  @Param({ "10000", "25000", "50000", "6000", "70000", "80000", "90000",
+      "100000", "120000", "140000", "160000", "180000", "200000" })
+  private long n;
 
   @Param
   CalcType type;
@@ -108,7 +108,7 @@ public class PiEstimatorBenchmark extends Benchmark {
 
     m_blockSize = PiEstimatorGpuBSP.blockSize;
     m_gridSize = PiEstimatorGpuBSP.gridSize;
-    m_totalIterations = m_blockSize * m_gridSize * n;
+    m_totalIterations = (long) m_blockSize * (long) m_gridSize * n;
 
     System.out.println("Benchmark PiEstimator[blockSize=" + m_blockSize
         + ",gridSize=" + m_gridSize + "] n=" + n + ", totalSamples="
