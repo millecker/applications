@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
@@ -51,7 +52,7 @@ import at.illecker.hama.rootbeer.examples.piestimator.gpu.LinearCongruentialRand
  */
 
 public class PiEstimatorCpuBSP extends
-    BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
+    BSP<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> {
   private static final Log LOG = LogFactory.getLog(PiEstimatorCpuBSP.class);
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/CPU-"
@@ -68,7 +69,7 @@ public class PiEstimatorCpuBSP extends
 
   @Override
   public void setup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
 
     // Choose one as a master
@@ -82,7 +83,7 @@ public class PiEstimatorCpuBSP extends
 
   @Override
   public void bsp(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
     long seed = System.currentTimeMillis();
@@ -99,32 +100,29 @@ public class PiEstimatorCpuBSP extends
       }
     }
 
-    double intermediate_results = 4.0 * hits / m_calculationsPerBspTask;
-
     // Send result to MasterTask
-    peer.send(m_masterTask, new DoubleWritable(intermediate_results));
+    peer.send(m_masterTask, new LongWritable(hits));
     peer.sync();
   }
 
   @Override
   public void cleanup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
 
     if (peer.getPeerName().equals(m_masterTask)) {
 
-      double pi = 0.0;
-
-      int numMessages = peer.getNumCurrentMessages();
-
-      DoubleWritable received;
+      long totalHits = 0;
+      LongWritable received;
       while ((received = peer.getCurrentMessage()) != null) {
-        pi += received.get();
+        totalHits += received.get();
       }
 
-      pi = pi / numMessages;
+      int numMessages = peer.getNumCurrentMessages();
+      double pi = 4.0 * totalHits / (m_calculationsPerBspTask * numMessages);
+
       peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (numMessages * m_calculationsPerBspTask)
+          + (m_calculationsPerBspTask * numMessages)
           // + (peer.getNumPeers() * m_threadCount * m_iterations)
           + " points is"), new DoubleWritable(pi));
     }

@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
@@ -53,7 +54,7 @@ import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
  */
 
 public class PiEstimatorGpuBSP extends
-    BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
+    BSP<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> {
   private static final Log LOG = LogFactory.getLog(PiEstimatorGpuBSP.class);
   private static final Path TMP_OUTPUT = new Path(
       "output/hama/rootbeer/examples/piestimator/GPU-"
@@ -81,7 +82,7 @@ public class PiEstimatorGpuBSP extends
 
   @Override
   public void setup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
 
     // Choose one as a master
@@ -106,7 +107,7 @@ public class PiEstimatorGpuBSP extends
 
   @Override
   public void bsp(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
@@ -126,9 +127,6 @@ public class PiEstimatorGpuBSP extends
     for (Result result : resultList) {
       totalHits += result.hits;
     }
-
-    double intermediate_results = 4.0 * totalHits
-        / (m_calculationsPerThread * m_blockSize * m_gridSize);
 
     // DEBUG
     if (m_isDebuggingEnabled) {
@@ -163,30 +161,30 @@ public class PiEstimatorGpuBSP extends
     }
 
     // Send result to MasterTask
-    peer.send(m_masterTask, new DoubleWritable(intermediate_results));
+    peer.send(m_masterTask, new LongWritable(totalHits));
     peer.sync();
   }
 
   @Override
   public void cleanup(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
 
     if (peer.getPeerName().equals(m_masterTask)) {
 
-      double pi = 0.0;
-
-      int numMessages = peer.getNumCurrentMessages();
-
-      DoubleWritable received;
+      long totalHits = 0;
+      LongWritable received;
       while ((received = peer.getCurrentMessage()) != null) {
-        pi += received.get();
+        totalHits += received.get();
       }
 
-      pi = pi / numMessages;
-      peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (numMessages * m_blockSize * m_gridSize * m_calculationsPerThread)
-          + " points is"), new DoubleWritable(pi));
+      double pi = 4.0 * totalHits
+          / (m_calculationsPerThread * m_blockSize * m_gridSize);
+
+      peer.write(
+          new Text("Estimated value of PI(3,14159265) using "
+              + (m_calculationsPerThread * m_blockSize * m_gridSize)
+              + " points is"), new DoubleWritable(pi));
     }
   }
 
