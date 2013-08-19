@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -58,6 +59,7 @@ public class PiEstimatorCpuBSP extends
       "output/hama/rootbeer/examples/piestimator/CPU-"
           + System.currentTimeMillis());
 
+  public static final String CONF_DEBUG = "piestimator.cpu.debug";
   public static final String CONF_ITERATIONS = "piestimator.iterations";
 
   private static final long totalIterations = 1433600000L;
@@ -66,6 +68,7 @@ public class PiEstimatorCpuBSP extends
   private String m_masterTask;
   private long m_iterations;
   private long m_calculationsPerBspTask;
+  private boolean m_isDebuggingEnabled;
 
   @Override
   public void setup(
@@ -74,6 +77,9 @@ public class PiEstimatorCpuBSP extends
 
     // Choose one as a master
     this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+
+    this.m_isDebuggingEnabled = peer.getConfiguration().getBoolean(CONF_DEBUG,
+        false);
 
     this.m_iterations = Long.parseLong(peer.getConfiguration().get(
         CONF_ITERATIONS));
@@ -112,14 +118,35 @@ public class PiEstimatorCpuBSP extends
 
     if (peer.getPeerName().equals(m_masterTask)) {
 
+      int numMessages = peer.getNumCurrentMessages();
+      
       long totalHits = 0;
       LongWritable received;
       while ((received = peer.getCurrentMessage()) != null) {
         totalHits += received.get();
       }
 
-      int numMessages = peer.getNumCurrentMessages();
       double pi = 4.0 * totalHits / (m_calculationsPerBspTask * numMessages);
+
+      // DEBUG
+      if (m_isDebuggingEnabled) {
+        // Write log to dfs
+        BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
+        FileSystem fs = FileSystem.get(peer.getConfiguration());
+        FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
+            .getOutputPath(job), peer.getTaskId() + ".log"));
+
+        outStream.writeChars("BSP=PiEstimatorGpuBSP,Iterations=" + m_iterations
+            + "\n");
+
+        outStream.writeChars("totalHits: " + totalHits + "\n");
+        outStream.writeChars("numMessages: " + numMessages + "\n");
+        outStream.writeChars("calculationsPerBspTask: "
+            + m_calculationsPerBspTask + "\n");
+        outStream.writeChars("calculationsTotal: "
+            + (m_calculationsPerBspTask * numMessages) + "\n");
+        outStream.close();
+      }
 
       peer.write(new Text("Estimated value of PI(3,14159265) using "
           + (m_calculationsPerBspTask * numMessages)
@@ -206,7 +233,8 @@ public class PiEstimatorCpuBSP extends
     long totalIterations = Long.parseLong(job.get(CONF_ITERATIONS));
     LOG.info("TotalIterations: " + totalIterations);
     LOG.info("IterationsPerBspTask: " + totalIterations / job.getNumBspTask());
-
+    job.setBoolean(CONF_DEBUG, true);
+    
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
       printOutput(job);

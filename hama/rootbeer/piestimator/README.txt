@@ -27,6 +27,7 @@ ant run-cpu [-DnumBspTask=8 -Diterations=1433600000]
 
 # Build and run GPU Kernel
 ant run-kernel
+# java -jar PiEstimator-GPU.jar 100000 1024 14
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 600s' \

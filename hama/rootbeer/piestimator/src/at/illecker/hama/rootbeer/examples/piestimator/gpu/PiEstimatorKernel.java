@@ -93,7 +93,7 @@ public class PiEstimatorKernel implements Kernel {
     // BlockSize = 1024
     // GridSize = 14
 
-    int calculationsPerThread = 100000;
+    long calculationsPerThread = 100000;
     int blockSize = 1024; // threads
     int gridSize = 14; // blocks
 
