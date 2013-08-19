@@ -169,6 +169,7 @@ public class MatrixMultiplicationBSPGpu
       }
     }
 
+    //TODO BLocksize and gridsize 1024 und 14
     int blockSize = (BLOCK_SIZE > matrixAArr[0].length) ? matrixAArr[0].length
         : BLOCK_SIZE;
     int gridSize = (GRID_SIZE > matrixBArr[0].length) ? matrixBArr[0].length

@@ -59,11 +59,16 @@ public class MatrixMultiplicationBSPCpu
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationBSPCpu.class);
 
-  private static final String DEBUG = "matrixmultiplication.bsp.cpu.debug";
+  public static final String CONF_DEBUG = "matrixmultiplication.bsp.cpu.debug";
+  //public static final String CONF_NUM_ROWS_A = "matrixmultiplication.bsp.cpu.numRowsA";
+  //public static final String CONF_NUM_COLS_A = "matrixmultiplication.bsp.cpu.numColsA";
+  //public static final String CONF_NUM_ROWS_B = "matrixmultiplication.bsp.cpu.numRowsB";
+  //public static final String CONF_NUM_COLS_B = "matrixmultiplication.bsp.cpu.numColsB";
+  public static final String CONF_MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
+
   private static final Path OUTPUT_DIR = new Path(
       "output/hama/rootbeer/examples/matrixmultiplication/CPU-"
           + System.currentTimeMillis());
-
   private static final Path MATRIX_A_PATH = new Path(
       "input/hama/rootbeer/examples/MatrixA.seq");
   private static final Path MATRIX_B_PATH = new Path(
@@ -78,7 +83,6 @@ public class MatrixMultiplicationBSPCpu
   private String masterTask;
 
   private List<KeyValuePair<Integer, Vector>> bColumns = new ArrayList<KeyValuePair<Integer, Vector>>();
-  private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
 
   @Override
   public void setup(
@@ -87,7 +91,7 @@ public class MatrixMultiplicationBSPCpu
 
     Configuration conf = peer.getConfiguration();
 
-    isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+    isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
     this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
@@ -106,7 +110,7 @@ public class MatrixMultiplicationBSPCpu
 
     // Receive columns of Matrix B
     SequenceFile.Reader reader = new SequenceFile.Reader(FileSystem.get(conf),
-        new Path(conf.get(MATRIX_MULT_B_PATH)), conf);
+        new Path(conf.get(CONF_MATRIX_MULT_B_PATH)), conf);
 
     IntWritable bKey = new IntWritable();
     VectorWritable bVector = new VectorWritable();
@@ -225,16 +229,15 @@ public class MatrixMultiplicationBSPCpu
     job.setOutputValueClass(VectorWritable.class);
     job.setOutputPath(outPath);
 
-    job.set(MATRIX_MULT_B_PATH, bPath.toString());
+    job.set(CONF_MATRIX_MULT_B_PATH, bPath.toString());
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     // Order message by row index
     job.set(MessageManager.QUEUE_TYPE_CLASS,
         "org.apache.hama.bsp.message.queue.SortedMessageQueue");
 
-    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
+    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask()); //"bsp.peers.num"
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
-    LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
     LOG.info("DEBUG: bsp.join.expr: " + job.get("bsp.join.expr"));
@@ -283,11 +286,7 @@ public class MatrixMultiplicationBSPCpu
       conf.setInt("bsp.peers.num", cluster.getMaxTasks());
     }
 
-    conf.setInt("matrixmultiplication.bsp.cpu.numRowsA", numRowsA);
-    conf.setInt("matrixmultiplication.bsp.cpu.numColsA", numColsA);
-    conf.setInt("matrixmultiplication.bsp.cpu.numRowsB", numRowsB);
-    conf.setInt("matrixmultiplication.bsp.cpu.numColsB", numRowsB);
-    conf.setBoolean(DEBUG, isDebugging);
+    conf.setBoolean(CONF_DEBUG, isDebugging);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("numRowsA: " + numRowsA);
@@ -302,7 +301,8 @@ public class MatrixMultiplicationBSPCpu
     }
 
     // Create random DistributedRowMatrix
-    // use constant seeds to get reproducable results
+    // use constant seeds to get reproducible results
+
     // Matrix A
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
         numColsA, new Random(42L), MATRIX_A_PATH, false);
@@ -323,6 +323,7 @@ public class MatrixMultiplicationBSPCpu
     long startTime = System.currentTimeMillis();
     DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false,
         false);
+
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 

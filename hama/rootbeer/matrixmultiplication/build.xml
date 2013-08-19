@@ -6,8 +6,8 @@
 	<property name="libjars.cpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/matrixmultiplication/gpu" />
-	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernelCleaned.class,ResultList.class,Result.class" />
-	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpuCleaned" />
+	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernel.class,ResultList.class,Result.class" />
+	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpu" />
 	<!-- cleaned GPU version without logging-->
 	<!--
 	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernelCleaned.class,ResultList.class,Result.class" />

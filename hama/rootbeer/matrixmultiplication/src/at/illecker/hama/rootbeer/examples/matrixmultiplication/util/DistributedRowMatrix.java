@@ -212,7 +212,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
    * @return a DistributedRowMatrix containing the product
    */
   public DistributedRowMatrix multiplyBSP(DistributedRowMatrix other,
-      Path outPath, boolean useGPU, boolean transposedMatrixA,
+      Path outPath, boolean useGPU, boolean transposeMatrixA,
       boolean cleanedBSPTask) throws IOException, ClassNotFoundException,
       InterruptedException {
     // Check if cols of MatrixA = rows of MatrixB
@@ -226,7 +226,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
 
     // Transpose Matrix within a new MapReduce Job
     DistributedRowMatrix transposed = this;
-    if (transposedMatrixA) {
+    if (transposeMatrixA) {
       transposed = transposed.transpose();
     }
     // Debug
@@ -238,6 +238,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
     if (!useGPU) {
       job = MatrixMultiplicationBSPCpu.createMatrixMultiplicationBSPCpuConf(
           initialConf, transposed.rowPath, other.rowPath, outPath.getParent());
+    
     } else { // use GPU
 
       if (!cleanedBSPTask) {
