@@ -21,19 +21,18 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hama.ml.math.DoubleVector;
 import org.apache.hama.ml.writable.VectorWritable;
-
-import com.google.common.collect.ComparisonChain;
 
 public class MatrixRowMessage implements WritableComparable<MatrixRowMessage> {
   private int rowIndex;
-  private VectorWritable rowValues = null;
+  private DoubleVector rowValues = null;
 
   public MatrixRowMessage() {
+    super();
   }
 
-  public MatrixRowMessage(int rowIndex, VectorWritable rowValues) {
-    super();
+  public MatrixRowMessage(int rowIndex, DoubleVector rowValues) {
     this.rowIndex = rowIndex;
     this.rowValues = rowValues;
   }
@@ -42,25 +41,24 @@ public class MatrixRowMessage implements WritableComparable<MatrixRowMessage> {
     return rowIndex;
   }
 
-  public VectorWritable getRowValues() {
+  public DoubleVector getRowValues() {
     return rowValues;
   }
 
   @Override
   public void readFields(DataInput in) throws IOException {
     rowIndex = in.readInt();
-    rowValues = new VectorWritable(VectorWritable.readVector(in));
+    rowValues = VectorWritable.readVector(in);
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
     out.writeInt(rowIndex);
-    VectorWritable.writeVector(rowValues.getVector(), out);
+    VectorWritable.writeVector(rowValues, out);
   }
 
   @Override
   public int compareTo(MatrixRowMessage o) {
-    return ComparisonChain.start().compare(rowIndex, o.rowIndex).result();
+    return ((rowIndex < o.rowIndex) ? -1 : (rowIndex == o.rowIndex ? 0 : 1));
   }
-
 }

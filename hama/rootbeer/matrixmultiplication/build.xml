@@ -2,8 +2,8 @@
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
 	<property name="output.file" value="MatrixMultiplication" />
-	<property name="libjars.gpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
-	<property name="libjars.cpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
 	<property name="libjars.bench" value="" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/matrixmultiplication/gpu" />
 	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernel.class,ResultList.class,Result.class" />

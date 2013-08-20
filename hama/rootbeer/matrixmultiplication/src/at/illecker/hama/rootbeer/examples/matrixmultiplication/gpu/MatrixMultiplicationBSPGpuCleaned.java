@@ -42,10 +42,9 @@ import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
-import org.apache.mahout.math.CardinalityException;
-import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.Vector;
-import org.apache.mahout.math.VectorWritable;
+import org.apache.hama.ml.math.DenseDoubleVector;
+import org.apache.hama.ml.math.DoubleVector;
+import org.apache.hama.ml.writable.VectorWritable;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixColMessage;
@@ -79,7 +78,7 @@ public class MatrixMultiplicationBSPGpuCleaned
   private String masterTask;
 
   private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
-  private Map<Integer, Vector> matrixB = new TreeMap<Integer, Vector>();
+  private Map<Integer, DoubleVector> matrixB = new TreeMap<Integer, DoubleVector>();
   private double[][] matrixBArr;
 
   @Override
@@ -100,7 +99,7 @@ public class MatrixMultiplicationBSPGpuCleaned
     VectorWritable bVector = new VectorWritable();
     // for each row of matrix B
     while (reader.next(bKey, bVector)) {
-      matrixB.put(bKey.get(), bVector.get());
+      matrixB.put(bKey.get(), bVector.getVector());
     }
     reader.close();
 
@@ -113,13 +112,13 @@ public class MatrixMultiplicationBSPGpuCleaned
       BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixColMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    Map<Integer, Vector> matrixA = new TreeMap<Integer, Vector>();
+    Map<Integer, DoubleVector> matrixA = new TreeMap<Integer, DoubleVector>();
 
     IntWritable aKey = new IntWritable();
     VectorWritable aVector = new VectorWritable();
     // Collect all rows of matrix A which belong to this bsp task
     while (peer.readNext(aKey, aVector)) {
-      matrixA.put(aKey.get(), aVector.get());
+      matrixA.put(aKey.get(), aVector.getVector());
     }
 
     // Convert rows of matrix A to double array for GPU kernels
@@ -167,9 +166,10 @@ public class MatrixMultiplicationBSPGpuCleaned
         // Collect GPU results and send to masterTask
         for (int j = 0; j < result.resultCols.length; j++) {
           // Send resulting column to masterTask
-          DenseVector outVector = new DenseVector(result.resultCols[j]);
+          DenseDoubleVector outVector = new DenseDoubleVector(
+              result.resultCols[j]);
           peer.send(masterTask, new MatrixColMessage(result.resultColsIndex[j],
-              new VectorWritable(outVector)));
+              outVector));
         }
       }
     }
@@ -179,24 +179,24 @@ public class MatrixMultiplicationBSPGpuCleaned
     // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
-      Map<Integer, Vector> resultCols = new TreeMap<Integer, Vector>();
+      Map<Integer, DoubleVector> resultCols = new TreeMap<Integer, DoubleVector>();
 
       // Collect messages
       MatrixColMessage currentMatrixColMessage = null;
       while ((currentMatrixColMessage = peer.getCurrentMessage()) != null) {
         resultCols.put(currentMatrixColMessage.getColIndex(),
-            currentMatrixColMessage.getColValues().get());
+            currentMatrixColMessage.getColValues());
       }
 
       // Write resultMatrix out
       if (resultCols.size() > 0) {
-        for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
+        for (int rowIndex = 0; rowIndex < resultCols.get(0).getDimension(); rowIndex++) {
 
           // Build row vector
-          DenseVector rowVector = new DenseVector(resultCols.size());
+          DenseDoubleVector rowVector = new DenseDoubleVector(resultCols.size());
           int colIndex = 0;
-          for (Vector colVector : resultCols.values()) {
-            rowVector.setQuick(colIndex, colVector.get(rowIndex));
+          for (DoubleVector colVector : resultCols.values()) {
+            rowVector.set(colIndex, colVector.get(rowIndex));
             colIndex++;
           }
 
@@ -207,20 +207,22 @@ public class MatrixMultiplicationBSPGpuCleaned
     }
   }
 
-  private double[][] toArray(Collection<Vector> vectors) {
+  private double[][] toArray(Collection<DoubleVector> vectors) {
     double[][] matrixArr = null;
 
     if (vectors.size() > 0) {
+
       int i = 0;
-      for (Vector v : vectors) {
+      for (DoubleVector v : vectors) {
+
         if (matrixArr == null) {
-          matrixArr = new double[vectors.size()][v.size()];
+          matrixArr = new double[vectors.size()][v.getDimension()];
         }
-        int j = 0;
-        for (Vector.Element e : v.all()) {
-          matrixArr[i][j] = e.get();
-          j++;
+
+        for (int j = 0; j < v.getDimension(); j++) {
+          matrixArr[i][j] = v.get(i);
         }
+
         i++;
       }
     }
@@ -331,7 +333,8 @@ public class MatrixMultiplicationBSPGpuCleaned
     LOG.info("outputPath: " + OUTPUT_DIR);
 
     if (numColsA != numRowsB) {
-      throw new CardinalityException(numColsA, numRowsB);
+      throw new Exception("Cols of MatrixA != rows of MatrixB! (" + numColsA
+          + "!=" + numRowsB + ")");
     }
 
     // Create random DistributedRowMatrix
@@ -354,7 +357,7 @@ public class MatrixMultiplicationBSPGpuCleaned
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, true, false, true);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, true, true);
     System.out.println("MatrixMultiplicationGpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 

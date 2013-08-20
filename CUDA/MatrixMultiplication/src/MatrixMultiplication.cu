@@ -53,27 +53,25 @@ __global__ void device_method(int *d_matrixA, int *d_matrixB, int *d_matrixC,
 		return;
 	}
 
-	//intermediateSums[thread_idxx] = 0;
-	//syncthreads();
+	// intermediateSums[thread_idxx] = 0;
+	// syncthreads();
 
 	// Check if thread and block is in matrix range
 	if ((block_idxx < matrixBColSize * blockSliceSize)
 			&& (thread_idxx < matrixBRowSize * threadSliceSize)) {
 
-
 		cuPrintf("[%d,%d]device_method started. thread_id: %d, block_id: %d\n",
 				thread_idxx, block_idxx, thread_idxx, block_idxx);
-
 
 		// Setup multipliers of matrix B (slized Matrix)
 		int multipliers[100][100]; //[blockSliceSize][threadSliceSize];
 		for (int k = 0; k < blockSliceSize; k++) {
 			for (int j = 0; j < threadSliceSize; j++) {
 
-				if ( (k+(blockSliceSize*block_idxx))	 < matrixBColSize) {
-					multipliers[k][j] = d_matrixB[((thread_idxx * threadSliceSize
-						+ j) * matrixAColSize) + (block_idxx * blockSliceSize)
-						+ k];
+				if ((k + (blockSliceSize * block_idxx)) < matrixBColSize) {
+					multipliers[k][j] = d_matrixB[((thread_idxx
+							* threadSliceSize + j) * matrixAColSize)
+							+ (block_idxx * blockSliceSize) + k];
 				} else {
 					multipliers[k][j] = 0;
 				}
@@ -90,8 +88,8 @@ __global__ void device_method(int *d_matrixA, int *d_matrixB, int *d_matrixC,
 				matrixAColumns[k][i] = d_matrixA[(i * matrixAColSize)
 						+ (thread_idxx * threadSliceSize) + k];
 
-				cuPrintf("[%d,%d]matrixAColumns setup[%d][%d]: %d\n", thread_idxx,
-						block_idxx, k, i, matrixAColumns[k][i]);
+				cuPrintf("[%d,%d]matrixAColumns setup[%d][%d]: %d\n",
+						thread_idxx, block_idxx, k, i, matrixAColumns[k][i]);
 			}
 		}
 
@@ -102,15 +100,17 @@ __global__ void device_method(int *d_matrixA, int *d_matrixB, int *d_matrixC,
 				int sum = 0;
 				for (int j = 0; j < threadSliceSize; j++) {
 
-					cuPrintf("[%d,%d]matrixAColumns read[%d][%d]: %d\n", thread_idxx,
-							block_idxx, j, i, matrixAColumns[j][i]);
+					cuPrintf("[%d,%d]matrixAColumns read[%d][%d]: %d\n",
+							thread_idxx, block_idxx, j, i,
+							matrixAColumns[j][i]);
 					cuPrintf("[%d,%d]multipliers[%d][%d]: %d\n", thread_idxx,
 							block_idxx, k, j, multipliers[k][j]);
 
 					sum += matrixAColumns[j][i] * multipliers[k][j];
 				}
 
-				cuPrintf("[%d,%d]sum: %d ,matrixARow: %d\n", thread_idxx, block_idxx, sum ,i);
+				cuPrintf("[%d,%d]sum: %d ,matrixARow: %d\n", thread_idxx,
+						block_idxx, sum, i);
 
 				intermediateSums[thread_idxx] = sum;
 
@@ -119,28 +119,29 @@ __global__ void device_method(int *d_matrixA, int *d_matrixB, int *d_matrixC,
 				// do reduction in shared memory
 				// 1-bit right shift = divide by two to the power 1
 				/*
-				for (int s = matrixARowSize / 2; s > 0; s >>= 1) {
+				 for (int s = matrixARowSize / 2; s > 0; s >>= 1) {
 
-					if (thread_idxx < s) {
-						intermediateSums[thread_idxx] +=
-								intermediateSums[thread_idxx + s];
-					}
-					syncthreads();
-				}*/
+				 if (thread_idxx < s) {
+				 intermediateSums[thread_idxx] +=
+				 intermediateSums[thread_idxx + s];
+				 }
+				 syncthreads();
+				 }*/
 
 				if (thread_idxx == 0) {
 
-					for (int t=1; t<matrixARowSize; t++) {
+					for (int t = 1; t < matrixARowSize; t++) {
 						sum += intermediateSums[t];
 					}
 
-					cuPrintf("[%d,%d]final sum: %d (i:%d,k:%d,blockSliceSize:%d,threadSliceSize:%d)\n",
-							thread_idxx, block_idxx,
-							sum,i,k,
-							blockSliceSize,threadSliceSize);
+					cuPrintf(
+							"[%d,%d]final sum: %d (i:%d,k:%d,blockSliceSize:%d,threadSliceSize:%d)\n",
+							thread_idxx, block_idxx, sum, i, k, blockSliceSize,
+							threadSliceSize);
 
-					if (sum!=0) {
-						d_matrixC[(i * matrixARowSize) + (blockSliceSize*block_idxx) + k] = sum;
+					if (sum != 0) {
+						d_matrixC[(i * matrixARowSize)
+								+ (blockSliceSize * block_idxx) + k] = sum;
 
 					}
 				}
@@ -208,7 +209,7 @@ bool verify(int *matrixA, int *matrixB, int n, int m) {
 	for (int j = 0; j < n; ++j) {
 		for (int i = 0; i < m; ++i) {
 			if (matrixA[j * m + i] != matrixB[j * m + i]) {
-				printf("Verify ERROR at [%d,%d]\n",j,i);
+				printf("Verify ERROR at [%d,%d]\n", j, i);
 				return false;
 			}
 		}
@@ -231,11 +232,11 @@ int main(int argc, char* argv[]) {
 	//max samples depending on hints and curandStates array
 	//unsigned n = maxbytes / (3*sizeof(double));
 
-	int n = 4;
+	int n = 250;
 	if (argc > 1) {
 		printf("Argument: %s\n", argv[1]);
 		n = atoi(argv[1]);
-		if (n<1) {
+		if (n < 1) {
 			return 1;
 		}
 	}
@@ -244,7 +245,7 @@ int main(int argc, char* argv[]) {
 	//}
 
 	// set to pinned memory
-	checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
+	checkCuda (cudaSetDeviceFlags(cudaDeviceMapHost));
 
 	// Allocate matrixA
 	//int matrixARowSize = n;

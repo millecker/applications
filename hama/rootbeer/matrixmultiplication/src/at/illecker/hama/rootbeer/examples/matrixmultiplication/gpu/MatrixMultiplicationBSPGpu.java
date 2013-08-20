@@ -17,6 +17,7 @@
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -44,11 +45,9 @@ import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
-import org.apache.mahout.math.Arrays;
-import org.apache.mahout.math.CardinalityException;
-import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.Vector;
-import org.apache.mahout.math.VectorWritable;
+import org.apache.hama.ml.math.DenseDoubleVector;
+import org.apache.hama.ml.math.DoubleVector;
+import org.apache.hama.ml.writable.VectorWritable;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixColMessage;
@@ -63,11 +62,12 @@ public class MatrixMultiplicationBSPGpu
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationBSPGpu.class);
 
-  private static final String DEBUG = "matrixmultiplication.bsp.gpu.debug";
+  private static final String CONF_DEBUG = "matrixmultiplication.bsp.gpu.debug";
+  public static final String CONF_MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.gpu.B.path";
+
   private static final Path OUTPUT_DIR = new Path(
       "output/hama/rootbeer/examples/matrixmultiplication/GPU-"
           + System.currentTimeMillis());
-
   private static final Path MATRIX_A_PATH = new Path(
       "input/hama/rootbeer/examples/MatrixA.seq");
   private static final Path MATRIX_B_PATH = new Path(
@@ -79,14 +79,12 @@ public class MatrixMultiplicationBSPGpu
 
   private boolean isDebuggingEnabled;
   private FSDataOutputStream logger;
-
   private String masterTask;
 
-  private static final String MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
-  private Map<Integer, Vector> matrixB = new TreeMap<Integer, Vector>();
+  private Map<Integer, DoubleVector> matrixB = new TreeMap<Integer, DoubleVector>();
   private double[][] matrixBArr;
 
-  private final int BLOCK_SIZE = 256;
+  private final int BLOCK_SIZE = 1024;
   private final int GRID_SIZE = 14;
 
   @Override
@@ -95,8 +93,7 @@ public class MatrixMultiplicationBSPGpu
       throws IOException {
 
     Configuration conf = peer.getConfiguration();
-
-    isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+    isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
     this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
@@ -115,17 +112,17 @@ public class MatrixMultiplicationBSPGpu
 
     // Receive matrix B
     SequenceFile.Reader reader = new SequenceFile.Reader(FileSystem.get(conf),
-        new Path(conf.get(MATRIX_MULT_B_PATH)), conf);
+        new Path(conf.get(CONF_MATRIX_MULT_B_PATH)), conf);
 
     IntWritable bKey = new IntWritable();
     VectorWritable bVector = new VectorWritable();
     // for each row of matrix B
     while (reader.next(bKey, bVector)) {
-      matrixB.put(bKey.get(), bVector.get());
+      matrixB.put(bKey.get(), bVector.getVector());
 
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,setup,MatrixB (" + bKey.get() + ","
-            + bVector.get() + ")\n");
+            + bVector.getVector() + ")\n");
       }
     }
     reader.close();
@@ -146,17 +143,17 @@ public class MatrixMultiplicationBSPGpu
       BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixColMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    Map<Integer, Vector> matrixA = new TreeMap<Integer, Vector>();
+    Map<Integer, DoubleVector> matrixA = new TreeMap<Integer, DoubleVector>();
 
     IntWritable aKey = new IntWritable();
     VectorWritable aVector = new VectorWritable();
     // Collect all rows of matrix A which belong to this bsp task
     while (peer.readNext(aKey, aVector)) {
-      matrixA.put(aKey.get(), aVector.get());
+      matrixA.put(aKey.get(), aVector.getVector());
       // Logging
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,input,key=" + aKey + ",value="
-            + aVector.get().toString() + "\n");
+            + aVector.getVector().toString() + "\n");
       }
     }
 
@@ -169,7 +166,6 @@ public class MatrixMultiplicationBSPGpu
       }
     }
 
-    //TODO BLocksize and gridsize 1024 und 14
     int blockSize = (BLOCK_SIZE > matrixAArr[0].length) ? matrixAArr[0].length
         : BLOCK_SIZE;
     int gridSize = (GRID_SIZE > matrixBArr[0].length) ? matrixBArr[0].length
@@ -292,9 +288,10 @@ public class MatrixMultiplicationBSPGpu
           }
 
           // Send resulting column to masterTask
-          DenseVector outVector = new DenseVector(result.resultCols[j]);
+          DenseDoubleVector outVector = new DenseDoubleVector(
+              result.resultCols[j]);
           peer.send(masterTask, new MatrixColMessage(result.resultColsIndex[j],
-              new VectorWritable(outVector)));
+              outVector));
 
           if (isDebuggingEnabled) {
             logger.writeChars("bsp,send,key=" + result.resultColsIndex[j]
@@ -317,29 +314,29 @@ public class MatrixMultiplicationBSPGpu
     // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
-      Map<Integer, Vector> resultCols = new TreeMap<Integer, Vector>();
+      Map<Integer, DoubleVector> resultCols = new TreeMap<Integer, DoubleVector>();
 
       // Collect messages
       MatrixColMessage currentMatrixColMessage = null;
       while ((currentMatrixColMessage = peer.getCurrentMessage()) != null) {
         resultCols.put(currentMatrixColMessage.getColIndex(),
-            currentMatrixColMessage.getColValues().get());
+            currentMatrixColMessage.getColValues());
         if (isDebuggingEnabled) {
           logger.writeChars("bsp,collect,key="
               + currentMatrixColMessage.getColIndex() + ",value="
-              + currentMatrixColMessage.getColValues().get().toString() + "\n");
+              + currentMatrixColMessage.getColValues().toString() + "\n");
         }
       }
 
       // Write resultMatrix out
       if (resultCols.size() > 0) {
-        for (int rowIndex = 0; rowIndex < resultCols.get(0).size(); rowIndex++) {
+        for (int rowIndex = 0; rowIndex < resultCols.get(0).getDimension(); rowIndex++) {
 
           // Build row vector
-          DenseVector rowVector = new DenseVector(resultCols.size());
+          DenseDoubleVector rowVector = new DenseDoubleVector(resultCols.size());
           int colIndex = 0;
-          for (Vector colVector : resultCols.values()) {
-            rowVector.setQuick(colIndex, colVector.get(rowIndex));
+          for (DoubleVector colVector : resultCols.values()) {
+            rowVector.set(colIndex, colVector.get(rowIndex));
             colIndex++;
           }
 
@@ -355,21 +352,22 @@ public class MatrixMultiplicationBSPGpu
 
   }
 
-  private double[][] toArray(Collection<Vector> vectors) {
+  private double[][] toArray(Collection<DoubleVector> vectors) {
     double[][] matrixArr = null;
 
     if (vectors.size() > 0) {
 
       int i = 0;
-      for (Vector v : vectors) {
+      for (DoubleVector v : vectors) {
+
         if (matrixArr == null) {
-          matrixArr = new double[vectors.size()][v.size()];
+          matrixArr = new double[vectors.size()][v.getDimension()];
         }
-        int j = 0;
-        for (Vector.Element e : v.all()) {
-          matrixArr[i][j] = e.get();
-          j++;
+
+        for (int j = 0; j < v.getDimension(); j++) {
+          matrixArr[i][j] = v.get(i);
         }
+
         i++;
       }
     }
@@ -418,7 +416,7 @@ public class MatrixMultiplicationBSPGpu
     job.setOutputValueClass(VectorWritable.class);
     job.setOutputPath(outPath);
 
-    job.set(MATRIX_MULT_B_PATH, bPath.toString());
+    job.set(CONF_MATRIX_MULT_B_PATH, bPath.toString());
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     // Order message by row index
@@ -427,7 +425,6 @@ public class MatrixMultiplicationBSPGpu
 
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
-    LOG.info("DEBUG: bsp.peers.num: " + job.get("bsp.peers.num"));
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
 
@@ -479,7 +476,7 @@ public class MatrixMultiplicationBSPGpu
     conf.setInt("matrixmultiplication.bsp.gpu.numColsA", numColsA);
     conf.setInt("matrixmultiplication.bsp.gpu.numRowsB", numRowsB);
     conf.setInt("matrixmultiplication.bsp.gpu.numColsB", numRowsB);
-    conf.setBoolean(DEBUG, isDebugging);
+    conf.setBoolean(CONF_DEBUG, isDebugging);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("numRowsA: " + numRowsA);
@@ -490,7 +487,8 @@ public class MatrixMultiplicationBSPGpu
     LOG.info("outputPath: " + OUTPUT_DIR);
 
     if (numColsA != numRowsB) {
-      throw new CardinalityException(numColsA, numRowsB);
+      throw new Exception("Cols of MatrixA != rows of MatrixB! (" + numColsA
+          + "!=" + numRowsB + ")");
     }
 
     // Create random DistributedRowMatrix
@@ -513,8 +511,8 @@ public class MatrixMultiplicationBSPGpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a
-        .multiplyBSP(b, MATRIX_C_PATH, true, false, false);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, true, false);
+
     System.out.println("MatrixMultiplicationGpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 

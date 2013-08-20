@@ -59,7 +59,7 @@ public class MatrixMultiplicationBSPCpu
       .getLog(MatrixMultiplicationBSPCpu.class);
 
   public static final String CONF_DEBUG = "matrixmultiplication.bsp.cpu.debug";
-  public static final String CONF_MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
+  public static final String CONF_MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.cpu.B.path";
 
   private static final Path OUTPUT_DIR = new Path(
       "output/hama/rootbeer/examples/matrixmultiplication/CPU-"
@@ -85,7 +85,6 @@ public class MatrixMultiplicationBSPCpu
       throws IOException {
 
     Configuration conf = peer.getConfiguration();
-
     isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
@@ -103,7 +102,7 @@ public class MatrixMultiplicationBSPCpu
       }
     }
 
-    // Receive columns of Matrix B
+    // Receive transposed Matrix B
     SequenceFile.Reader reader = new SequenceFile.Reader(FileSystem.get(conf),
         new Path(conf.get(CONF_MATRIX_MULT_B_PATH)), conf);
 
@@ -147,8 +146,7 @@ public class MatrixMultiplicationBSPCpu
         outVector.set(bVectorRow.getKey(), dot);
       }
 
-      peer.send(masterTask, new MatrixRowMessage(aKey.get(),
-          new VectorWritable(outVector)));
+      peer.send(masterTask, new MatrixRowMessage(aKey.get(), outVector));
 
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,send,key=" + aKey.get() + ",value="
@@ -158,28 +156,23 @@ public class MatrixMultiplicationBSPCpu
     }
 
     peer.sync();
-  }
-
-  @Override
-  public void cleanup(
-      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
-      throws IOException {
 
     // MasterTask accumulates result
     if (peer.getPeerName().equals(masterTask)) {
 
       MatrixRowMessage currentMatrixRowMessage = null;
+
       // Collect messages
       while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
+
         int rowIndex = currentMatrixRowMessage.getRowIndex();
-        DoubleVector rowValues = currentMatrixRowMessage.getRowValues()
-            .getVector();
+        DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
 
         if (isDebuggingEnabled) {
           logger.writeChars("bsp,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
         }
-        peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
+        peer.write(new IntWritable(rowIndex), VectorWritable.wrap(rowValues));
       }
     }
   }

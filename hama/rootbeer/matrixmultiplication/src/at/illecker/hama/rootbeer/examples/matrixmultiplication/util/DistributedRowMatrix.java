@@ -85,6 +85,14 @@ public class DistributedRowMatrix implements Configurable {
     }
   }
 
+  public int numRows() {
+    return numRows;
+  }
+
+  public int numCols() {
+    return numCols;
+  }
+
   public Path getRowPath() {
     return rowPath;
   }
@@ -101,14 +109,6 @@ public class DistributedRowMatrix implements Configurable {
       log.error("Unable to set outputBasePath to {}, leaving as {}"
           + outPathString + " " + outputTmpBasePath);
     }
-  }
-
-  public int numRows() {
-    return numRows;
-  }
-
-  public int numCols() {
-    return numCols;
   }
 
   /**
@@ -343,6 +343,8 @@ public class DistributedRowMatrix implements Configurable {
   public static DenseDoubleMatrix readDistributedRowMatrix(Configuration conf,
       Path path) {
 
+    // System.out.println("readDistributedRowMatrix: " + path);
+
     List<DoubleVector> matrix = new ArrayList<DoubleVector>();
 
     SequenceFile.Reader reader = null;
@@ -354,13 +356,18 @@ public class DistributedRowMatrix implements Configurable {
       VectorWritable vector = new VectorWritable();
 
       while (reader.next(key, vector)) {
+        // System.out.println("readDistributedRowMatrix: key: " + key
+        // + Arrays.toString(vector.getVector().toArray()));
         matrix.add(vector.getVector());
       }
       reader.close();
 
-      DoubleVector list[] = new DoubleVector[matrix.size()];
-      DenseDoubleMatrix result = new DenseDoubleMatrix(matrix.toArray(list));
-      return result;
+      if (matrix.size() > 0) {
+        DoubleVector list[] = new DoubleVector[matrix.size()];
+        DenseDoubleMatrix result = new DenseDoubleMatrix(matrix.toArray(list));
+        return result;
+      }
+      return null;
 
     } catch (IOException e) {
       e.printStackTrace();
@@ -415,12 +422,14 @@ public class DistributedRowMatrix implements Configurable {
   }
 
   public static void printMatrix(double[][] matrix, int rows, int columns) {
-    System.out.println();
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < columns; j++) {
-        System.out.print(matrix[i][j] + " ");
-      }
+    if (matrix != null) {
       System.out.println();
+      for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+          System.out.print(matrix[i][j] + " ");
+        }
+        System.out.println();
+      }
     }
   }
 
@@ -435,13 +444,22 @@ public class DistributedRowMatrix implements Configurable {
   }
 
   public double[][] toDoubleArray() {
-    return this.readDistributedRowMatrix().getValues();
+    DenseDoubleMatrix matrix = this.readDistributedRowMatrix();
+    if (matrix != null) {
+      return matrix.getValues();
+    } else {
+      return null;
+    }
   }
 
   public boolean verify(DistributedRowMatrix other) {
 
     DenseDoubleMatrix matrixA = this.readDistributedRowMatrix();
     DenseDoubleMatrix matrixB = other.readDistributedRowMatrix();
+
+    if ((matrixA == null) || (matrixB == null)) {
+      return false;
+    }
 
     if ((matrixA.getRowCount() != matrixB.getRowCount())
         || (matrixA.getColumnCount() != matrixB.getColumnCount())) {
