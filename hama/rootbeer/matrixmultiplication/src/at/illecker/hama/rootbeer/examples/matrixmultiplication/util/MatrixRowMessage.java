@@ -21,7 +21,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.mahout.math.VectorWritable;
+import org.apache.hama.ml.writable.VectorWritable;
 
 import com.google.common.collect.ComparisonChain;
 
@@ -55,7 +55,7 @@ public class MatrixRowMessage implements WritableComparable<MatrixRowMessage> {
   @Override
   public void write(DataOutput out) throws IOException {
     out.writeInt(rowIndex);
-    VectorWritable.writeVector(out, rowValues.get());
+    VectorWritable.writeVector(rowValues.getVector(), out);
   }
 
   @Override

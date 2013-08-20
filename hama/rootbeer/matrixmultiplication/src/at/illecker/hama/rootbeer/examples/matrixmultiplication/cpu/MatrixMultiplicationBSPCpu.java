@@ -43,11 +43,10 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
+import org.apache.hama.ml.math.DenseDoubleVector;
+import org.apache.hama.ml.math.DoubleVector;
+import org.apache.hama.ml.writable.VectorWritable;
 import org.apache.hama.util.KeyValuePair;
-import org.apache.mahout.math.CardinalityException;
-import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.Vector;
-import org.apache.mahout.math.VectorWritable;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;
@@ -60,10 +59,6 @@ public class MatrixMultiplicationBSPCpu
       .getLog(MatrixMultiplicationBSPCpu.class);
 
   public static final String CONF_DEBUG = "matrixmultiplication.bsp.cpu.debug";
-  //public static final String CONF_NUM_ROWS_A = "matrixmultiplication.bsp.cpu.numRowsA";
-  //public static final String CONF_NUM_COLS_A = "matrixmultiplication.bsp.cpu.numColsA";
-  //public static final String CONF_NUM_ROWS_B = "matrixmultiplication.bsp.cpu.numRowsB";
-  //public static final String CONF_NUM_COLS_B = "matrixmultiplication.bsp.cpu.numColsB";
   public static final String CONF_MATRIX_MULT_B_PATH = "matrixmultiplication.bsp.B.path";
 
   private static final Path OUTPUT_DIR = new Path(
@@ -82,7 +77,7 @@ public class MatrixMultiplicationBSPCpu
   private FSDataOutputStream logger;
   private String masterTask;
 
-  private List<KeyValuePair<Integer, Vector>> bColumns = new ArrayList<KeyValuePair<Integer, Vector>>();
+  private List<KeyValuePair<Integer, DoubleVector>> bColumns = new ArrayList<KeyValuePair<Integer, DoubleVector>>();
 
   @Override
   public void setup(
@@ -116,8 +111,8 @@ public class MatrixMultiplicationBSPCpu
     VectorWritable bVector = new VectorWritable();
     // for each col of matrix B (cause by transposed B)
     while (reader.next(bKey, bVector)) {
-      bColumns
-          .add(new KeyValuePair<Integer, Vector>(bKey.get(), bVector.get()));
+      bColumns.add(new KeyValuePair<Integer, DoubleVector>(bKey.get(), bVector
+          .getVector()));
     }
     reader.close();
   }
@@ -135,18 +130,19 @@ public class MatrixMultiplicationBSPCpu
       // Logging
       if (isDebuggingEnabled) {
         logger.writeChars("bsp,input,key=" + aKey + ",value="
-            + aVector.get().toString() + "\n");
+            + aVector.getVector().toString() + "\n");
       }
 
-      DenseVector outVector = null;
+      DenseDoubleVector outVector = null;
       // for each col of matrix B (cause by transposed B)
-      for (KeyValuePair<Integer, Vector> bVectorRow : bColumns) {
+      for (KeyValuePair<Integer, DoubleVector> bVectorRow : bColumns) {
 
         if (outVector == null) {
-          outVector = new DenseVector(bVectorRow.getValue().size());
+          outVector = new DenseDoubleVector(bVectorRow.getValue()
+              .getDimension());
         }
 
-        double dot = aVector.get().dot(bVectorRow.getValue());
+        double dot = aVector.getVector().dot(bVectorRow.getValue());
 
         outVector.set(bVectorRow.getKey(), dot);
       }
@@ -176,7 +172,8 @@ public class MatrixMultiplicationBSPCpu
       // Collect messages
       while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
         int rowIndex = currentMatrixRowMessage.getRowIndex();
-        Vector rowValues = currentMatrixRowMessage.getRowValues().get();
+        DoubleVector rowValues = currentMatrixRowMessage.getRowValues()
+            .getVector();
 
         if (isDebuggingEnabled) {
           logger.writeChars("bsp,write,key=" + rowIndex + ",value="
@@ -236,7 +233,7 @@ public class MatrixMultiplicationBSPCpu
     job.set(MessageManager.QUEUE_TYPE_CLASS,
         "org.apache.hama.bsp.message.queue.SortedMessageQueue");
 
-    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask()); //"bsp.peers.num"
+    LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask()); // "bsp.peers.num"
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
     LOG.info("DEBUG: bsp.tasks.maximum: " + job.get("bsp.tasks.maximum"));
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
@@ -297,7 +294,8 @@ public class MatrixMultiplicationBSPCpu
     LOG.info("outputPath: " + OUTPUT_DIR);
 
     if (numColsA != numRowsB) {
-      throw new CardinalityException(numColsA, numRowsB);
+      throw new Exception("Cols of MatrixA != rows of MatrixB! (" + numColsA
+          + "!=" + numRowsB + ")");
     }
 
     // Create random DistributedRowMatrix
@@ -321,8 +319,7 @@ public class MatrixMultiplicationBSPCpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false,
-        false);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false);
 
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
