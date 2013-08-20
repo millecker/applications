@@ -166,13 +166,15 @@ public class MatrixMultiplicationBSPCpu
       while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
 
         int rowIndex = currentMatrixRowMessage.getRowIndex();
-        DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
-
+        //DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
+        DenseDoubleVector rowValues = new DenseDoubleVector(new double[]{1,2,3,4,5});
+        
         if (isDebuggingEnabled) {
           logger.writeChars("bsp,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
         }
-        peer.write(new IntWritable(rowIndex), VectorWritable.wrap(rowValues));
+        // peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
+        peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
       }
     }
   }
