@@ -28,8 +28,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.hama.bsp.BSPJob;
 
+import at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpu;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 
 import com.google.caliper.Benchmark;
@@ -39,7 +39,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "256", "384", "512", "768", "1024", "1536", "2048" })
+  @Param({ "512", "1024", "2048", "3072", "4096" })
   private int n;
 
   @Param
@@ -62,7 +62,6 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
   private int m_blockSize;
   private int m_gridSize;
-  private long m_totalIterations;
 
   private DistributedRowMatrix m_matrixA;
   private DistributedRowMatrix m_matrixB;
@@ -117,18 +116,20 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     m_MATRIX_C_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixC.seq");
     m_MATRIX_D_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixD.seq");
 
-    //TODO
-    //m_blockSize = MatrixMultiplicationGpuBSP.blockSize;
-    //m_gridSize = MatrixMultiplicationGpuBSP.gridSize;
+    m_blockSize = MatrixMultiplicationBSPGpu.BLOCK_SIZE;
+    m_gridSize = MatrixMultiplicationBSPGpu.GRID_SIZE;
 
-    System.out.println("Benchmark MatrixMultiplication [blockSize="
-        + m_blockSize + ",gridSize=" + m_gridSize + "] " + n + " x " + n
-        + " matrix");
+    System.out.println("Benchmark MatrixMultiplication " + type
+        + " [blockSize=" + m_blockSize + ",gridSize=" + m_gridSize + "] " + n
+        + " x " + n + " matrix");
+
     // Create random DistributedRowMatrix
     DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
-        new Random(42L), m_MATRIX_A_PATH, true);
+        new Random(42L), m_MATRIX_A_PATH, false);
+
     DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
-        new Random(), m_MATRIX_B_PATH, false);
+        new Random(1337L), m_MATRIX_B_PATH, (type == CalcType.CPU) ? true
+            : false);
 
     // Load DistributedRowMatrix a and b
     m_matrixA = new DistributedRowMatrix(m_MATRIX_A_PATH, m_OUTPUT_DIR_PATH, n,
@@ -158,13 +159,16 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
     DistributedRowMatrix matrixC = new DistributedRowMatrix(m_MATRIX_C_PATH,
         m_OUTPUT_DIR_PATH, n, n);
+    matrixC.setConf(m_conf);
 
-    // Overwrite matrix A, NOT transposed for verification check
-    DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
-        new Random(42L), m_MATRIX_A_PATH, false);
-    m_matrixA = new DistributedRowMatrix(m_MATRIX_A_PATH, m_OUTPUT_DIR_PATH, n,
-        n);
-    m_matrixA.setConf(m_conf);
+    if (type == CalcType.CPU) {
+      // Overwrite matrix B, NOT transposed for verification check
+      DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
+          new Random(1337L), m_MATRIX_B_PATH, false);
+      m_matrixB = new DistributedRowMatrix(m_MATRIX_B_PATH, m_OUTPUT_DIR_PATH,
+          n, n);
+      m_matrixB.setConf(m_conf);
+    }
 
     DistributedRowMatrix matrixD = m_matrixA.multiplyJava(m_matrixB,
         m_MATRIX_D_PATH);
@@ -232,31 +236,20 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     @Override
     public int run(String[] arg0) throws Exception {
 
-      BSPJob job;
-
-      // TODO
-      /*
       if (useGPU) {
-        job = MatrixMultiplicationGpuBSP.createMatrixMultiplicationGpuBSPConf(
-            new HamaConfiguration(m_conf), m_OUTPUT_DIR_PATH);
+        m_conf.set(MatrixMultiplicationBSPGpu.CONF_BLOCKSIZE, "" + m_blockSize);
+        m_conf.set(MatrixMultiplicationBSPGpu.CONF_GRIDSIZE, "" + m_gridSize);
+        m_conf.setBoolean(MatrixMultiplicationBSPGpu.CONF_DEBUG, false);
+        m_conf.setInt("bsp.peers.num", 1);
 
-        job.set(PiEstimatorGpuBSP.CONF_BLOCKSIZE, "" + m_blockSize);
-        job.set(PiEstimatorGpuBSP.CONF_GRIDSIZE, "" + m_gridSize);
-        job.setNumBspTask(1);
-        job.set(PiEstimatorGpuBSP.CONF_ITERATIONS, "" + m_totalIterations);
-        job.setBoolean(PiEstimatorGpuBSP.CONF_DEBUG, false);
-
-      } else {
-        job = MatrixMultiplicationCpuBSP.createMatrixMultiplicationCpuBSPConf(
-            new HamaConfiguration(m_conf), m_OUTPUT_DIR_PATH);
-
-        job.setNumBspTask(8);
-        job.set(PiEstimatorCpuBSP.CONF_ITERATIONS, "" + m_totalIterations);
+        m_matrixA.setConf(m_conf);
+        m_matrixB.setConf(m_conf);
       }
-      
-      return (job.waitForCompletion(true) ? 1 : 0);
-      */
-      return 0;
+
+      DistributedRowMatrix resultMatrix = m_matrixA.multiplyBSP(m_matrixB,
+          m_MATRIX_C_PATH, useGPU);
+
+      return resultMatrix.numRows();
     }
   }
 
