@@ -25,6 +25,12 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
+/*
+ * Known Restrictions:
+ * Block Size must be 2^n (because of reduction sum)
+ * Matrix size n <= blockSize or n = blocksize*Int
+ */
+
 public class MatrixMultiplicationBSPKernel implements Kernel {
 
   // input
@@ -83,15 +89,16 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
 
               multiplier = matrixB[(thread_idxx * threadSliceSize) + j][(block_idxx * blockSliceSize)
                   + k];
+
+              double matrixAColValue = 0;
+              if (((thread_idxx * threadSliceSize) + j) < matrixAColSize) {
+
+                matrixAColValue = rowsA[i][(thread_idxx * threadSliceSize) + j];
+              }
+
+              sum += matrixAColValue * multiplier;
+
             }
-
-            double matrixAColValue = 0;
-            if (((thread_idxx * threadSliceSize) + j) < matrixAColSize) {
-
-              matrixAColValue = rowsA[i][(thread_idxx * threadSliceSize) + j];
-            }
-
-            sum += matrixAColValue * multiplier;
           }
 
           RootbeerGpu.setSharedDouble(thread_idxx * 8, sum);
@@ -99,6 +106,8 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
 
           // do reduction sum in shared memory
           // 1-bit right shift = divide by two to the power 1
+
+          // if (threadSliceSize==1) {
           for (int s = RootbeerGpu.getBlockDimx() / 2; s > 0; s >>= 1) {
             if (thread_idxx < s) {
 
@@ -111,6 +120,12 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
 
           if (thread_idxx == 0) {
 
+            // for (int t = 1; t < RootbeerGpu.getBlockDimx(); t++) {
+            // sum += RootbeerGpu.getSharedDouble(t * 8);
+            // }
+            // sum =
+            // RootbeerGpu.getSharedDouble(0)+RootbeerGpu.getSharedDouble(8);
+
             sum = RootbeerGpu.getSharedDouble(thread_idxx * 8);
 
             if (sum != 0) {
@@ -120,6 +135,8 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
             }
           }
 
+          // RootbeerGpu.setSharedDouble(thread_idxx * 8, 0);
+          // RootbeerGpu.syncthreads();
         }
       }
     }

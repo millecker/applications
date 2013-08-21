@@ -24,7 +24,7 @@ public class ResultMatrix {
     matrix = new double[rows][cols];
   }
 
-  public void set(int x, int y, double value) {
+  public/* synchronized */void set(int x, int y, double value) {
     matrix[x][y] = value;
   }
 }
