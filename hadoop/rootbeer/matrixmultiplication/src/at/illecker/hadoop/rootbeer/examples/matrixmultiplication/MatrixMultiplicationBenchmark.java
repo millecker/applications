@@ -134,6 +134,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
     DistributedRowMatrix matrixC = new DistributedRowMatrix(MATRIX_C_PATH,
         OUTPUT_DIR_PATH, n, n);
+    matrixC.setConf(conf);
 
     // Overwrite matrix A, NOT transposed for verification check
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
