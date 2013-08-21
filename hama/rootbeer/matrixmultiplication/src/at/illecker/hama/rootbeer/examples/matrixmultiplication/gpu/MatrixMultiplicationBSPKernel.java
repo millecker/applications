@@ -122,9 +122,8 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
   public static void main(String[] args) {
 
     // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
-    // ptxas info : Used 39 registers, 40984 bytes smem, 380 bytes cmem[0], 88
-    // bytes cmem[2]
-
+    // ptxas info : Used 31 registers, 8228 bytes smem, 380 bytes cmem[0]
+        
     // using -maxrregcount 32
     // using -shared-mem-size 1024*8 + 12 = 8192 + 12 = 8204
 

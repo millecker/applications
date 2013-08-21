@@ -31,7 +31,7 @@ ant run-cpu [-DnumBspTask=8 -DnumRowsA=100 -DnumColsA=100 \
  
  # Build and run GPU Kernel
 ant run-kernel
-# java -jar MatrixMultiplication-GPU.jar 32 1024 14 false
+# java -jar MatrixMultiplication-GPU.jar 1024 1024 14 false
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 600s' \
