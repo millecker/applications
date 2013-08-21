@@ -98,7 +98,10 @@ public class MatrixMultiplicationBSPGpu extends
     m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
-    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    // m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    // TODO
+    // task must be 0 otherwise write out does NOT work!
+    m_masterTask = peer.getPeerName(0);
 
     this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
         CONF_BLOCKSIZE));

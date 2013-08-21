@@ -87,7 +87,10 @@ public class MatrixMultiplicationBSPCpu
     m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
-    m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    // m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    // TODO
+    // task must be 0 otherwise write out does NOT work!
+    m_masterTask = peer.getPeerName(0);
 
     // Init logging
     if (m_isDebuggingEnabled) {
@@ -274,7 +277,7 @@ public class MatrixMultiplicationBSPCpu
         return;
       }
     } else {
-      conf.setInt("bsp.peers.num", 1);//cluster.getMaxTasks());
+      conf.setInt("bsp.peers.num", cluster.getMaxTasks());
     }
 
     conf.setBoolean(CONF_DEBUG, isDebugging);
