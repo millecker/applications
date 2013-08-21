@@ -73,11 +73,10 @@ public class MatrixMultiplicationBSPCpu
   private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
       + "/MatrixD.seq");
 
-  private boolean isDebuggingEnabled;
-  private FSDataOutputStream logger;
-  private String masterTask;
-
-  private List<KeyValuePair<Integer, DoubleVector>> bColumns = new ArrayList<KeyValuePair<Integer, DoubleVector>>();
+  private boolean m_isDebuggingEnabled;
+  private FSDataOutputStream m_logger;
+  private String m_masterTask;
+  private List<KeyValuePair<Integer, DoubleVector>> m_bColumns = new ArrayList<KeyValuePair<Integer, DoubleVector>>();
 
   @Override
   public void setup(
@@ -85,17 +84,19 @@ public class MatrixMultiplicationBSPCpu
       throws IOException {
 
     Configuration conf = peer.getConfiguration();
-    isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
+    m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
-    this.masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 
     // Init logging
-    if (isDebuggingEnabled) {
+    if (m_isDebuggingEnabled) {
       try {
         FileSystem fs = FileSystem.get(conf);
-        logger = fs.create(new Path(FileOutputFormat.getOutputPath(new BSPJob(
-            (HamaConfiguration) conf)) + "/BSP_" + peer.getTaskId() + ".log"));
+        m_logger = fs.create(new Path(FileOutputFormat
+            .getOutputPath(new BSPJob((HamaConfiguration) conf))
+            + "/BSP_"
+            + peer.getTaskId() + ".log"));
 
       } catch (IOException e) {
         e.printStackTrace();
@@ -110,8 +111,8 @@ public class MatrixMultiplicationBSPCpu
     VectorWritable bVector = new VectorWritable();
     // for each col of matrix B (cause by transposed B)
     while (reader.next(bKey, bVector)) {
-      bColumns.add(new KeyValuePair<Integer, DoubleVector>(bKey.get(), bVector
-          .getVector()));
+      m_bColumns.add(new KeyValuePair<Integer, DoubleVector>(bKey.get(),
+          bVector.getVector()));
     }
     reader.close();
   }
@@ -127,14 +128,14 @@ public class MatrixMultiplicationBSPCpu
     while (peer.readNext(aKey, aVector)) {
 
       // Logging
-      if (isDebuggingEnabled) {
-        logger.writeChars("bsp,input,key=" + aKey + ",value="
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("bsp,input,key=" + aKey + ",value="
             + aVector.getVector().toString() + "\n");
       }
 
       DenseDoubleVector outVector = null;
       // for each col of matrix B (cause by transposed B)
-      for (KeyValuePair<Integer, DoubleVector> bVectorRow : bColumns) {
+      for (KeyValuePair<Integer, DoubleVector> bVectorRow : m_bColumns) {
 
         if (outVector == null) {
           outVector = new DenseDoubleVector(bVectorRow.getValue()
@@ -146,19 +147,19 @@ public class MatrixMultiplicationBSPCpu
         outVector.set(bVectorRow.getKey(), dot);
       }
 
-      peer.send(masterTask, new MatrixRowMessage(aKey.get(), outVector));
+      peer.send(m_masterTask, new MatrixRowMessage(aKey.get(), outVector));
 
-      if (isDebuggingEnabled) {
-        logger.writeChars("bsp,send,key=" + aKey.get() + ",value="
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("bsp,send,key=" + aKey.get() + ",value="
             + outVector.toString() + "\n");
-        logger.flush();
+        m_logger.flush();
       }
     }
 
     peer.sync();
 
     // MasterTask accumulates result
-    if (peer.getPeerName().equals(masterTask)) {
+    if (peer.getPeerName().equals(m_masterTask)) {
 
       MatrixRowMessage currentMatrixRowMessage = null;
 
@@ -166,15 +167,12 @@ public class MatrixMultiplicationBSPCpu
       while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
 
         int rowIndex = currentMatrixRowMessage.getRowIndex();
-        // DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
-        DenseDoubleVector rowValues = new DenseDoubleVector(new double[] { 1,
-            2, 3, 4, 5 });
+        DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
 
-        if (isDebuggingEnabled) {
-          logger.writeChars("bsp,write,key=" + rowIndex + ",value="
+        if (m_isDebuggingEnabled) {
+          m_logger.writeChars("bsp,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
         }
-        // peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
         peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
       }
     }
@@ -241,10 +239,10 @@ public class MatrixMultiplicationBSPCpu
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numRowsA = 10;
-    int numColsA = 10;
-    int numRowsB = 10;
-    int numColsB = 10;
+    int numRowsA = 1024;
+    int numColsA = 1024;
+    int numRowsB = 1024;
+    int numColsB = 1024;
     boolean isDebugging = false;
 
     Configuration conf = new HamaConfiguration();
@@ -276,7 +274,7 @@ public class MatrixMultiplicationBSPCpu
         return;
       }
     } else {
-      conf.setInt("bsp.peers.num", cluster.getMaxTasks());
+      conf.setInt("bsp.peers.num", 1);//cluster.getMaxTasks());
     }
 
     conf.setBoolean(CONF_DEBUG, isDebugging);
