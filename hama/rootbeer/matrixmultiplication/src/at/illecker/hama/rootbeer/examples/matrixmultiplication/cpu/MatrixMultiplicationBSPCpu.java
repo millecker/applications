@@ -166,9 +166,10 @@ public class MatrixMultiplicationBSPCpu
       while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
 
         int rowIndex = currentMatrixRowMessage.getRowIndex();
-        //DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
-        DenseDoubleVector rowValues = new DenseDoubleVector(new double[]{1,2,3,4,5});
-        
+        // DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
+        DenseDoubleVector rowValues = new DenseDoubleVector(new double[] { 1,
+            2, 3, 4, 5 });
+
         if (isDebuggingEnabled) {
           logger.writeChars("bsp,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
@@ -314,7 +315,7 @@ public class MatrixMultiplicationBSPCpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false, false);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, false);
 
     System.out.println("MatrixMultiplicationCpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");

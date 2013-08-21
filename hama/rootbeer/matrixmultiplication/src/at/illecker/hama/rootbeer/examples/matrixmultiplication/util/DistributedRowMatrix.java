@@ -121,7 +121,7 @@ public class DistributedRowMatrix implements Configurable {
    */
   public DistributedRowMatrix multiply(DistributedRowMatrix other, Path outPath)
       throws IOException, ClassNotFoundException, InterruptedException {
-    return multiplyBSP(other, outPath, false, false);
+    return multiplyBSP(other, outPath, false);
   }
 
   /**
@@ -134,8 +134,8 @@ public class DistributedRowMatrix implements Configurable {
    * @return a DistributedRowMatrix containing the product
    */
   public DistributedRowMatrix multiplyBSP(DistributedRowMatrix other,
-      Path outPath, boolean useGPU, boolean cleanedBSPTask) throws IOException,
-      ClassNotFoundException, InterruptedException {
+      Path outPath, boolean useGPU) throws IOException, ClassNotFoundException,
+      InterruptedException {
     // Check if cols of MatrixA = rows of MatrixB
     // (l x m) * (m x n) = (l x n)
     if (numCols != other.numRows()) {
@@ -158,14 +158,8 @@ public class DistributedRowMatrix implements Configurable {
 
     } else { // use GPU
 
-      if (!cleanedBSPTask) {
-        job = MatrixMultiplicationBSPGpu.createMatrixMultiplicationBSPGpuConf(
-            initialConf, this.rowPath, other.rowPath, outPath.getParent());
-      } else {
-        job = at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpuCleaned
-            .createMatrixMultiplicationBSPGpuConf(initialConf, this.rowPath,
-                other.rowPath, outPath.getParent());
-      }
+      job = MatrixMultiplicationBSPGpu.createMatrixMultiplicationBSPGpuConf(
+          initialConf, this.rowPath, other.rowPath, outPath.getParent());
     }
 
     // Multiply Matrix

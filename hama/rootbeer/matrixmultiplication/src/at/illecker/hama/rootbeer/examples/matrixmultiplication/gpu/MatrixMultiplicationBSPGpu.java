@@ -176,7 +176,7 @@ public class MatrixMultiplicationBSPGpu
           + ",threadNum=" + blockSize * gridSize + "\n");
     }
 
-    MatrixMultiplicationBSPSliceKernel kernel = new MatrixMultiplicationBSPSliceKernel(
+    MatrixMultiplicationBSPKernel kernel = new MatrixMultiplicationBSPKernel(
         matrixAArr, matrixBArr, blockSize, gridSize);
     Rootbeer rootbeer = new Rootbeer();
     rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
@@ -206,6 +206,7 @@ public class MatrixMultiplicationBSPGpu
     }
 
     // Get GPU results
+    /*
     int i = 0;
     List<Result> resultList = kernel.resultList.getList();
     for (Result result : resultList) {
@@ -307,7 +308,7 @@ public class MatrixMultiplicationBSPGpu
     if (isDebuggingEnabled) {
       logger.writeChars("bsp,resultCount=" + i + "\n");
       logger.flush();
-    }
+    }*/
 
     peer.sync();
 
@@ -511,7 +512,7 @@ public class MatrixMultiplicationBSPGpu
 
     // MatrixMultiply all within a new BSP job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, true, false);
+    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH, true);
 
     System.out.println("MatrixMultiplicationGpu using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");

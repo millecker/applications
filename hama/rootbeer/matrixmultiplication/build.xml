@@ -1,26 +1,22 @@
 <project>
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<!--
+	<property name="rootbeer.args" value="-maxrregcount 32 -shared-mem-size 8204 -64bit" />
+	-->
 	<property name="output.file" value="MatrixMultiplication" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />
-	<property name="libjars.bench" value="" />
+	<property name="libjars.bench" value="${lib}${file.separator}caliper-1.0-beta-1-all.jar,${lib}${file.separator}hadoop-core-1.3.0-SNAPSHOT.jar,${lib}${file.separator}hama-core-0.6.3-SNAPSHOT.jar,${lib}${file.separator}commons-logging-1.1.1.jar,${lib}${file.separator}commons-configuration-1.7.jar,${lib}${file.separator}commons-lang-2.6.jar,${lib}${file.separator}zookeeper-3.4.5.jar" />
 	<property name="rootbeer.package.dir" value="at/illecker/hama/rootbeer/examples/matrixmultiplication/gpu" />
-	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernel.class,ResultList.class,Result.class" />
+	<property name="rootbeer.classes" value="MatrixMultiplicationBSPKernel.class,ResultMatrix.class,Result.class" />
+	<property name="kernel.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPKernel" />
 	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpu" />
-	<!-- cleaned GPU version without logging-->
-	<!--
-	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernelCleaned.class,ResultList.class,Result.class" />
-	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpuCleaned" />
-	
-	<property name="rootbeer.classes" value="MatrixMultiplicationBSPSliceKernel.class,ResultList.class,Result.class" />
-	<property name="gpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpu" />
-	-->
 	<property name="cpu.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationBSPCpu" />
-	<property name="bench.class" value="" />
+	<property name="bench.class" value="at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu." />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask numRowsA numColsA numRowsB numColsB debug" />
+	<property name="application.args" value="numBspTask numRowsA numColsA numRowsB numColsB debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>

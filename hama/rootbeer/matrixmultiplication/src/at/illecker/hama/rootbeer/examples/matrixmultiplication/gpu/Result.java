@@ -18,46 +18,16 @@ package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
 
 public class Result {
 
-  public int thread_idxx;
-  public int block_idxx;
-  public int threadSliceSize;
-  public int blockSliceSize;
-
-  public int[][] bColsSharedMemIndex = null;
-  public double[][] bColsSharedMemValues = null;
-
-  public double[][] multipliers = null;
-  public int[][][] bColsIndexes = null;
-  public double[][][] bColsVals = null;
-
-  public int[][] threadResultsSharedMemIndex = null;
-  public double[][] threadResultsSharedMemValues = null;
-
-  public int[][][] blockResultsSharedMemIndex = null;
-  public double[][][] blockResultsSharedMemValues = null;
-
-  // output
-  public int[] resultColsIndex = null;
-  public double[][] resultCols = null;
+  public int x;
+  public int y;
+  public double value;
 
   @Override
   public String toString() {
     StringBuilder ret = new StringBuilder();
-    ret.append("calc row: \n");
-    ret.append("  thread_idxx: ");
-    ret.append(thread_idxx);
+    ret.append("(" + x + "," + y + "):");
+    ret.append(value);
     ret.append("\n");
-
-    ret.append("  block_idxx: ");
-    ret.append(block_idxx);
-    ret.append("\n");
-
-    ret.append("  threadSliceSize: ");
-    ret.append(threadSliceSize);
-    ret.append("\n");
-
-    ret.append("  blockSliceSize: ");
-    ret.append(blockSliceSize);
 
     return ret.toString();
   }
