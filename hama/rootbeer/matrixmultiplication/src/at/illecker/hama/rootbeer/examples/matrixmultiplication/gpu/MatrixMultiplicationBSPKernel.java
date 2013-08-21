@@ -78,14 +78,18 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
           for (int j = 0; j < threadSliceSize; j++) {
 
             double multiplier = 0;
-            if ((k + (blockSliceSize * block_idxx)) < matrixBColSize) {
+            if ((((block_idxx * blockSliceSize) + k) < matrixBColSize)
+                && (((thread_idxx * threadSliceSize) + j) < matrixBRowSize)) {
 
-              multiplier = matrixB[(thread_idxx * threadSliceSize + j)][(block_idxx * blockSliceSize)
+              multiplier = matrixB[(thread_idxx * threadSliceSize) + j][(block_idxx * blockSliceSize)
                   + k];
             }
 
-            double matrixAColValue = rowsA[i][(thread_idxx * threadSliceSize)
-                + j];
+            double matrixAColValue = 0;
+            if (((thread_idxx * threadSliceSize) + j) < matrixAColSize) {
+
+              matrixAColValue = rowsA[i][(thread_idxx * threadSliceSize) + j];
+            }
 
             sum += matrixAColValue * multiplier;
           }
@@ -110,7 +114,9 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
             sum = RootbeerGpu.getSharedDouble(thread_idxx * 8);
 
             if (sum != 0) {
-              resultMatrix.set(i, ((blockSliceSize * block_idxx) + k), sum);
+              if (((block_idxx * blockSliceSize) + k) < matrixBColSize) {
+                resultMatrix.set(i, ((block_idxx * blockSliceSize) + k), sum);
+              }
             }
           }
 
@@ -123,7 +129,7 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
 
     // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
     // ptxas info : Used 31 registers, 8228 bytes smem, 380 bytes cmem[0]
-        
+
     // using -maxrregcount 32
     // using -shared-mem-size 1024*8 + 12 = 8192 + 12 = 8204
 
