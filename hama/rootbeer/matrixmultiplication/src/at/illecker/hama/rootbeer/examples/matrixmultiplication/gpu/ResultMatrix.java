@@ -16,50 +16,15 @@
  */
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ResultMatrix {
 
-  private double[][] matrix;
-
-  private Result[] data;
-  private int size;
+  public double[][] matrix;
 
   public ResultMatrix(int rows, int cols) {
     matrix = new double[rows][cols];
-
-    data = new Result[8];
-    size = 0;
   }
 
-  public synchronized void set(int x, int y, double value) {
+  public void set(int x, int y, double value) {
     matrix[x][y] = value;
-  }
-
-  public double[][] getMatrix() {
-    return matrix;
-  }
-
-  public synchronized void add(Result newResult) {
-    data[size] = newResult;
-    size++;
-
-    // if data is full create new array with double dimension
-    if (size == data.length) {
-      Result[] new_data = new Result[size * 2];
-      for (int i = 0; i < size; ++i) {
-        new_data[i] = data[i];
-      }
-      data = new_data;
-    }
-  }
-
-  public List<Result> getList() {
-    List<Result> ret = new ArrayList<Result>();
-    for (int i = 0; i < size; ++i) {
-      ret.add(data[i]);
-    }
-    return ret;
   }
 }

@@ -41,7 +41,7 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
     this.matrixB = matrixB;
     this.threadSliceSize = threadSliceSize;
     this.blockSliceSize = blockSliceSize;
-    resultMatrix = new ResultMatrix(rowsA.length,this.matrixB[0].length);
+    resultMatrix = new ResultMatrix(rowsA.length, this.matrixB[0].length);
   }
 
   public void gpuMethod() {
@@ -70,90 +70,50 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
     if ((block_idxx < matrixBColSize * blockSliceSize)
         && (thread_idxx < matrixBRowSize * threadSliceSize)) {
 
-      // cuPrintf("[%d,%d]device_method started. thread_id: %d, block_id: %d\n",
-      // thread_idxx, block_idxx, thread_idxx, block_idxx);
-
-      // Setup multipliers of matrix B (slized Matrix)
-      double multipliers[][] = new double[blockSliceSize][threadSliceSize];
-      for (int k = 0; k < blockSliceSize; k++) {
-        for (int j = 0; j < threadSliceSize; j++) {
-
-          if ((k + (blockSliceSize * block_idxx)) < matrixBColSize) {
-
-            multipliers[k][j] = matrixB[(thread_idxx * threadSliceSize + j)][(block_idxx * blockSliceSize)
-                + k];
-
-          } else {
-            multipliers[k][j] = 0;
-          }
-
-          // cuPrintf("[%d,%d]multipliers[%d][%d]: %d\n", thread_idxx,
-          // block_idxx, k, j, multipliers[k][j]);
-        }
-      }
-
-      // Setup columns of matrix A
-      double[][] matrixAColumns = new double[threadSliceSize][matrixARowSize];
-      for (int k = 0; k < threadSliceSize; k++) {
-        for (int i = 0; i < matrixARowSize; i++) {
-          matrixAColumns[k][i] = rowsA[i][(thread_idxx * threadSliceSize) + k];
-
-          // cuPrintf("[%d,%d]matrixAColumns setup[%d][%d]: %d\n",
-          // thread_idxx, block_idxx, k, i, matrixAColumns[k][i]);
-        }
-      }
-
       // Calculate scalar multiplication
       for (int k = 0; k < blockSliceSize; k++) {
         for (int i = 0; i < matrixARowSize; i++) {
 
-          int sum = 0;
+          double sum = 0;
           for (int j = 0; j < threadSliceSize; j++) {
 
-            // cuPrintf("[%d,%d]matrixAColumns read[%d][%d]: %d\n",
-            // thread_idxx, block_idxx, j, i,
-            // matrixAColumns[j][i]);
-            // cuPrintf("[%d,%d]multipliers[%d][%d]: %d\n", thread_idxx,
-            // block_idxx, k, j, multipliers[k][j]);
+            double multiplier = 0;
+            if ((k + (blockSliceSize * block_idxx)) < matrixBColSize) {
 
-            sum += matrixAColumns[j][i] * multipliers[k][j];
+              multiplier = matrixB[(thread_idxx * threadSliceSize + j)][(block_idxx * blockSliceSize)
+                  + k];
+            }
+
+            double matrixAColValue = rowsA[i][(thread_idxx * threadSliceSize)
+                + j];
+
+            sum += matrixAColValue * multiplier;
           }
-
-          // cuPrintf("[%d,%d]sum: %d ,matrixARow: %d\n", thread_idxx,
-          // block_idxx, sum, i);
 
           RootbeerGpu.setSharedDouble(thread_idxx * 8, sum);
           RootbeerGpu.syncthreads();
 
-          // do reduction in shared memory
+          // do reduction sum in shared memory
           // 1-bit right shift = divide by two to the power 1
+          for (int s = RootbeerGpu.getBlockDimx() / 2; s > 0; s >>= 1) {
+            if (thread_idxx < s) {
 
-          // for (int s = matrixARowSize / 2; s > 0; s >>= 1) { if (thread_idxx
-          // < s) { intermediateSums[thread_idxx] +=
-          // intermediateSums[thread_idxx + s]; } syncthreads(); }
+              double val1 = RootbeerGpu.getSharedDouble(thread_idxx * 8);
+              double val2 = RootbeerGpu.getSharedDouble((thread_idxx + s) * 8);
+              RootbeerGpu.setSharedDouble(thread_idxx * 8, val1 + val2);
+            }
+            RootbeerGpu.syncthreads();
+          }
 
           if (thread_idxx == 0) {
 
-            for (int t = 1; t < matrixARowSize; t++) {
-              sum += RootbeerGpu.getSharedDouble(t * 8);
-            }
-
-            // cuPrintf(
-            // "[%d,%d]final sum: %d (i:%d,k:%d,blockSliceSize:%d,threadSliceSize:%d)\n",
-            // thread_idxx, block_idxx, sum, i, k, blockSliceSize,
-            // threadSliceSize);
+            sum = RootbeerGpu.getSharedDouble(thread_idxx * 8);
 
             if (sum != 0) {
-
-              Result result = new Result();
-              result.x = i;
-              result.y = (blockSliceSize * block_idxx) + k;
-              result.value = sum;
-              resultMatrix.add(result);
-              
               resultMatrix.set(i, ((blockSliceSize * block_idxx) + k), sum);
             }
           }
+
         }
       }
     }
@@ -172,7 +132,7 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
     // GridSize = 14
 
     boolean DEBUG = false;
-    int n = 4;
+    int n = 1024;
     int blockSize = 1024; // threads
     int gridSize = 14; // blocks
 
@@ -199,15 +159,15 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
 
     double[][] matrixA = createRandomArray(n, n, new Random(42L));
     double[][] matrixB = createRandomArray(n, n, new Random(1337L));
-    //double[][] matrixC = createConstantArray(n, n, 0);
+    // double[][] matrixC = createConstantArray(n, n, 0);
 
     if (DEBUG) {
       System.out.println("MatrixA");
       printArray(matrixA, n, n);
       System.out.println("MatrixB");
       printArray(matrixB, n, n);
-      //System.out.println("MatrixC");
-      //printArray(matrixC, n, n);
+      // System.out.println("MatrixC");
+      // printArray(matrixC, n, n);
     }
 
     MatrixMultiplicationBSPKernel kernel = new MatrixMultiplicationBSPKernel(
@@ -240,17 +200,7 @@ public class MatrixMultiplicationBSPKernel implements Kernel {
     }
 
     // Get GPU Result
-    double[][] matrixC = kernel.resultMatrix.getMatrix();
-
-    List<Result> resultList = kernel.resultMatrix.getList();
-    System.out.println("results: " + resultList.size());
-
-    for (Result result : resultList) {
-      if (DEBUG) {
-        System.out.println(result.toString());
-      }
-      matrixC[result.x][result.y] = result.value;
-    }
+    double[][] matrixC = kernel.resultMatrix.matrix;
 
     double[][] matrixD = multiply(matrixA, matrixB, n, n, n);
 
