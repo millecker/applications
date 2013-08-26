@@ -121,8 +121,10 @@ public class HelloHybridBSP
     } else {
       job.setNumBspTask(cluster.getMaxTasks());
     }
+    job.setNumBspGpuTask(1);
 
     LOG.info("NumBspTask: " + job.getNumBspTask());
+    LOG.info("NumBspGpuTask: " + job.getNumBspGpuTask());
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
