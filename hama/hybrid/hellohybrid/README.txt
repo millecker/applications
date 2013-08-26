@@ -8,9 +8,12 @@
 ant clean
 
 # Build jar file
-ant jar-cpu
+ant jar-gpu
 
 # Submit Hybrid Task to Hama
-ant run-cpu
+ant run-gpu
+
+# Build and run GPU Kernel
+ant run-kernel
 
 ###############################################################################

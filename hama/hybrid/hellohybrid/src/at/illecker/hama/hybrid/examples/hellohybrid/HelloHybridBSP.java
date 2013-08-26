@@ -17,6 +17,7 @@
 package at.illecker.hama.hybrid.examples.hellohybrid;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +39,10 @@ import org.apache.hama.bsp.NullOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
 
+import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
+import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+
 public class HelloHybridBSP
     extends
     HybridBSP<NullWritable, NullWritable, NullWritable, NullWritable, NullWritable> {
@@ -56,7 +61,7 @@ public class HelloHybridBSP
     FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
         .getOutputPath(job), peer.getTaskId() + ".log"));
 
-    outStream.writeChars("HelloHybrid.bsp executed!\n");
+    outStream.writeChars("HelloHybrid.bsp executed on CPU!\n");
     outStream.close();
   }
 
@@ -70,7 +75,34 @@ public class HelloHybridBSP
     FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
         .getOutputPath(job), peer.getTaskId() + ".log"));
 
-    outStream.writeChars("HelloHybrid.bspGpu executed!\n");
+    outStream.writeChars("HelloHybrid.bspGpu executed on GPU!\n");
+
+    HelloHybridKernel kernel = new HelloHybridKernel(1);
+    Rootbeer rootbeer = new Rootbeer();
+    // 1 Kernel within 1 Block
+    rootbeer.setThreadConfig(1, 1, 1);
+
+    // Run GPU Kernels
+    Stopwatch watch = new Stopwatch();
+    watch.start();
+    rootbeer.runAll(kernel);
+    watch.stop();
+
+    List<StatsRow> stats = rootbeer.getStats();
+    for (StatsRow row : stats) {
+      outStream.writeChars("  StatsRow:\n");
+      outStream.writeChars("    init time: " + row.getInitTime() + "\n");
+      outStream.writeChars("    serial time: " + row.getSerializationTime()
+          + "\n");
+      outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
+      outStream.writeChars("    deserial time: " + row.getDeserializationTime()
+          + "\n");
+      outStream.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
+      outStream.writeChars("    num threads: " + row.getNumThreads() + "\n");
+    }
+
+    outStream.writeChars("HelloHybridKernel,Result=" + kernel.result
+        + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
     outStream.close();
   }
 
