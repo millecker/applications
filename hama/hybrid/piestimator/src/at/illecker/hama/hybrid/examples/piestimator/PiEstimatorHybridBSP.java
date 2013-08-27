@@ -87,7 +87,14 @@ public class PiEstimatorHybridBSP extends
         false);
     this.m_iterations = Long.parseLong(peer.getConfiguration().get(
         CONF_ITERATIONS));
+    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
+        CONF_BLOCKSIZE));
+    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
+        CONF_GRIDSIZE));
+
     m_calculationsPerBspTask = divup(m_iterations, peer.getNumPeers());
+    int threadCount = m_blockSize * m_gridSize;
+    m_calculationsPerThread = divup(m_calculationsPerBspTask, threadCount);
   }
 
   @Override
@@ -165,20 +172,8 @@ public class PiEstimatorHybridBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
 
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
-    this.m_isDebuggingEnabled = peer.getConfiguration().getBoolean(CONF_DEBUG,
-        false);
-    this.m_iterations = Long.parseLong(peer.getConfiguration().get(
-        CONF_ITERATIONS));
-    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
-        CONF_BLOCKSIZE));
-    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
-        CONF_GRIDSIZE));
-
-    m_calculationsPerBspTask = divup(m_iterations, peer.getNumPeers());
-    int threadCount = m_blockSize * m_gridSize;
-    m_calculationsPerThread = divup(m_calculationsPerBspTask, threadCount);
+    // Same cleanup as CPU
+    setup(peer);
   }
 
   @Override
