@@ -11,7 +11,7 @@
 	<property name="kernel.class" value="at.illecker.hama.hybrid.examples.piestimator.PiEstimatorKernel" />
 	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBSP" />
 	<property name="cpu.class" value="" />
-	<property name="bench.class" value="" />
+	<property name="bench.class" value="at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
 	<property name="application.args" value="numBspTask numBspGpuTask iterations benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
