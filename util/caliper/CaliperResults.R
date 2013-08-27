@@ -251,6 +251,22 @@ ggsave(file=outputfile, scale=2)
 message <- paste("Info: Saved Barplot in",outputfile,"\n")
 cat(message)
 
+# Generate Geom Line plot of average data
+if (!is.na(args[5]) && args[5]=='true') {
+  ggplot(benchmarkTableAvg, aes(x=AllParameters,y=magnitude,color="red",group=unit)) + 
+    geom_point(size=5) + 
+    geom_line() +
+    xlab(xaxisDesc) +
+    ylab(yaxisDesc) +
+    ggtitle(title) +
+    theme(legend.position = "none")
+
+  outputfile <- paste(caliperJsonFile,"_geom_line.pdf", sep="")
+  ggsave(file=outputfile, scale=2)
+
+  message <- paste("Info: Saved GeomLine Plot in ",outputfile,"\n",sep="")
+  cat(message)
+}
 
 # Generate Box plot
 #benchmarkTable
@@ -270,7 +286,7 @@ cat(message)
 
 
 # Generate CPU + GPU plot
-if (!is.na(args[5]) && args[5]=='true') {
+if (!is.na(args[6]) && args[6]=='true') {
   power <- as.numeric(args[2])
   #cat(paste("Generate geom_line plot and normalize magnitude with 10^",power,"\n",sep=""))
   
@@ -287,9 +303,9 @@ if (!is.na(args[5]) && args[5]=='true') {
     ggtitle(title) +
     theme(legend.position = "bottom")
   
-  outputfile <- paste(caliperJsonFile,"_geom_line.pdf", sep="")
+  outputfile <- paste(caliperJsonFile,"_cpu_gpu_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
   cat(message)
 }
 # benchmarkTableAvgSecCPU <- sqldf('SELECT scenario,n,(avg(magnitude/weight) / 1000000000) as magnitude FROM benchmarkTable WHERE type=="CPU" GROUP BY scenario')
