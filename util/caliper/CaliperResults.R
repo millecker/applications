@@ -19,6 +19,7 @@ if (is.na(args[1])) {
 # Load result file
 caliperJsonFile <- args[1]
 # caliperJsonFile <- "results/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13:37:02Z.json"
+# caliperJsonFile <- "results/hama/piestimator_hybrid/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2013-08-27T08:29:35Z.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -290,12 +291,12 @@ if (!is.na(args[6]) && args[6]=='true') {
   power <- as.numeric(args[2])
   #cat(paste("Generate geom_line plot and normalize magnitude with 10^",power,"\n",sep=""))
   
-  benchmarkTableAvgSec <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
-  #benchmarkTableAvgSec <- transform(benchmarkTableAvgSec,n = as.numeric(as.character(benchmarkTableAvgSec$n)))
-  # benchmarkTableAvgSec
-  # str(benchmarkTableAvgSec)
-  #benchmarkTableAvgSec <- within(benchmarkTableAvgSec, iterations <- n * constant)
-  ggplot(benchmarkTableAvgSec, aes(x=n,y=magnitude,colour=type,group=type)) + 
+  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
+  #benchmarkTableAvgScenarioGroup <- transform(benchmarkTableAvgScenarioGroup,n = as.numeric(as.character(benchmarkTableAvgScenarioGroup$n)))
+  # benchmarkTableAvgScenarioGroup
+  # str(benchmarkTableAvgScenarioGroup)
+  #benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, iterations <- n * constant)
+  ggplot(benchmarkTableAvgScenarioGroup, aes(x=n,y=magnitude,colour=type,group=type)) + 
     geom_point(size=5) + 
     geom_line() +
     xlab(paste("N",args[3])) +
@@ -308,15 +309,41 @@ if (!is.na(args[6]) && args[6]=='true') {
   message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
   cat(message)
 }
-# benchmarkTableAvgSecCPU <- sqldf('SELECT scenario,n,(avg(magnitude/weight) / 1000000000) as magnitude FROM benchmarkTable WHERE type=="CPU" GROUP BY scenario')
-# ggplot(benchmarkTableAvgSecCPU, aes(x=n,y=magnitude,group=1)) + geom_point() + geom_line() 
-# outputfile <- paste(caliperJsonFile,"_cpu.pdf", sep="")
-# ggsave(file=outputfile, scale=1)
 
-# benchmarkTableAvgSecGPU <- sqldf('SELECT scenario,n,(avg(magnitude/weight) / 1000000000) as magnitude FROM benchmarkTable WHERE type=="GPU" GROUP BY scenario')
-# ggplot(benchmarkTableAvgSecGPU, aes(x=n,y=magnitude,group=1)) + geom_point() + geom_line() 
-# outputfile <- paste(caliperJsonFile,"_gpu.pdf", sep="")
-# ggsave(file=outputfile, scale=1)
+# Generate Speedup and Efficiency plot
+if (!is.na(args[7]) && args[7]=='true') {
+  power <- as.numeric(args[2])
   
+  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
+  # convert bspTaskNum col to numeric
+  benchmarkTableAvgScenarioGroup$bspTaskNum <- as.numeric(benchmarkTableAvgScenarioGroup$bspTaskNum)
+  # get magnitude of bspTaskNum=1
+  magnitude_bspTaskNum1 <- benchmarkTableAvgScenarioGroup[benchmarkTableAvgScenarioGroup$bspTaskNum==1,]$magnitude
+  # add new col of magnitude of bspTaskNum=1
+  benchmarkTableAvgScenarioGroup$seq_magnitude <- NA
+  benchmarkTableAvgScenarioGroup$seq_magnitude[is.na(benchmarkTableAvgScenarioGroup$seq_magnitude)] <- magnitude_bspTaskNum1
+  # add speedup column
+  benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, speedup <- seq_magnitude / magnitude)
+  # add efficiency column
+  benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, efficiency <- speedup / bspTaskNum)
+  
+  # prepare date for plot
+  speedupEfficiencyTable <- data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$speedup, type = 'speedup')
+  speedupEfficiencyTable <- rbind(speedupEfficiencyTable, data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$efficiency, type = 'efficiency'))
+  
+  ggplot(speedupEfficiencyTable, aes(x=bspTaskNum,y=value,colour=type,group=type)) + 
+    geom_point(size=5) + 
+    geom_line() +
+    xlab(paste("bspTaskNum")) +
+    ylab(paste("")) +
+    ggtitle(title) +
+    theme(legend.position = "bottom")
+  
+  outputfile <- paste(caliperJsonFile,"_speedup_efficiency_geom_line.pdf", sep="")
+  ggsave(file=outputfile, scale=1.5)
+  message <- paste("Info: Saved Speedup and Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  cat(message)
+}
+
 # Delete temporary created plot file
 unlink("Rplots.pdf")
