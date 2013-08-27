@@ -231,7 +231,7 @@ public class PiEstimatorHybridBSP extends
       outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
           + "\n");
       outStream.writeChars("results: " + resultList.size() + "\n");
-      outStream.writeChars("calculationsTotal: " + m_calculationsPerThread
+      outStream.writeChars("calculationsTotalOnGPU: " + m_calculationsPerThread
           * m_blockSize * m_gridSize + "\n");
       outStream.close();
     }
@@ -310,22 +310,25 @@ public class PiEstimatorHybridBSP extends
     ClusterStatus cluster = jobClient.getClusterStatus(true);
 
     if (args.length > 0) {
-      if (args.length == 2) {
+      if (args.length == 3) {
         job.setNumBspTask(Integer.parseInt(args[0]));
-        job.set(CONF_ITERATIONS, args[1]);
+        job.setNumBspGpuTask(Integer.parseInt(args[1]));
+        job.set(CONF_ITERATIONS, args[2]);
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
-        System.out.println("    Argument3=totalIterations");
+        System.out.println("    Argument2=numBspGpuTask");
+        System.out.println("    Argument3=totalIterations ("
+            + PiEstimatorHybridBSP.totalIterations + ")");
         return;
       }
     } else {
       job.setNumBspTask(cluster.getMaxTasks());
+      // Enable one GPU task
+      job.setNumBspGpuTask(1);
       job.set(CONF_ITERATIONS, "" + PiEstimatorHybridBSP.totalIterations);
     }
 
-    // Enable one GPU task
-    job.setNumBspGpuTask(1);
     LOG.info("TotalIterations: " + job.get(CONF_ITERATIONS));
     LOG.info("BlockSize: " + blockSize);
     LOG.info("GridSize: " + gridSize);
