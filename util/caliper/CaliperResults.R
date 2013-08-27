@@ -326,23 +326,51 @@ if (!is.na(args[7]) && args[7]=='true') {
   benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, speedup <- seq_magnitude / magnitude)
   # add efficiency column
   benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, efficiency <- speedup / bspTaskNum)
+  # add group column
+  benchmarkTableAvgScenarioGroup$type <- 1
   
-  # prepare date for plot
-  speedupEfficiencyTable <- data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$speedup, type = 'speedup')
-  speedupEfficiencyTable <- rbind(speedupEfficiencyTable, data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$efficiency, type = 'efficiency'))
+  # Save speedup plot 
+  ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=speedup,colour=type,group=type)) + 
+     geom_point(size=5) + 
+     geom_line() +
+     xlab(paste("bspTaskNum")) +
+     ylab(paste("speedup")) +
+     ggtitle(title) +
+     theme(legend.position = "none")
+  outputfile <- paste(caliperJsonFile,"_speedup_geom_line.pdf", sep="")
+  ggsave(file=outputfile, scale=1.5)
+  message <- paste("Info: Saved Speedup GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  cat(message)
   
-  ggplot(speedupEfficiencyTable, aes(x=bspTaskNum,y=value,colour=type,group=type)) + 
+  # Save efficiency plot 
+  ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=efficiency,colour=type,group=type)) + 
     geom_point(size=5) + 
     geom_line() +
     xlab(paste("bspTaskNum")) +
-    ylab(paste("")) +
+    ylab(paste("efficiency")) +
     ggtitle(title) +
-    theme(legend.position = "bottom")
-  
-  outputfile <- paste(caliperJsonFile,"_speedup_efficiency_geom_line.pdf", sep="")
+    theme(legend.position = "none")
+  outputfile <- paste(caliperJsonFile,"_efficiency_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved Speedup and Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  message <- paste("Info: Saved Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
   cat(message)
+  
+  # prepare data for plot speedup and efficiency together
+  # speedupEfficiencyTable <- data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$speedup, type = 'speedup')
+  # speedupEfficiencyTable <- rbind(speedupEfficiencyTable, data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$efficiency, type = 'efficiency'))
+  
+  # ggplot(speedupEfficiencyTable, aes(x=bspTaskNum,y=value,colour=type,group=type)) + 
+  #   geom_point(size=5) + 
+  #   geom_line() +
+  #   xlab(paste("bspTaskNum")) +
+  #   ylab(paste("")) +
+  #   ggtitle(title) +
+  #   theme(legend.position = "bottom")
+  
+  # outputfile <- paste(caliperJsonFile,"_speedup_efficiency_geom_line.pdf", sep="")
+  # ggsave(file=outputfile, scale=1.5)
+  # message <- paste("Info: Saved Speedup and Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  # cat(message)
 }
 
 # Delete temporary created plot file
