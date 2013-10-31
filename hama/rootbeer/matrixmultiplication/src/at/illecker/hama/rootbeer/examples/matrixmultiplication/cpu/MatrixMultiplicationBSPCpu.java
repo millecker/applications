@@ -43,10 +43,10 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
-import org.apache.hama.ml.math.DenseDoubleVector;
-import org.apache.hama.ml.math.DoubleVector;
-import org.apache.hama.ml.writable.VectorWritable;
-import org.apache.hama.util.KeyValuePair;
+import org.apache.hama.commons.io.VectorWritable;
+import org.apache.hama.commons.math.DenseDoubleVector;
+import org.apache.hama.commons.math.DoubleVector;
+import org.apache.hama.commons.util.KeyValuePair;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMessage;

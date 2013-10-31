@@ -36,10 +36,10 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.ml.math.DenseDoubleMatrix;
-import org.apache.hama.ml.math.DenseDoubleVector;
-import org.apache.hama.ml.math.DoubleVector;
-import org.apache.hama.ml.writable.VectorWritable;
+import org.apache.hama.commons.io.VectorWritable;
+import org.apache.hama.commons.math.DenseDoubleMatrix;
+import org.apache.hama.commons.math.DenseDoubleVector;
+import org.apache.hama.commons.math.DoubleVector;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationBSPCpu;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationBSPGpu;

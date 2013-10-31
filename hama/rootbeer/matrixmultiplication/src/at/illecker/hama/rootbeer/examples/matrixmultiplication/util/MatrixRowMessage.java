@@ -21,8 +21,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hama.ml.math.DoubleVector;
-import org.apache.hama.ml.writable.VectorWritable;
+import org.apache.hama.commons.io.VectorWritable;
+import org.apache.hama.commons.math.DoubleVector;
 
 public class MatrixRowMessage implements WritableComparable<MatrixRowMessage> {
   private int rowIndex;
