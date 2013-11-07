@@ -1,8 +1,6 @@
 CC = g++
-CPPFLAGS = -m64 -I$(HAMA_HOME)/../../../../c++/install/include -g
-#CPPFLAGS = -m64 -I/home/bafu/workspace/hama-0.5.0-gpu/c++/install/include
-LDFLAGS = -L$(HAMA_HOME)/../../../../c++/install/lib -lhamapipes -lhadooputils -lcrypto -lpthread -O2
-#LDFLAGS = -L/home/bafu/workspace/hama-0.5.0-gpu/c++/install/lib -lhamapipes -lhadooputils -lcrypto -lpthread -O2
+CPPFLAGS = -m64 -I$(HAMA_HOME)/../../../../c++/src/main/native/utils/api -I$(HAMA_HOME)/../../../../c++/src/main/native/pipes/api
+LDFLAGS = -L$(HAMA_HOME)/../../../../c++/target/native -lhadooputils -lcrypto -lpthread -g -Wall -O2
 
 all: MatrixMultiplication
 

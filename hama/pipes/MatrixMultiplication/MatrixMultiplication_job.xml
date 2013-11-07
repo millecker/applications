@@ -17,6 +17,14 @@
     <name>bsp.input.format.class</name>
     <value>org.apache.hama.bsp.SequenceFileInputFormat</value>
   </property>
+  <property>
+    <name>bsp.input.dir</name>
+    <value>input/matrixmult/matrixA.seq</value>
+  </property>
+  <property>
+    <name>hama.mat.mult.B.path</name>
+    <value>input/matrixmult/transposedMatrixB.seq</value>
+  </property>
 <!--
   <property>
     <name>bsp.output.format.class</name>
@@ -50,13 +58,5 @@
   <property>
     <name>bsp.input.partitioner.class</name>
     <value>org.apache.hama.pipes.PipesPartitioner</value>                                            
-  </property>
-  <property>
-    <name>bsp.input.dir</name>
-    <value>input/examples/MatrixA.seq</value>                                            
-  </property>
-  <property>
-    <name>hama.mat.mult.B.path</name>
-    <value>input/examples/MatrixB.seq</value>                                            
   </property>
 </configuration>

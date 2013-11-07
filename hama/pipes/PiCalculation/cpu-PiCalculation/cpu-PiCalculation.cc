@@ -1,9 +1,28 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "hama/Pipes.hh"
 #include "hama/TemplateFactory.hh"
 #include "hadoop/StringUtils.hh"
 
 #include <time.h>
 #include <math.h>
+#include <stdlib.h>
 #include <string>
 #include <iostream>
 
@@ -14,27 +33,31 @@ using HamaPipes::BSP;
 using HamaPipes::BSPContext;
 using namespace HadoopUtils;
 
-class PiCalculationBSP: public BSP {
+class PiCalculationBSP: public BSP<string,string,string,string,string> {
 private:
-    string masterTask;
-    int iterations;
+  string masterTask;
+  long iterations; // iterations_per_bsp_task
 public:
-  PiCalculationBSP(BSPContext& context) {
-      iterations = 10000;
+  PiCalculationBSP(BSPContext<string,string,string,string,string>& context) {
+    iterations = 1000000L;
   }
     
-  inline double closed_interval_rand(double x0, double x1)
-  {
+  inline double closed_interval_rand(double x0, double x1) {
     return x0 + (x1 - x0) * rand() / ((double) RAND_MAX);
   }
 
-  void bsp(BSPContext& context) {
+  void setup(BSPContext<string,string,string,string,string>& context) {
+    // Choose one as a master
+    masterTask = context.getPeerName(context.getNumPeers() / 2);
+  }
       
-    /* initialize random seed: */
+  void bsp(BSPContext<string,string,string,string,string>& context) {
+    
+    /* initialize random seed */
     srand(time(NULL));
     
     int in = 0;
-    for (int i = 0; i < iterations; i++) {
+    for (long i = 0; i < iterations; i++) {
       //rand() -> greater than or equal to 0.0 and less than 1.0. 
       double x = 2.0 * closed_interval_rand(0, 1) - 1.0;
       double y = 2.0 * closed_interval_rand(0, 1) - 1.0;    
@@ -43,38 +66,28 @@ public:
       }
     }      
       
-    double data = 4.0 * in / iterations;
-      
-    cout << "SendMessage to Master: " << masterTask << " value: "  << data  << "\n";
-    context.sendMessage(masterTask, toString(data));
+    context.sendMessage(masterTask, toString(in));
     context.sync();
   }
     
-  void setup(BSPContext& context) {
-    // Choose one as a master
-    masterTask = context.getPeerName(context.getNumPeers() / 2);
-    cout << "MasterTask: " << masterTask << "\n";
-  }
-    
-  void cleanup(BSPContext& context) {
+  void cleanup(BSPContext<string,string,string,string,string>& context) {
     if (context.getPeerName().compare(masterTask)==0) {
       cout << "I'm the MasterTask fetch results!\n";
-      double pi = 0.0;
+      long totalHits = 0;
       int msgCount = context.getNumCurrentMessages();
       cout << "MasterTask fetches " << msgCount << " results!\n";
       string received;
       for (int i=0; i<msgCount; i++) {
         string received = context.getCurrentMessage();
-        pi += toDouble(received);
+        totalHits += toInt(received);
       }
 
-      pi = pi / msgCount; //msgCount = numPeers
-      cout << "Estimated value of PI is " << pi << " write results...\n";
+      double pi = 4.0 * totalHits / (msgCount * iterations);
       context.write("Estimated value of PI is", toString(pi));
     }
   }
 };
 
 int main(int argc, char *argv[]) {
-  return HamaPipes::runTask(HamaPipes::TemplateFactory<PiCalculationBSP>());
+  return HamaPipes::runTask<string,string,string,string,string>(HamaPipes::TemplateFactory<PiCalculationBSP,string,string,string,string,string>());
 }
