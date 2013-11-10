@@ -32,49 +32,49 @@ using HamaPipes::BSP;
 using HamaPipes::BSPContext;
 using namespace HadoopUtils;
 
-class SumBSP: public BSP<string,string,string,string,string> {
+class SumBSP: public BSP<string,string,string,double,double> {
 private:
   string masterTask;
 public:
-  SumBSP(BSPContext<string,string,string,string,string>& context) {  }
-
-  void setup(BSPContext<string,string,string,string,string>& context) {
+  SumBSP(BSPContext<string,string,string,double,double>& context) {  }
+  
+  void setup(BSPContext<string,string,string,double,double>& context) {
     // Choose one as a master
     masterTask = context.getPeerName(context.getNumPeers() / 2);
   }
   
-  void bsp(BSPContext<string,string,string,string,string>& context) {
+  void bsp(BSPContext<string,string,string,double,double>& context) {
     
     double intermediateSum = 0.0;
+    // key and value are strings because of KeyValueTextInputFormat
     string key;
     string value;
     
     while(context.readNext(key,value)) {
       cout << "SumBSP bsp: key: " << key << " value: "  << value  << "\n";
       intermediateSum += toDouble(value);
-      
     }
+    
     cout << "SendMessage to Master: " << masterTask << " value: "  << intermediateSum  << "\n";
-    context.sendMessage(masterTask, toString(intermediateSum));
+    context.sendMessage(masterTask, intermediateSum);
     context.sync();
   }
   
-  void cleanup(BSPContext<string,string,string,string,string>& context) {
+  void cleanup(BSPContext<string,string,string,double,double>& context) {
     if (context.getPeerName().compare(masterTask)==0) {
       cout << "I'm the MasterTask fetch results!\n";
       double sum = 0.0;
       int msgCount = context.getNumCurrentMessages();
       cout << "MasterTask fetches " << msgCount << " results!\n";
       for (int i=0; i<msgCount; i++) {
-        string received = context.getCurrentMessage();
-        sum += toDouble(received);
+        sum += context.getCurrentMessage();
       }
       cout << "Sum " << sum << " write results...\n";
-      context.write("Sum", toString(sum));
+      context.write("Sum", sum);
     }
-  }    
+  }
 };
 
 int main(int argc, char *argv[]) {
-  return HamaPipes::runTask<string,string,string,string,string>(HamaPipes::TemplateFactory<SumBSP,string,string,string,string,string>());
+  return HamaPipes::runTask<string,string,string,double,double>(HamaPipes::TemplateFactory<SumBSP,string,string,string,double,double>());
 }
