@@ -38,114 +38,114 @@ using namespace HadoopUtils;
 
 using math::DenseDoubleVector;
 
-class MatrixMultiplicationBSP: public BSP<string,string,string,string,string> {
+class MatrixMultiplicationBSP: public BSP<int,string,int,string,string> {
 private:
-    string masterTask;
-    int seqFileID;
-    string HAMA_MAT_MULT_B_PATH;
+  string masterTask;
+  int seqFileID;
+  string HAMA_MAT_MULT_B_PATH;
 public:
-  MatrixMultiplicationBSP(BSPContext<string,string,string,string,string>& context) {
+  MatrixMultiplicationBSP(BSPContext<int,string,int,string,string>& context) {
     seqFileID = 0;
     HAMA_MAT_MULT_B_PATH = "hama.mat.mult.B.path";
   }
-
-  void setup(BSPContext<string,string,string,string,string>& context) {
+  
+  void setup(BSPContext<int,string,int,string,string>& context) {
     // Choose one as a master
     masterTask = context.getPeerName(context.getNumPeers() / 2);
     
     reopenMatrixB(context);
   }
   
-  void bsp(BSPContext<string,string,string,string,string>& context) {
-      
-    string aRowKey;
+  void bsp(BSPContext<int,string,int,string,string>& context) {
+    
+    int aRowKey;
     string aRowVectorStr;
     // while for each row of matrixA
     while(context.readNext(aRowKey, aRowVectorStr)) {
-      //cout << "aRowKey: " << aRowKey << " - aRowVectorStr: " << aRowVectorStr << "\n";
-        
+      cout << "aRowKey: " << aRowKey << " - aRowVectorStr: " << aRowVectorStr << "\n";
+      
       DenseDoubleVector *aRowVector = new DenseDoubleVector(aRowVectorStr);
       DenseDoubleVector *colValues = NULL;
-        
+      
       int bColKey;
       string bColVectorStr;
-        
+      
       // while for each col of matrixB
-      while (context.sequenceFileReadNext<int,string>(seqFileID,bColKey,bColVectorStr)) {
+      while (context.sequenceFileReadNext<int,string>(seqFileID, bColKey, bColVectorStr)) {
         
-          //cout << "bColKey: " << bColKey << " - bColVectorStr: " << bColVectorStr << "\n";
-          
-          DenseDoubleVector *bColVector = new DenseDoubleVector(bColVectorStr);
-          
+        cout << "bColKey: " << bColKey << " - bColVectorStr: " << bColVectorStr << "\n";
+        
+        DenseDoubleVector *bColVector = new DenseDoubleVector(bColVectorStr);
+        
         if (colValues == NULL) {
-             colValues = new DenseDoubleVector(bColVector->getDimension());
+          colValues = new DenseDoubleVector(bColVector->getDimension());
         }
-          double dot = aRowVector->dot(bColVector);
-          
+        double dot = aRowVector->dot(bColVector);
+        
         colValues->set(bColKey, dot);
       }
-        
+      
       // Submit one calculated row
       std::stringstream message;
       message << aRowKey << ":" << colValues->toString();
-      //cout << "Send Message: " << message.str() << "\n";
-      context.sendMessage(masterTask, message.str()); 
-        
+      cout << "Send Message: " << message.str() << "\n";
+      context.sendMessage(masterTask, message.str());
+      
       reopenMatrixB(context);
     }
-      
+    
     context.sequenceFileClose(seqFileID);
     context.sync();
   }
-    
-  void cleanup(BSPContext<string,string,string,string,string>& context) {
-      if (context.getPeerName().compare(masterTask)==0) {
-          //cout << "I'm the MasterTask fetch results!\n";
-          
-          int msgCount = context.getNumCurrentMessages();
-          //cout << "MasterTask fetches " << msgCount << " messages!\n";
-          
-          for (int i=0; i<msgCount; i++) {
-              
-              string received = context.getCurrentMessage();
-              //key:value1,value2,value3
-              int pos = (int)received.find(":");
-              string key = received.substr(0,pos);
-              string values = received.substr(pos+1,received.length());
-              
-              //cout << "RECEIVED MSG: key:" << key << " value: " << values.substr(0,20) << "\n";
-              
-              context.write(key, values);
-          }
+  
+  void cleanup(BSPContext<int,string,int,string,string>& context) {
+    if (context.getPeerName().compare(masterTask)==0) {
+      cout << "I'm the MasterTask fetch results!\n";
+      
+      int msgCount = context.getNumCurrentMessages();
+      cout << "MasterTask fetches " << msgCount << " messages!\n";
+      
+      for (int i=0; i<msgCount; i++) {
+        
+        string received = context.getCurrentMessage();
+        //key:value1,value2,value3
+        int pos = (int)received.find(":");
+        int key = toInt(received.substr(0,pos));
+        string values = received.substr(pos+1,received.length());
+        
+        cout << "RECEIVED MSG: key:" << key << " value: " << values.substr(0,20) << "\n";
+        
+        context.write(key, values);
       }
+    }
   }
-    
-  void reopenMatrixB(BSPContext<string,string,string,string,string>& context) {
+  
+  void reopenMatrixB(BSPContext<int,string,int,string,string>& context) {
     if (seqFileID!=0) {
       context.sequenceFileClose(seqFileID);
     }
-
+    
     const BSPJob* job = context.getBSPJob();
     string path = job->get(HAMA_MAT_MULT_B_PATH);
-      
+    
     //cout << "sequenceFileOpen path: " << path << "\n";
-    seqFileID = context.sequenceFileOpen(path,"r",
-                "org.apache.hadoop.io.IntWritable",
+    seqFileID = context.sequenceFileOpen(path, "r",
+                                         "org.apache.hadoop.io.IntWritable",
                                          "org.apache.hama.commons.io.PipesVectorWritable");
   }
-    
+  
 };
 
-class MatrixRowPartitioner: public Partitioner<string,string,string,string,string> {
+class MatrixRowPartitioner: public Partitioner<int,string,int,string,string> {
 public:
-  MatrixRowPartitioner(BSPContext<string,string,string,string,string>& context) { }
-        
-    int partition(const string& key,const string& value, int32_t numTasks) {
-      //cout << "partition key: " << key << " value: " << value.substr(0,10) << "..." << " numTasks: "<< numTasks <<"\n";
-      return toInt(key) % numTasks;
-    }
+  MatrixRowPartitioner(BSPContext<int,string,int,string,string>& context) { }
+  
+  int partition(const int& key, const string& value, int32_t num_tasks) {
+    cout << "partition key: " << key << " value: " << value.substr(0,10) << "..." << " num_tasks: "<< num_tasks <<"\n";
+    return key % num_tasks;
+  }
 };
 
 int main(int argc, char *argv[]) {
-  return HamaPipes::runTask<string,string,string,string,string>(HamaPipes::TemplateFactory<MatrixMultiplicationBSP,string,string,string,string,string,MatrixRowPartitioner>());
+  return HamaPipes::runTask<int,string,int,string,string>(HamaPipes::TemplateFactory<MatrixMultiplicationBSP,int,string,int,string,string,MatrixRowPartitioner>());
 }

@@ -36,7 +36,7 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.commons.io.VectorWritable;
+import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.math.DenseDoubleMatrix;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
@@ -347,7 +347,7 @@ public class DistributedRowMatrix implements Configurable {
       reader = new SequenceFile.Reader(fs, path, conf);
 
       IntWritable key = new IntWritable();
-      VectorWritable vector = new VectorWritable();
+      PipesVectorWritable vector = new PipesVectorWritable();
 
       while (reader.next(key, vector)) {
         // System.out.println("readDistributedRowMatrix: key: " + key
@@ -385,7 +385,7 @@ public class DistributedRowMatrix implements Configurable {
     try {
       FileSystem fs = FileSystem.get(conf);
       writer = new SequenceFile.Writer(fs, conf, path, IntWritable.class,
-          VectorWritable.class);
+          PipesVectorWritable.class);
 
       if (saveTransposed) { // Transpose Matrix before saving
         double[][] transposed = new double[columns][rows];
@@ -399,7 +399,7 @@ public class DistributedRowMatrix implements Configurable {
 
       for (int i = 0; i < matrix.length; i++) {
         DenseDoubleVector rowVector = new DenseDoubleVector(matrix[i]);
-        writer.append(new IntWritable(i), new VectorWritable(rowVector));
+        writer.append(new IntWritable(i), new PipesVectorWritable(rowVector));
       }
 
     } catch (IOException e) {

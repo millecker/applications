@@ -43,7 +43,7 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
 import org.apache.hama.bsp.sync.SyncException;
-import org.apache.hama.commons.io.VectorWritable;
+import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 import org.apache.hama.commons.util.KeyValuePair;
@@ -53,7 +53,7 @@ import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.MatrixRowMes
 
 public class MatrixMultiplicationBSPCpu
     extends
-    BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> {
+    BSP<IntWritable, PipesVectorWritable, IntWritable, PipesVectorWritable, MatrixRowMessage> {
 
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationBSPCpu.class);
@@ -80,7 +80,7 @@ public class MatrixMultiplicationBSPCpu
 
   @Override
   public void setup(
-      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, PipesVectorWritable, IntWritable, PipesVectorWritable, MatrixRowMessage> peer)
       throws IOException {
 
     Configuration conf = peer.getConfiguration();
@@ -111,22 +111,26 @@ public class MatrixMultiplicationBSPCpu
         new Path(conf.get(CONF_MATRIX_MULT_B_PATH)), conf);
 
     IntWritable bKey = new IntWritable();
-    VectorWritable bVector = new VectorWritable();
+    PipesVectorWritable bVector = new PipesVectorWritable();
     // for each col of matrix B (cause by transposed B)
     while (reader.next(bKey, bVector)) {
       m_bColumns.add(new KeyValuePair<Integer, DoubleVector>(bKey.get(),
           bVector.getVector()));
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("setup,read,transposedMatrixB,key=" + bKey.get()
+            + ",value=" + bVector.getVector().toString() + "\n");
+      }
     }
     reader.close();
   }
 
   @Override
   public void bsp(
-      BSPPeer<IntWritable, VectorWritable, IntWritable, VectorWritable, MatrixRowMessage> peer)
+      BSPPeer<IntWritable, PipesVectorWritable, IntWritable, PipesVectorWritable, MatrixRowMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
     IntWritable aKey = new IntWritable();
-    VectorWritable aVector = new VectorWritable();
+    PipesVectorWritable aVector = new PipesVectorWritable();
     // while for each row of matrix A
     while (peer.readNext(aKey, aVector)) {
 
@@ -176,7 +180,8 @@ public class MatrixMultiplicationBSPCpu
           m_logger.writeChars("bsp,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
         }
-        peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
+        peer.write(new IntWritable(rowIndex),
+            new PipesVectorWritable(rowValues));
       }
     }
   }
@@ -220,7 +225,7 @@ public class MatrixMultiplicationBSPCpu
 
     job.setOutputFormat(SequenceFileOutputFormat.class);
     job.setOutputKeyClass(IntWritable.class);
-    job.setOutputValueClass(VectorWritable.class);
+    job.setOutputValueClass(PipesVectorWritable.class);
     job.setOutputPath(outPath);
 
     job.set(CONF_MATRIX_MULT_B_PATH, bPath.toString());

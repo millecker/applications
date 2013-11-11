@@ -15,4 +15,8 @@ hadoop dfs -put input/* input/matrixmult
 
 hama pipes -conf MatrixMultiplication_job.xml -output output/pipes/matrixmult
 
-#hama seqdumper -seqFile input/matrixmult/matrixA.seq
+hama seqdumper -seqFile input/matrixmult/matrixA.seq
+
+hama seqdumper -seqFile input/matrixmult/transposedMatrixB.seq
+
+hama seqdumper -seqFile output/pipes/matrixmult/part-00000
