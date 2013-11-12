@@ -1,12 +1,14 @@
 #!/bin/bash
 
-hadoop dfs -rmr output/PiCalculation
-hadoop dfs -rmr bin/cpu-PiCalculation
+hadoop fs -rmr output/PiCalculation
+hadoop fs -rmr bin/cpu-PiCalculation
 
 cd cpu-PiCalculation
 make clean && make
 cd ..
 
-hadoop dfs -put cpu-PiCalculation/cpu-PiCalculation bin/cpu-PiCalculation
+hadoop fs -put cpu-PiCalculation/cpu-PiCalculation bin/cpu-PiCalculation
 
 hama pipes -conf piCalculation_job.xml -output output/PiCalculation
+
+hama seqdumper -seqFile output/PiCalculation/part-00004
