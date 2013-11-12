@@ -1,22 +1,22 @@
 #!/bin/bash
 
-hadoop dfs -rmr output/matrixmult
-hadoop dfs -rmr bin/cpu_MatrixMultiplication
+hadoop fs -rmr output/matrixmult
+hadoop fs -rmr bin/cpu_MatrixMultiplication
 
 cd cpu-MatrixMultiplication
 make clean && make
 cd ..
 
-hadoop dfs -put cpu-MatrixMultiplication/MatrixMultiplication bin/cpu_MatrixMultiplication
+hadoop fs -put cpu-MatrixMultiplication/MatrixMultiplication bin/cpu_MatrixMultiplication
 
-hadoop dfs -rmr input/matrixmult
-hadoop dfs -mkdir input/matrixmult
-hadoop dfs -put input/* input/matrixmult
+hadoop fs -rmr input/matrixmult
+hadoop fs -mkdir input/matrixmult
+hadoop fs -put input/* input/matrixmult
 
 hama pipes -conf MatrixMultiplication_job.xml -output output/pipes/matrixmult
 
-hama seqdumper -seqFile input/matrixmult/matrixA.seq
+hama seqdumper -seqFile input/matrixmult/matrixA_10x10.seq
 
-hama seqdumper -seqFile input/matrixmult/transposedMatrixB.seq
+hama seqdumper -seqFile input/matrixmult/transposedMatrixB_10x10.seq
 
 hama seqdumper -seqFile output/pipes/matrixmult/part-00000

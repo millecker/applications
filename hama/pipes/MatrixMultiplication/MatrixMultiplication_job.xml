@@ -15,11 +15,11 @@
   </property>
   <property>
     <name>bsp.input.dir</name>
-    <value>input/matrixmult/matrixA.seq</value>
+    <value>input/matrixmult/matrixA_10x10.seq</value>
   </property>
   <property>
     <name>hama.mat.mult.B.path</name>
-    <value>input/matrixmult/transposedMatrixB.seq</value>
+    <value>input/matrixmult/transposedMatrixB_10x10.seq</value>
   </property>
   <property>
     <name>bsp.input.format.class</name>
@@ -52,8 +52,8 @@
   </property>
   -->
   <property>
-    <name>hama.messenger.queue.class</name>
-    <value>org.apache.hama.bsp.message.queue.SortedMessageQueue</value>
+    <name>hama.messenger.xfer.queue.class</name>
+    <value>org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol</value>
   </property>
   <property>
     <name>bsp.input.partitioner.class</name>
@@ -72,5 +72,10 @@
   <property>
     <name>bsp.local.tasks.maximum</name>
     <value>8</value>
+  </property>
+  <!-- bspTaskNum -->
+  <property>
+    <name>bsp.peers.num</name>
+    <value>3</value>
   </property>
 </configuration>

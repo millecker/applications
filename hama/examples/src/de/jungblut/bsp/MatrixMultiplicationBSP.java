@@ -122,8 +122,9 @@ public final class MatrixMultiplicationBSP
       InterruptedException, ClassNotFoundException {
 
     HamaConfiguration conf = new HamaConfiguration();
-    conf.set(MessageManager.QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.queue.SortedMessageQueue");
+    conf.set(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
+        "org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol");
+
     conf.set("bsp.local.tasks.maximum", "8");
     // LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
 

@@ -232,8 +232,8 @@ public class MatrixMultiplicationBSPCpu
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     // Order message by row index
-    job.set(MessageManager.QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.queue.SortedMessageQueue");
+    job.set(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
+        "org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol");
 
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask()); // "bsp.peers.num"
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));

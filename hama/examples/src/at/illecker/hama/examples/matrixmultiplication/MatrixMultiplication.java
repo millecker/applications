@@ -153,14 +153,16 @@ public class MatrixMultiplication
 
     Path outPath = new Path("output/hama/examples/matrixmult");
 
-    conf.set(MessageManager.QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.queue.SortedMessageQueue");
+    // Order message by row index
+    conf.set(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
+        "org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol");
+
     // conf.set("bsp.local.tasks.maximum", "10");
 
     // set Job Config
     BSPJob job = new BSPJob(conf);
 
-    if (numBspTask>0) {
+    if (numBspTask > 0) {
       job.setNumBspTask(numBspTask);
     }
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
