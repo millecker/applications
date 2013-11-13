@@ -13,10 +13,10 @@ hadoop fs -rmr input/matrixmult
 hadoop fs -mkdir input/matrixmult
 hadoop fs -put input/* input/matrixmult
 
-hama pipes -conf MatrixMultiplication_job.xml -output output/pipes/matrixmult
+hama pipes -conf MatrixMultiplication_job.xml -output output/matrixmult
 
 hama seqdumper -seqFile input/matrixmult/matrixA_10x10.seq
 
 hama seqdumper -seqFile input/matrixmult/transposedMatrixB_10x10.seq
 
-hama seqdumper -seqFile output/pipes/matrixmult/part-00000
+hama seqdumper -seqFile output/matrixmult/part-00001
