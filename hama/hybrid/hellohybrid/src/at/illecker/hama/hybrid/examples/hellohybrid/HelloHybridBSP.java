@@ -52,6 +52,11 @@ public class HelloHybridBSP
       "output/hama/hybrid/examples/hellohybrid-" + System.currentTimeMillis());
 
   @Override
+  public Class<NullWritable> getMessageClass() {
+    return NullWritable.class;
+  }
+
+  @Override
   public void bsp(
       BSPPeer<NullWritable, NullWritable, NullWritable, NullWritable, NullWritable> peer)
       throws IOException, SyncException, InterruptedException {
@@ -67,8 +72,8 @@ public class HelloHybridBSP
 
   @Override
   public void bspGpu(
-      BSPPeer<NullWritable, NullWritable, NullWritable, NullWritable, NullWritable> peer)
-      throws IOException, SyncException, InterruptedException {
+      BSPPeer<NullWritable, NullWritable, NullWritable, NullWritable, NullWritable> peer,
+      Rootbeer rootbeer) throws IOException, SyncException, InterruptedException {
 
     BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
     FileSystem fs = FileSystem.get(peer.getConfiguration());
@@ -78,7 +83,6 @@ public class HelloHybridBSP
     outStream.writeChars("HelloHybrid.bspGpu executed on GPU!\n");
 
     HelloHybridKernel kernel = new HelloHybridKernel(1);
-    Rootbeer rootbeer = new Rootbeer();
     // 1 Kernel within 1 Block
     rootbeer.setThreadConfig(1, 1, 1);
 
@@ -165,4 +169,5 @@ public class HelloHybridBSP
           + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
     }
   }
+
 }

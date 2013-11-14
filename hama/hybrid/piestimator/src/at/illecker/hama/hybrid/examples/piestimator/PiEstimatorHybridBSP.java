@@ -75,6 +75,11 @@ public class PiEstimatorHybridBSP extends
   private int m_gridSize;
   private int m_blockSize;
 
+  @Override
+  public Class<LongWritable> getMessageClass() {
+    return LongWritable.class;
+  }
+
   /********************************* CPU *********************************/
   @Override
   public void setup(
@@ -169,8 +174,8 @@ public class PiEstimatorHybridBSP extends
   /********************************* GPU *********************************/
   @Override
   public void setupGpu(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
-      throws IOException {
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer,
+      Rootbeer rootbeer) throws IOException {
 
     // Same cleanup as CPU
     setup(peer);
@@ -178,12 +183,12 @@ public class PiEstimatorHybridBSP extends
 
   @Override
   public void bspGpu(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
-      throws IOException, SyncException, InterruptedException {
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer,
+      Rootbeer rootbeer) throws IOException, SyncException,
+      InterruptedException {
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
         System.currentTimeMillis());
-    Rootbeer rootbeer = new Rootbeer();
     rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
     // Run GPU Kernels
@@ -238,8 +243,8 @@ public class PiEstimatorHybridBSP extends
 
   @Override
   public void cleanupGpu(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
-      throws IOException {
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer,
+      Rootbeer rootbeer) throws IOException {
 
     // Same cleanup as CPU
     cleanup(peer);
@@ -346,4 +351,5 @@ public class PiEstimatorHybridBSP extends
           + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
     }
   }
+
 }
