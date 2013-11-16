@@ -28,6 +28,7 @@
 #include <sstream>
 
 using std::string;
+using std::vector;
 using std::cout;
 
 using HamaPipes::BSP;
@@ -58,37 +59,37 @@ public:
   
   void bsp(BSPContext<int,string,int,string,string>& context) {
     
-    int aRowKey;
-    string aRowVectorStr;
+    int a_row_key = 0;
+    string a_row_vector_str;
     // while for each row of matrixA
-    while(context.readNext(aRowKey, aRowVectorStr)) {
-      cout << "aRowKey: " << aRowKey << " - aRowVectorStr: " << aRowVectorStr << "\n";
+    while(context.readNext(a_row_key, a_row_vector_str)) {
+      cout << "a_row_key: " << a_row_key << " - a_row_vector_str: " << a_row_vector_str << "\n";
       
-      DenseDoubleVector *aRowVector = new DenseDoubleVector(aRowVectorStr);
-      DenseDoubleVector *colValues = NULL;
+      DenseDoubleVector *a_row_vector = new DenseDoubleVector(a_row_vector_str);
+      int b_col_key = 0;
+      string b_col_vector_str;
       
-      int bColKey;
-      string bColVectorStr;
+      // dynamic column values, depend on matrix B cols
+      vector<double> col_values;
       
       // while for each col of matrixB
-      while (context.sequenceFileReadNext<int,string>(seqFileID, bColKey, bColVectorStr)) {
+      while (context.sequenceFileReadNext<int,string>(seqFileID, b_col_key, b_col_vector_str)) {
         
-        cout << "bColKey: " << bColKey << " - bColVectorStr: " << bColVectorStr << "\n";
+        cout << "b_col_key: " << b_col_key << " - b_col_vector_str: " << b_col_vector_str << "\n";
         
-        DenseDoubleVector *bColVector = new DenseDoubleVector(bColVectorStr);
+        DenseDoubleVector *b_col_vector = new DenseDoubleVector(b_col_vector_str);
         
-        if (colValues == NULL) {
-          colValues = new DenseDoubleVector(bColVector->getDimension());
-        }
-        double dot = aRowVector->dot(bColVector);
+        double dot = a_row_vector->dot(b_col_vector);
         
-        colValues->set(bColKey, dot);
+        col_values.push_back(dot);
       }
       
+      DenseDoubleVector *col_values_vector = new DenseDoubleVector(col_values.size(), col_values.data());
+      
       // Submit one calculated row
+      // :key:value1,value2,value3
       std::stringstream message;
-      message << aRowKey << ":" << colValues->toString();
-      cout << "Send Message: " << message.str() << "\n";
+      message << ":" << a_row_key << ":" << col_values_vector->toString();
       context.sendMessage(masterTask, message.str());
       
       reopenMatrixB(context);
@@ -107,11 +108,12 @@ public:
       
       for (int i=0; i<msgCount; i++) {
         
+        // :key:value1,value2,value3
         string received = context.getCurrentMessage();
-        //key:value1,value2,value3
-        int pos = (int)received.find(":");
-        int key = toInt(received.substr(0,pos));
-        string values = received.substr(pos+1,received.length());
+        string key_value_str = received.substr(1);
+        int pos = (int)key_value_str.find(received.substr(0,1));
+        int key = HadoopUtils::toInt(key_value_str.substr(0,pos));
+        string values = key_value_str.substr(pos+1);
         
         cout << "RECEIVED MSG: key:" << key << " value: " << values.substr(0,20) << "\n";
         

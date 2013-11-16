@@ -40,7 +40,7 @@ namespace math {
       vector[i] = val;
   }
     
-  DenseDoubleVector::DenseDoubleVector(double arr[]) : vector(arr) { 
+  DenseDoubleVector::DenseDoubleVector(int len, double arr[]) : vector(arr), size(len) {
   }
 
   DenseDoubleVector::DenseDoubleVector(const string values) { 

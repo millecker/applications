@@ -45,12 +45,10 @@
     <name>bsp.output.value.class</name>
     <value>org.apache.hama.commons.io.PipesVectorWritable</value>
   </property>
-  <!--
   <property>
     <name>bsp.message.class</name>
-    <value>org.apache.hama.commons.io.PipesVectorWritable</value>
+    <value>org.apache.hama.commons.io.PipesKeyValueWritable</value>
   </property>
-  -->
   <property>
     <name>hama.messenger.xfer.queue.class</name>
     <value>org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol</value>
