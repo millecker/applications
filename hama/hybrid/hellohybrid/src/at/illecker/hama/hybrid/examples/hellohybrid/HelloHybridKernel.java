@@ -16,6 +16,7 @@
  */
 package at.illecker.hama.hybrid.examples.hellohybrid;
 
+import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 
 public class HelloHybridKernel implements Kernel {
@@ -28,7 +29,7 @@ public class HelloHybridKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    result = m_iterations;
+    result = HamaPeer.getNumCurrentMessages();
   }
 
   public static void main(String[] args) {

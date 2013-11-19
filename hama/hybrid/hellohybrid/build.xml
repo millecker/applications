@@ -1,5 +1,9 @@
 <project>
 	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<!--
+	<property name="rootbeer.args" value="-maxrregcount 32 -shared-mem-size 8204 -64bit" />
+	-->
 	<property name="output.file" value="HelloHybrid" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />

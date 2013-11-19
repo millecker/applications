@@ -73,7 +73,8 @@ public class HelloHybridBSP
   @Override
   public void bspGpu(
       BSPPeer<NullWritable, NullWritable, NullWritable, NullWritable, NullWritable> peer,
-      Rootbeer rootbeer) throws IOException, SyncException, InterruptedException {
+      Rootbeer rootbeer) throws IOException, SyncException,
+      InterruptedException {
 
     BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
     FileSystem fs = FileSystem.get(peer.getConfiguration());
@@ -155,7 +156,8 @@ public class HelloHybridBSP
         return;
       }
     } else {
-      job.setNumBspTask(cluster.getMaxTasks());
+      // job.setNumBspTask(cluster.getMaxTasks());
+      job.setNumBspTask(2); // 1 CPU and 1 GPU
     }
     job.setNumBspGpuTask(1);
 
