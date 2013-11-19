@@ -28,11 +28,6 @@
 
 #include <cuda_runtime.h>
 
-// Global vars
-pthread_t t_socket_server;
-SocketServer socket_server;
-SocketClient socket_client;
-
 // Convenience function for checking CUDA runtime API results
 // can be wrapped around any runtime API call. No-op in release builds.
 inline cudaError_t checkCuda(cudaError_t result) {
@@ -81,20 +76,24 @@ public:
   __device__ __host__ ~HostDeviceInterface() {}
 };
 
-
-
 class HostMonitor {
 private:
   pthread_t monitor_thread;
   pthread_mutex_t mutex_process_command;
   //pthread_mutex_t mutex_result_available;
+  SocketClient *socket_client;
 
 public:
   volatile bool is_monitoring;
   volatile HostDeviceInterface *host_device_interface;
 
-  HostMonitor(HostDeviceInterface *h_d_interface) {
+  HostMonitor(HostDeviceInterface *h_d_interface, int port) {
     host_device_interface = h_d_interface;
+    
+    socket_client = new SocketClient();
+    // connect SocketClient
+    socket_client->connectSocket(port);
+
     printf("HostMonitor init\n");
 
     is_monitoring = false;
@@ -164,14 +163,14 @@ public:
     switch (host_device_interface->command) {
       
       case HostDeviceInterface::GET_VALUE: {
-        socket_client.sendCMD(HostDeviceInterface::GET_VALUE, host_device_interface->param1);
+        socket_client->sendCMD(HostDeviceInterface::GET_VALUE, host_device_interface->param1);
         
-        while (!socket_client.isNewResultInt) {
-          socket_client.nextEvent();
+        while (!socket_client->isNewResultInt) {
+          socket_client->nextEvent();
         }
         
-        socket_client.isNewResultInt = false;
-        host_device_interface->result_int = socket_client.resultInt;
+        socket_client->isNewResultInt = false;
+        host_device_interface->result_int = socket_client->resultInt;
 
         //pthread_mutex_lock((pthread_mutex_t *) &mutex_result_available);
         host_device_interface->is_result_available = true; // dieses statement zieht nicht!!!
@@ -195,7 +194,7 @@ public:
       }
 
       case HostDeviceInterface::DONE: {
-        socket_client.sendCMD(HostDeviceInterface::DONE);
+        socket_client->sendCMD(HostDeviceInterface::DONE);
         host_device_interface->is_result_available = true;
         // block until result was consumed
         while (host_device_interface->is_result_available) {}
@@ -206,6 +205,10 @@ public:
   }
 
 };
+
+// Global vars
+pthread_t t_socket_server;
+SocketServer socket_server;
 
 // global HostDeviceInterface for SIGINT handler
 HostDeviceInterface *h_host_device_interface;
@@ -394,19 +397,16 @@ int main(void) {
   // wait for SocketServer to come up
   while (socket_server.getPort() == -1) {}
 
-  // connect SocketClient
-  socket_client.connectSocket(socket_server.getPort());
-
   //CUDA setup
   // runtime must be placed into a state enabling to allocate zero-copy buffers.
   checkCuda(cudaSetDeviceFlags(cudaDeviceMapHost));
 
-  // allocate host_kernelWrapper as pinned memory
+  // allocate host_device_interface as pinned memory
   checkCuda(cudaHostAlloc((void**) &h_host_device_interface, sizeof(HostDeviceInterface),
             cudaHostAllocWriteCombined | cudaHostAllocMapped));
 
   // init HostMonitor
-  host_monitor = new HostMonitor(h_host_device_interface);
+  host_monitor = new HostMonitor(h_host_device_interface, socket_server.getPort());
   host_monitor->start_monitoring();
 
   // wait for HostMonitor monitoring
