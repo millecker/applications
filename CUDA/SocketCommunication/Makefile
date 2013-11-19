@@ -10,7 +10,7 @@ LDFLAGS= -L$(CUDA_INSTALL_PATH)/lib -lcuda -lcudart
 
 all: SocketCommunication
 
-SocketCommunication: bin/libhadooputils.a bin/libsocket.a src/socket_communication.cu
+SocketCommunication: bin/libhadooputils.a bin/libsocket.a src/socket_communication_new.cu
 #		$(CXX) $(CFLAGS) $^ $(LDFLAGS) -o bin/$@
 #		$(NVCC) $(NVCCFLAGS) -link $^ -o bin/$@
 		$(NVCC) $(NVCCFLAGS) $^ -o bin/$@
