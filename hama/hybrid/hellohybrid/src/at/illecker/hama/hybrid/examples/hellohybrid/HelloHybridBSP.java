@@ -30,9 +30,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.NullOutputFormat;
@@ -83,7 +81,7 @@ public class HelloHybridBSP
 
     outStream.writeChars("HelloHybrid.bspGpu executed on GPU!\n");
 
-    HelloHybridKernel kernel = new HelloHybridKernel(1);
+    HelloHybridKernel kernel = new HelloHybridKernel();
     // 1 Kernel within 1 Block
     rootbeer.setThreadConfig(1, 1, 1);
 
@@ -106,8 +104,12 @@ public class HelloHybridBSP
       outStream.writeChars("    num threads: " + row.getNumThreads() + "\n");
     }
 
-    outStream.writeChars("HelloHybridKernel,Result=" + kernel.result
-        + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
+    outStream.writeChars("HelloHybridKernel,GPUTime="
+        + watch.elapsedTimeMillis() + "ms\n");
+    outStream.writeChars("HelloHybridKernel,peerName: '" + kernel.peerName
+        + "'\n");
+    outStream.writeChars("HelloHybridKernel,numPeers: '" + kernel.numPeers
+        + "'\n");
     outStream.close();
   }
 
@@ -144,8 +146,8 @@ public class HelloHybridBSP
     job.setOutputFormat(NullOutputFormat.class);
     FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
 
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
+    // BSPJobClient jobClient = new BSPJobClient(conf);
+    // ClusterStatus cluster = jobClient.getClusterStatus(true);
 
     if (args.length > 0) {
       if (args.length == 1) {

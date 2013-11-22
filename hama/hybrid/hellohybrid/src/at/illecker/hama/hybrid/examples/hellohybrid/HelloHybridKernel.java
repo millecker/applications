@@ -21,21 +21,22 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 
 public class HelloHybridKernel implements Kernel {
 
-  private long m_iterations;
-  public double result = 0;
+  public int numPeers = 0;
+  public String peerName;
 
-  public HelloHybridKernel(long iterations) {
-    m_iterations = iterations;
+  public HelloHybridKernel() {
   }
 
   public void gpuMethod() {
-    result = HamaPeer.getNumCurrentMessages();
+    new String("");
+    peerName = HamaPeer.getPeerName();
+    numPeers = HamaPeer.getNumPeers();
   }
 
   public static void main(String[] args) {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new HelloHybridKernel(0);
+    new HelloHybridKernel();
   }
 }
