@@ -1,0 +1,23 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<property name="rootbeer.args" value="-64bit" />
+	<!--
+	<property name="rootbeer.args" value="-maxrregcount 32 -shared-mem-size 8204 -64bit" />
+	-->
+	<property name="output.file" value="Summation" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="at/illecker/hama/hybrid/examples/summation" />
+	<property name="rootbeer.classes" value="SummationKernel.class" />
+	<property name="kernel.class" value="at.illecker.hama.hybrid.examples.summation.SummationKernel" />
+	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.summation.SummationBSP" />
+	<property name="cpu.class" value="" />
+	<property name="bench.class" value="" />
+	<property name="program" value="hama" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
