@@ -21,22 +21,40 @@ import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 
 public class SummationKernel implements Kernel {
 
+  private String masterTask;
   public int numPeers = 0;
   public String peerName;
 
-  public SummationKernel() {
+  public SummationKernel(String masterTask) {
+    this.masterTask = masterTask;
   }
 
   public void gpuMethod() {
     new String("");
     peerName = HamaPeer.getPeerName();
     numPeers = HamaPeer.getNumPeers();
+
+    double intermediateSum = 0.0;
+    String key = "";
+    String value = "";
+
+    while (HamaPeer.readNext(key, value)) {
+      System.out.println("SummationBSP.bsp key: " + key + " value: " + value
+          + "\n");
+      intermediateSum += Double.parseDouble(value);
+    }
+
+    System.out.println("SummationBSP.bsp send intermediateSum: "
+        + intermediateSum + "\n");
+
+    HamaPeer.send(masterTask, "" + intermediateSum);
+    HamaPeer.sync();
   }
 
   public static void main(String[] args) {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new SummationKernel();
+    new SummationKernel(new String());
   }
 }
