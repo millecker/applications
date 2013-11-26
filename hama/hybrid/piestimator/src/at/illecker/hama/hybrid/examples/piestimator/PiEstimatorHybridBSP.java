@@ -174,8 +174,8 @@ public class PiEstimatorHybridBSP extends
   /********************************* GPU *********************************/
   @Override
   public void setupGpu(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer,
-      Rootbeer rootbeer) throws IOException {
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
+      throws IOException, SyncException, InterruptedException {
 
     // Same cleanup as CPU
     setup(peer);
@@ -243,8 +243,8 @@ public class PiEstimatorHybridBSP extends
 
   @Override
   public void cleanupGpu(
-      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer,
-      Rootbeer rootbeer) throws IOException {
+      BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
+      throws IOException {
 
     // Same cleanup as CPU
     cleanup(peer);
