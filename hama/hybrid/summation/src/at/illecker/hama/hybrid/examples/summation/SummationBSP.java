@@ -86,8 +86,8 @@ public class SummationBSP extends
     outStream.writeChars("SummationBSP.bsp executed on CPU!\n");
 
     double intermediateSum = 0.0;
-    Text key;
-    Text value;
+    Text key = new Text();
+    Text value = new Text();
 
     while (peer.readNext(key, value)) {
       outStream.writeChars("SummationBSP.bsp key: " + key + " value: " + value
