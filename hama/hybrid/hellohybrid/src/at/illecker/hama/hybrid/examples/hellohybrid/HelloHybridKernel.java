@@ -28,7 +28,6 @@ public class HelloHybridKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    new String("");
     peerName = HamaPeer.getPeerName();
     numPeers = HamaPeer.getNumPeers();
   }

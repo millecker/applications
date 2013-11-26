@@ -70,8 +70,7 @@ public class SummationBSP extends
   public void setupGpu(
       BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    setup(peer);
   }
 
   @Override

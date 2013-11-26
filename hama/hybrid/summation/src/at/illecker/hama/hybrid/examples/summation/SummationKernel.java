@@ -30,7 +30,6 @@ public class SummationKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    new String("");
     peerName = HamaPeer.getPeerName();
     numPeers = HamaPeer.getNumPeers();
 
@@ -41,14 +40,14 @@ public class SummationKernel implements Kernel {
     while (HamaPeer.readNext(key, value)) {
       System.out.println("SummationBSP.bsp key: " + key + " value: " + value
           + "\n");
-      intermediateSum += Double.parseDouble(value);
+      // intermediateSum += Double.parseDouble(value);
     }
 
     System.out.println("SummationBSP.bsp send intermediateSum: "
         + intermediateSum + "\n");
 
-    HamaPeer.send(masterTask, "" + intermediateSum);
-    HamaPeer.sync();
+    // HamaPeer.send(masterTask, "" + intermediateSum);
+    // HamaPeer.sync();
   }
 
   public static void main(String[] args) {
