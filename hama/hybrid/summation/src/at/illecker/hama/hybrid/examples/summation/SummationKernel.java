@@ -46,8 +46,8 @@ public class SummationKernel implements Kernel {
     System.out.println("SummationBSP.bsp send intermediateSum: "
         + intermediateSum + "\n");
 
-    // HamaPeer.send(masterTask, "" + intermediateSum);
-    // HamaPeer.sync();
+    HamaPeer.sendDouble(masterTask, intermediateSum);
+    HamaPeer.sync();
   }
 
   public static void main(String[] args) {

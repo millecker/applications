@@ -62,8 +62,8 @@ public class SummationBSP extends
   public void setup(
       BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
+    // Choose first as master
+    this.m_masterTask = peer.getPeerName(0);
   }
 
   @Override
@@ -96,10 +96,27 @@ public class SummationBSP extends
 
     outStream.writeChars("SummationBSP.bsp send intermediateSum: "
         + intermediateSum + "\n");
-    outStream.close();
 
     peer.send(m_masterTask, new DoubleWritable(intermediateSum));
     peer.sync();
+
+    // Consume messages
+    if (peer.getPeerName().equals(m_masterTask)) {
+      outStream.writeChars("SummationBSP.bsp consume messages...\n");
+
+      double sum = 0.0;
+      int msg_count = peer.getNumCurrentMessages();
+
+      for (int i = 0; i < msg_count; i++) {
+        DoubleWritable msg = peer.getCurrentMessage();
+        outStream.writeChars("SummationBSP.bsp message: " + msg.get() + "\n");
+        sum += msg.get();
+      }
+
+      outStream.writeChars("SummationBSP.bsp write Sum: " + sum + "\n");
+      peer.write(new Text("Sum"), new DoubleWritable(sum));
+    }
+    outStream.close();
   }
 
   @Override
