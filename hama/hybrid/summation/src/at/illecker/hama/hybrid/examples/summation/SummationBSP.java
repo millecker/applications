@@ -63,7 +63,7 @@ public class SummationBSP extends
       BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
     // Choose first as master
-    this.m_masterTask = peer.getPeerName(0);
+    this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
   }
 
   @Override
