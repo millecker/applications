@@ -33,16 +33,22 @@ public class SummationKernel implements Kernel {
     numPeers = HamaPeer.getNumPeers();
 
     double intermediateSum = 0.0;
-    String key = "";
-    String value = "";
+    int key = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
+    int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
 
-    while (HamaPeer.readNext(key, value)) {
-      System.out.print("SummationBSP.bsp key: ");
-      System.out.print(key);
-      System.out.print(" value: ");
-      System.out.println(value);
+    // autoboxing to Integer
+    //HamaPeer.readNext(key, value);
+    System.out.print("SummationBSP.bsp key: ");
+    System.out.println(key);
+    System.out.print("SummationBSP.bsp value: ");
+    System.out.println(value);
       // intermediateSum += Double.parseDouble(value);
-    }
+    
+    HamaPeer.readNext(new Integer(0), new Integer(0));
+    HamaPeer.readNext(new Long(0), new Long(0)); 
+    HamaPeer.readNext(new Float(0), new Float(0)); 
+    HamaPeer.readNext(new Double(0), new Double(0)); 
+    HamaPeer.readNext(new String(), new String());     
 
     System.out.print("SummationBSP.bsp send intermediateSum: ");
     System.out.println(intermediateSum);
