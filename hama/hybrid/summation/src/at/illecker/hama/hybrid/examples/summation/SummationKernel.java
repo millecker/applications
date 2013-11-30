@@ -37,23 +37,23 @@ public class SummationKernel implements Kernel {
     int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
 
     // autoboxing to Integer
-    //HamaPeer.readNext(key, value);
+    HamaPeer.readNext(key, value);
     System.out.print("SummationBSP.bsp key: ");
     System.out.println(key);
     System.out.print("SummationBSP.bsp value: ");
     System.out.println(value);
-      // intermediateSum += Double.parseDouble(value);
-    
-    HamaPeer.readNext(new Integer(0), new Integer(0));
-    HamaPeer.readNext(new Long(0), new Long(0)); 
-    HamaPeer.readNext(new Float(0), new Float(0)); 
-    HamaPeer.readNext(new Double(0), new Double(0)); 
-    HamaPeer.readNext(new String(), new String());     
+    // intermediateSum += Double.parseDouble(value);
+
+    // HamaPeer.readNext(new Integer(0), new Integer(0));
+    // HamaPeer.readNext(new Long(0), new Long(0));
+    // HamaPeer.readNext(new Float(0), new Float(0));
+    // HamaPeer.readNext(new Double(0), new Double(0));
+    // HamaPeer.readNext(new String(), new String());
 
     System.out.print("SummationBSP.bsp send intermediateSum: ");
     System.out.println(intermediateSum);
 
-    HamaPeer.sendDouble(m_masterTask, intermediateSum);
+    HamaPeer.send(m_masterTask, intermediateSum);
     HamaPeer.sync();
 
     // Consume messages
@@ -66,7 +66,8 @@ public class SummationKernel implements Kernel {
       System.out.println(msg_count);
 
       for (int i = 0; i < msg_count; i++) {
-        double msg = HamaPeer.getCurrentDoubleMessage();
+        double msg = 0;
+        HamaPeer.getCurrentMessage(msg);
         System.out.print("SummationBSP.bsp message: ");
         System.out.println(msg);
         sum += msg;
