@@ -18,6 +18,7 @@ package at.illecker.hama.hybrid.examples.summation;
 
 import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
 
 public class SummationKernel implements Kernel {
 
@@ -35,9 +36,13 @@ public class SummationKernel implements Kernel {
     double intermediateSum = 0.0;
     int key = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
     int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
-
     // autoboxing to Integer
-    HamaPeer.readNext(key, value);
+    KeyValuePair keyValuePair = new KeyValuePair(key, value);
+
+    HamaPeer.readNext(keyValuePair);
+    key = (Integer) keyValuePair.getKey();
+    value = (Integer) keyValuePair.getValue();
+
     System.out.print("SummationBSP.bsp key: ");
     System.out.println(key);
     System.out.print("SummationBSP.bsp value: ");
@@ -66,8 +71,7 @@ public class SummationKernel implements Kernel {
       System.out.println(msg_count);
 
       for (int i = 0; i < msg_count; i++) {
-        double msg = 0;
-        HamaPeer.getCurrentMessage(msg);
+        double msg = HamaPeer.getCurrentDoubleMessage();
         System.out.print("SummationBSP.bsp message: ");
         System.out.println(msg);
         sum += msg;
@@ -75,7 +79,7 @@ public class SummationKernel implements Kernel {
 
       System.out.print("SummationBSP.bsp write Sum: ");
       System.out.println(sum);
-      // HamaPeer.write("Sum", sum);
+      HamaPeer.write("Sum", sum);
     }
   }
 
