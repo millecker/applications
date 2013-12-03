@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
@@ -162,15 +163,34 @@ public class SummationBSP extends
     outStream.close();
   }
 
-  static void printOutput(BSPJob job) throws IOException {
+  static void printOutput(BSPJob job, BigDecimal sum) throws IOException {
     FileSystem fs = FileSystem.get(job.getConfiguration());
-    FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
-        System.out.println("File " + files[i].getPath());
-        FSDataInputStream in = fs.open(files[i].getPath());
-        IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
-        in.close();
+    FileStatus[] listStatus = fs
+        .listStatus(FileOutputFormat.getOutputPath(job));
+    for (FileStatus status : listStatus) {
+      if (!status.isDir()) {
+        try {
+          SequenceFile.Reader reader = new SequenceFile.Reader(fs,
+              status.getPath(), job.getConfiguration());
+
+          Text key = new Text();
+          DoubleWritable value = new DoubleWritable();
+
+          if (reader.next(key, value)) {
+            LOG.info("Output File: " + status.getPath());
+            LOG.info("key: '" + key + "' value: '" + value + "' expected: '"
+                + sum.doubleValue() + "'");
+          }
+          reader.close();
+
+        } catch (IOException e) {
+          if (status.getLen() > 0) {
+            System.out.println("Output File " + status.getPath());
+            FSDataInputStream in = fs.open(status.getPath());
+            IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
+            in.close();
+          }
+        }
       }
     }
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
@@ -237,7 +257,6 @@ public class SummationBSP extends
     // Generate Summation input
     fs.delete(INPUT_PATH, true);
     BigDecimal sum = writeSummationInputFile(fs, INPUT_PATH);
-    LOG.info("Sum: " + sum.toString());
 
     // BSPJobClient jobClient = new BSPJobClient(conf);
     // ClusterStatus cluster = jobClient.getClusterStatus(true);
@@ -261,9 +280,9 @@ public class SummationBSP extends
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
-      printOutput(job);
       System.out.println("Job Finished in "
           + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
+      printOutput(job, sum);
     }
   }
 
