@@ -34,26 +34,27 @@ public class SummationKernel implements Kernel {
     numPeers = HamaPeer.getNumPeers();
 
     double intermediateSum = 0.0;
-    int key = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
-    int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
+    // int key = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
+    // int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
     // autoboxing to Integer
+
+    String key = "";
+    String value = "";
     KeyValuePair keyValuePair = new KeyValuePair(key, value);
 
-    HamaPeer.readNext(keyValuePair);
-    key = (Integer) keyValuePair.getKey();
-    value = (Integer) keyValuePair.getValue();
+    while (HamaPeer.readNext(keyValuePair)) {
+      key = (String) keyValuePair.getKey();
+      value = (String) keyValuePair.getValue();
 
-    System.out.print("SummationBSP.bsp key: ");
-    System.out.println(key);
-    System.out.print("SummationBSP.bsp value: ");
-    System.out.println(value);
-    // intermediateSum += Double.parseDouble(value);
+      System.out.print("SummationBSP.bsp key: '");
+      System.out.print(key);
+      System.out.println("'");
+      System.out.print("SummationBSP.bsp value: '");
+      System.out.print(value);
+      System.out.println("'");
 
-    // HamaPeer.readNext(new Integer(0), new Integer(0));
-    // HamaPeer.readNext(new Long(0), new Long(0));
-    // HamaPeer.readNext(new Float(0), new Float(0));
-    // HamaPeer.readNext(new Double(0), new Double(0));
-    // HamaPeer.readNext(new String(), new String());
+      // intermediateSum += Double.parseDouble(value);
+    }
 
     System.out.print("SummationBSP.bsp send intermediateSum: ");
     System.out.println(intermediateSum);
