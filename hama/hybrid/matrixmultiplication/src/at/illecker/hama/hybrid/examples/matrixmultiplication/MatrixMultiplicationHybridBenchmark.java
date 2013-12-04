@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.hybrid.matrixmultiplication;
+package at.illecker.hama.hybrid.examples.matrixmultiplication;
 
 import java.io.IOException;
 import java.util.Random;
@@ -29,7 +29,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import at.illecker.hama.hybrid.matrixmultiplication.util.DistributedRowMatrix;
+import at.illecker.hama.hybrid.examples.matrixmultiplication.util.DistributedRowMatrix;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;

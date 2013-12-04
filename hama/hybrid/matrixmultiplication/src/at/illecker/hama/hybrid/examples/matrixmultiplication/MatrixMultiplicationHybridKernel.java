@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.hybrid.matrixmultiplication;
+package at.illecker.hama.hybrid.examples.matrixmultiplication;
 
 import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
@@ -36,6 +36,9 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
     m_masterTask = HamaPeer.getPeerName(0);
     m_peerName = HamaPeer.getPeerName();
 
+    KeyValuePair aKeyValuePair = new KeyValuePair(new Integer(0), new Integer(0));
+    
+    /*
     reopenMatrixB();
 
     int aRowKey = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
@@ -75,6 +78,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       // HamaPeer.sendMessage(masterTask, message);
 
       reopenMatrixB();
+      
     }
 
     HamaPeer.sequenceFileClose(m_seqFileId);
@@ -98,6 +102,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         HamaPeer.write(key, values);
       }
     }
+    */
   }
 
   void reopenMatrixB() {

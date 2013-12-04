@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.hybrid.matrixmultiplication.util;
+package at.illecker.hama.hybrid.examples.matrixmultiplication.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -24,41 +24,41 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hama.commons.io.VectorWritable;
 import org.apache.hama.commons.math.DoubleVector;
 
-public class MatrixColMessage implements WritableComparable<MatrixColMessage> {
-  private int colIndex;
-  private DoubleVector colValues = null;
+public class MatrixRowMessage implements WritableComparable<MatrixRowMessage> {
+  private int rowIndex;
+  private DoubleVector rowValues = null;
 
-  public MatrixColMessage() {
+  public MatrixRowMessage() {
     super();
   }
 
-  public MatrixColMessage(int colIndex, DoubleVector colValues) {
-    this.colIndex = colIndex;
-    this.colValues = colValues;
+  public MatrixRowMessage(int rowIndex, DoubleVector rowValues) {
+    this.rowIndex = rowIndex;
+    this.rowValues = rowValues;
   }
 
-  public int getColIndex() {
-    return colIndex;
+  public int getRowIndex() {
+    return rowIndex;
   }
 
-  public DoubleVector getColValues() {
-    return colValues;
+  public DoubleVector getRowValues() {
+    return rowValues;
   }
 
   @Override
   public void readFields(DataInput in) throws IOException {
-    colIndex = in.readInt();
-    colValues = VectorWritable.readVector(in);
+    rowIndex = in.readInt();
+    rowValues = VectorWritable.readVector(in);
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
-    out.writeInt(colIndex);
-    VectorWritable.writeVector(colValues, out);
+    out.writeInt(rowIndex);
+    VectorWritable.writeVector(rowValues, out);
   }
 
   @Override
-  public int compareTo(MatrixColMessage o) {
-    return ((colIndex < o.colIndex) ? -1 : (colIndex == o.colIndex ? 0 : 1));
+  public int compareTo(MatrixRowMessage o) {
+    return ((rowIndex < o.rowIndex) ? -1 : (rowIndex == o.rowIndex ? 0 : 1));
   }
 }

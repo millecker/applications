@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.hybrid.matrixmultiplication.util;
+package at.illecker.hama.hybrid.examples.matrixmultiplication.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -41,7 +41,7 @@ import org.apache.hama.commons.math.DenseDoubleMatrix;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 
-import at.illecker.hama.hybrid.matrixmultiplication.MatrixMultiplicationHybridBSP;
+import at.illecker.hama.hybrid.examples.matrixmultiplication.MatrixMultiplicationHybridBSP;
 
 public class DistributedRowMatrix implements Configurable {
   private static final Log log = LogFactory.getLog(DistributedRowMatrix.class);

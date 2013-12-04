@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.illecker.hama.hybrid.matrixmultiplication;
+package at.illecker.hama.hybrid.examples.matrixmultiplication;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,9 +48,8 @@ import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 import org.apache.hama.commons.util.KeyValuePair;
 
-import at.illecker.hama.hybrid.examples.summation.SummationKernel;
-import at.illecker.hama.hybrid.matrixmultiplication.util.DistributedRowMatrix;
-import at.illecker.hama.hybrid.matrixmultiplication.util.MatrixRowMessage;
+import at.illecker.hama.hybrid.examples.matrixmultiplication.util.DistributedRowMatrix;
+import at.illecker.hama.hybrid.examples.matrixmultiplication.util.MatrixRowMessage;
 import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
 import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
 import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
@@ -257,7 +256,8 @@ public class MatrixMultiplicationHybridBSP
     m_logger.writeChars("MatrixMultiplicationHybrid.bspGpu blockSize: "
         + m_blockSize + " gridSize: " + m_gridSize + "\n");
 
-    SummationKernel kernel = new SummationKernel(m_masterTask);
+    MatrixMultiplicationHybridKernel kernel = new MatrixMultiplicationHybridKernel(
+        CONF_MATRIX_MULT_B_PATH);
     // 1 Kernel within 1 Block
     rootbeer.setThreadConfig(1, 1, 1);
     // rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize *
@@ -285,9 +285,11 @@ public class MatrixMultiplicationHybridBSP
     m_logger.writeChars("MatrixMultiplicationHybrid,GPUTime="
         + watch.elapsedTimeMillis() + "ms\n");
     m_logger.writeChars("MatrixMultiplicationHybrid,peerName: '"
-        + kernel.peerName + "'\n");
-    m_logger.writeChars("MatrixMultiplicationHybrid,numPeers: '"
-        + kernel.numPeers + "'\n");
+        + kernel.m_peerName + "'\n");
+    m_logger.writeChars("MatrixMultiplicationHybrid,masterTask: '"
+        + kernel.m_masterTask + "'\n");
+    m_logger.writeChars("MatrixMultiplicationHybrid,matrixB_path: '"
+        + kernel.m_matrixB_path + "'\n");
     m_logger.close();
   }
 
@@ -396,6 +398,8 @@ public class MatrixMultiplicationHybridBSP
     }
 
     conf.setBoolean(CONF_DEBUG, isDebugging);
+    conf.set(CONF_BLOCKSIZE, "" + BLOCK_SIZE);
+    conf.set(CONF_GRIDSIZE, "" + GRID_SIZE);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("NumGpuBspTask: " + conf.getInt("bsp.peers.gpu.num", 0));
