@@ -252,12 +252,16 @@ public class MatrixMultiplicationHybridBSP
       Rootbeer rootbeer) throws IOException, SyncException,
       InterruptedException {
 
-    m_logger.writeChars("MatrixMultiplicationHybrid.bspGpu executed on GPU!\n");
-    m_logger.writeChars("MatrixMultiplicationHybrid.bspGpu blockSize: "
-        + m_blockSize + " gridSize: " + m_gridSize + "\n");
+    // Logging
+    if (m_isDebuggingEnabled) {
+      m_logger
+          .writeChars("MatrixMultiplicationHybrid.bspGpu executed on GPU!\n");
+      m_logger.writeChars("MatrixMultiplicationHybrid.bspGpu blockSize: "
+          + m_blockSize + " gridSize: " + m_gridSize + "\n");
+    }
 
     MatrixMultiplicationHybridKernel kernel = new MatrixMultiplicationHybridKernel(
-        CONF_MATRIX_MULT_B_PATH);
+        peer.getConfiguration().get(CONF_MATRIX_MULT_B_PATH));
     // 1 Kernel within 1 Block
     rootbeer.setThreadConfig(1, 1, 1);
     // rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize *
@@ -357,11 +361,11 @@ public class MatrixMultiplicationHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numRowsA = 1024;
-    int numColsA = 1024;
-    int numRowsB = 1024;
-    int numColsB = 1024;
-    boolean isDebugging = false;
+    int numRowsA = 4;//1024;
+    int numColsA = 4;//1024;
+    int numRowsB = 4;//1024;
+    int numColsB = 4;//1024;
+    boolean isDebugging = true;
 
     Configuration conf = new HamaConfiguration();
     BSPJobClient jobClient = new BSPJobClient(conf);

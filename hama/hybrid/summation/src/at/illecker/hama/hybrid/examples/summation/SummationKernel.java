@@ -53,7 +53,7 @@ public class SummationKernel implements Kernel {
       System.out.print(value);
       System.out.println("'");
 
-      // intermediateSum += Double.parseDouble(value);
+      intermediateSum += Double.parseDouble(value);
     }
 
     System.out.print("SummationBSP.bsp send intermediateSum: ");

@@ -36,9 +36,6 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
     m_masterTask = HamaPeer.getPeerName(0);
     m_peerName = HamaPeer.getPeerName();
 
-    KeyValuePair aKeyValuePair = new KeyValuePair(new Integer(0), new Integer(0));
-    
-    /*
     reopenMatrixB();
 
     int aRowKey = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
@@ -50,6 +47,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       aRowKey = (Integer) aKeyValuePair.getKey();
       aRowVectorStr = (String) aKeyValuePair.getValue();
 
+      /*
       // DenseDoubleVector aRowVector = new DenseDoubleVector(aRowVectorStr);
 
       int bColKey = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
@@ -76,14 +74,14 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       // String message = "";
       // message << ":" << a_row_key << ":" << col_values_vector->toString();
       // HamaPeer.sendMessage(masterTask, message);
-
+      */
       reopenMatrixB();
-      
     }
 
     HamaPeer.sequenceFileClose(m_seqFileId);
     HamaPeer.sync();
 
+    /*
     if (m_peerName.equals(m_masterTask)) {
 
       int msgCount = HamaPeer.getNumCurrentMessages();
