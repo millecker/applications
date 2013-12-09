@@ -47,8 +47,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       aRowKey = (Integer) aKeyValuePair.getKey();
       aRowVectorStr = (String) aKeyValuePair.getValue();
 
-      /*
-      // DenseDoubleVector aRowVector = new DenseDoubleVector(aRowVectorStr);
+      DenseDoubleVector aRowVector = new DenseDoubleVector(aRowVectorStr);
 
       int bColKey = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
       String bColVectorStr = "";
@@ -62,8 +61,8 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         bColKey = (Integer) bKeyValuePair.getKey();
         bColVectorStr = (String) bKeyValuePair.getValue();
 
-        // DenseDoubleVector bColVector = new DenseDoubleVector(bColVectorStr);
-        // double dot = a_row_vector->dot(b_col_vector);
+        DenseDoubleVector bColVector = new DenseDoubleVector(bColVectorStr);
+        double dot = aRowVector.dot(bColVector);
         // col_values.push_back(dot);
       }
 
@@ -74,8 +73,8 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       // String message = "";
       // message << ":" << a_row_key << ":" << col_values_vector->toString();
       // HamaPeer.sendMessage(masterTask, message);
-      */
       reopenMatrixB();
+      break; // TODO
     }
 
     HamaPeer.sequenceFileClose(m_seqFileId);
