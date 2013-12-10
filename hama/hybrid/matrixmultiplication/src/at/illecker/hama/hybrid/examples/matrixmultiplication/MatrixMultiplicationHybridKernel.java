@@ -54,7 +54,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       KeyValuePair bKeyValuePair = new KeyValuePair(bColKey, bColVectorStr);
 
       // dynamic column values, depend on matrix B cols
-      // vector<double> col_values;
+      DenseDoubleVector colValues = new DenseDoubleVector();
 
       // while for each col of matrix B
       while (HamaPeer.sequenceFileReadNext(m_seqFileId, bKeyValuePair)) {
@@ -63,16 +63,15 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
 
         DenseDoubleVector bColVector = new DenseDoubleVector(bColVectorStr);
         double dot = aRowVector.dot(bColVector);
-        // col_values.push_back(dot);
+        colValues.set(bColKey, dot);
       }
 
-      // DenseDoubleVector *col_values_vector = new
-      // DenseDoubleVector(col_values.size(), col_values.data());
-
       // Submit one calculated row
-      // String message = "";
-      // message << ":" << a_row_key << ":" << col_values_vector->toString();
-      // HamaPeer.sendMessage(masterTask, message);
+      String message = ":" + aRowKey + ":" + colValues.toString();
+      System.out.print("send message: ");
+      System.out.println(message);
+      HamaPeer.send(m_masterTask, message);
+
       reopenMatrixB();
       break; // TODO
     }
@@ -80,7 +79,6 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
     HamaPeer.sequenceFileClose(m_seqFileId);
     HamaPeer.sync();
 
-    /*
     if (m_peerName.equals(m_masterTask)) {
 
       int msgCount = HamaPeer.getNumCurrentMessages();
@@ -88,18 +86,19 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       for (int i = 0; i < msgCount; i++) {
 
         // :key:value1,value2,value3
-        String msg = HamaPeer.getCurrentStringMessage();
+        String message = HamaPeer.getCurrentStringMessage();
+        System.out.print("got message: ");
+        System.out.println(message);
 
-        String keyValueStr = msg.substring(1);
-        int pos = (int) keyValueStr.indexOf(msg.substring(0, 1));
+        // String keyValueStr = msg.substring(1);
+        // int pos = (int) keyValueStr.indexOf(msg.substring(0, 1));
 
-        int key = Integer.parseInt(keyValueStr.substring(0, pos));
-        String values = keyValueStr.substring(pos + 1);
+        // int key = Integer.parseInt(keyValueStr.substring(0, pos));
+        // String values = keyValueStr.substring(pos + 1);
 
-        HamaPeer.write(key, values);
+        // HamaPeer.write(key, values);
       }
     }
-    */
   }
 
   void reopenMatrixB() {
