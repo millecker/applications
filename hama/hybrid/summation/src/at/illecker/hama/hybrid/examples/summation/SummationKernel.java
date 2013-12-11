@@ -32,7 +32,7 @@ public class SummationKernel implements Kernel {
 
   public void gpuMethod() {
     numPeers = HamaPeer.getNumPeers();
-  
+
     double intermediateSum = 0.0;
     // int key = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
     // int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
@@ -53,7 +53,10 @@ public class SummationKernel implements Kernel {
       System.out.print(value);
       System.out.println("'");
 
-      intermediateSum += Double.parseDouble(value);
+      double doubleVal = Double.parseDouble(value);
+      System.out.println(doubleVal);
+      System.out.println(Double.toString(doubleVal));
+      intermediateSum += doubleVal;
     }
 
     System.out.print("SummationBSP.bsp send intermediateSum: ");

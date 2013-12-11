@@ -93,10 +93,7 @@ public class DenseDoubleVector {
     String str = "";
     String delimiter = ",";
     for (int i = 0; i <= m_index; i++) {
-      System.out.println("toString: ");
-      System.out.println(m_vector[i]);
       String val = Double.toString(m_vector[i]);
-      System.out.println(val);
       if (i == 0) {
         str += "" + val;
       } else {
