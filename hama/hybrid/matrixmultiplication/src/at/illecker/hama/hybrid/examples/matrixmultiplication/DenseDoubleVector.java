@@ -44,7 +44,7 @@ public class DenseDoubleVector {
     for (int i = 0; i < vals.length; i++) {
       m_vector[i] = Double.parseDouble(vals[i]);
       // System.out.print("DenseDoubleVector add: ");
-      System.out.println(m_vector[i]);
+      // System.out.println(m_vector[i]);
     }
     m_index = vals.length;
   }
@@ -65,11 +65,6 @@ public class DenseDoubleVector {
       }
       m_vector = new_data;
     }
-    System.out.println("set");
-    System.out.print("index: ");
-    System.out.println(index);
-    System.out.print("value: ");
-    System.out.println(value);
     m_vector[index] = value;
     if (index > m_index) {
       m_index = index;

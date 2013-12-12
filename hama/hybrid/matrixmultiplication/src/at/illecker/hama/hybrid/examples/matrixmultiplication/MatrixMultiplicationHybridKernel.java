@@ -89,13 +89,13 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         System.out.println(message);
 
         // split delimiter and value
+        String delimiter = message.substring(0, 1);
         String keyValueStr = message.substring(1);
 
         // find position of delimiter
-        int pos = keyValueStr.indexOf(message.substring(0, 1));
+        int pos = keyValueStr.indexOf(delimiter);
 
-        int key = Integer.parseInt("1"); // will fail if 0
-        // Integer.parseInt(keyValueStr.substring(0, pos));
+        int key = Integer.parseInt(keyValueStr.substring(0, pos));
         System.out.print("write key: ");
         System.out.println(key);
 
@@ -103,7 +103,8 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         System.out.print("write value: ");
         System.out.println(values);
 
-        HamaPeer.write(key, values);
+        // TODO valueOf(0) will fail
+        HamaPeer.write(((key == 0) ? new Integer(1) : key), values);
       }
     }
   }

@@ -361,10 +361,10 @@ public class MatrixMultiplicationHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numRowsA = 4;//1024;
-    int numColsA = 4;//1024;
-    int numRowsB = 4;//1024;
-    int numColsB = 4;//1024;
+    int numRowsA = 4;// 1024;
+    int numColsA = 4;// 1024;
+    int numRowsB = 4;// 1024;
+    int numColsB = 4;// 1024;
     boolean isDebugging = true;
 
     Configuration conf = new HamaConfiguration();
@@ -438,27 +438,40 @@ public class MatrixMultiplicationHybridBSP
         OUTPUT_DIR, numRowsB, numColsB);
     b.setConf(conf);
 
-    // MatrixMultiply all within a new BSP job
+    // MatrixMultiplication
     long startTime = System.currentTimeMillis();
     DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH);
 
-    System.out.println("MatrixMultiplicationCpu using Hama finished in "
+    System.out.println("MatrixMultiplicationHybrid using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
-    /*
-     * // Verification // Overwrite matrix B, NOT transposed for verification
-     * check DistributedRowMatrix.createRandomDistributedRowMatrix(conf,
-     * numRowsB, numColsB, new Random(1337L), MATRIX_B_PATH, false); b = new
-     * DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
-     * b.setConf(conf); DistributedRowMatrix d = a.multiplyJava(b,
-     * MATRIX_D_PATH); if (c.verify(d)) { System.out.println("Verify PASSED!");
-     * } else { System.out.println("Verify FAILED!"); } if (isDebugging) {
-     * System.out.println("Matrix A:"); a.printDistributedRowMatrix();
-     * System.out.println("Matrix B:"); b.printDistributedRowMatrix();
-     * System.out.println("Matrix C:"); c.printDistributedRowMatrix();
-     * System.out.println("Matrix D:"); d.printDistributedRowMatrix();
-     * printOutput(conf); }
-     */
+    // Verification
+
+    // Overwrite matrix B, NOT transposed for verification
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
+        numColsB, new Random(1337L), MATRIX_B_PATH, false);
+    b = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
+    b.setConf(conf);
+
+    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
+
+    if (c.verify(d)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
+
+    if (isDebugging) {
+      System.out.println("Matrix A:");
+      a.printDistributedRowMatrix();
+      System.out.println("Matrix B:");
+      b.printDistributedRowMatrix();
+      System.out.println("Matrix C:");
+      c.printDistributedRowMatrix();
+      System.out.println("Matrix D:");
+      d.printDistributedRowMatrix();
+      printOutput(conf);
+    }
   }
 
 }
