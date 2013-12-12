@@ -104,7 +104,7 @@ public class MatrixMultiplicationHybridBSP
       BSPPeer<IntWritable, PipesVectorWritable, IntWritable, PipesVectorWritable, MatrixRowMessage> peer)
       throws IOException {
 
-    Configuration conf = peer.getConfiguration();
+    HamaConfiguration conf = peer.getConfiguration();
     this.m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end
@@ -215,7 +215,7 @@ public class MatrixMultiplicationHybridBSP
       BSPPeer<IntWritable, PipesVectorWritable, IntWritable, PipesVectorWritable, MatrixRowMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    Configuration conf = peer.getConfiguration();
+    HamaConfiguration conf = peer.getConfiguration();
     this.m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // Choose one as a master, who sorts the matrix rows at the end

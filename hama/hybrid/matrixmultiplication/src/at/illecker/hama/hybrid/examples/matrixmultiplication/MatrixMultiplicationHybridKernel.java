@@ -73,7 +73,6 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       HamaPeer.send(m_masterTask, message);
 
       reopenMatrixB();
-      break; // TODO
     }
 
     HamaPeer.sequenceFileClose(m_seqFileId);
@@ -84,19 +83,27 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       int msgCount = HamaPeer.getNumCurrentMessages();
 
       for (int i = 0; i < msgCount; i++) {
-
         // :key:value1,value2,value3
         String message = HamaPeer.getCurrentStringMessage();
         System.out.print("got message: ");
         System.out.println(message);
 
-        // String keyValueStr = msg.substring(1);
-        // int pos = (int) keyValueStr.indexOf(msg.substring(0, 1));
+        // split delimiter and value
+        String keyValueStr = message.substring(1);
 
-        // int key = Integer.parseInt(keyValueStr.substring(0, pos));
-        // String values = keyValueStr.substring(pos + 1);
+        // find position of delimiter
+        int pos = keyValueStr.indexOf(message.substring(0, 1));
 
-        // HamaPeer.write(key, values);
+        int key = Integer.parseInt("1"); // will fail if 0
+        // Integer.parseInt(keyValueStr.substring(0, pos));
+        System.out.print("write key: ");
+        System.out.println(key);
+
+        String values = keyValueStr.substring(pos + 1);
+        System.out.print("write value: ");
+        System.out.println(values);
+
+        HamaPeer.write(key, values);
       }
     }
   }
