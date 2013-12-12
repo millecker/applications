@@ -3,7 +3,6 @@ package at.illecker.hama.rootbeer.examples.singleshortestpath;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -32,7 +31,7 @@ public class SingleShortestPathCpu {
       Vertex<Text, IntWritable, IntWritable> {
 
     @Override
-    public void setup(Configuration conf) {
+    public void setup(HamaConfiguration conf) {
       this.setValue(new IntWritable(Integer.MAX_VALUE));
     }
 
