@@ -124,8 +124,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         System.out.println(values);
 
         // TODO valueOf(0) will fail
-        HamaPeer.write(new Integer(key), new String(
-            "81.000000, 48.000000, 120.000000, 166.000000"));
+        HamaPeer.write(new Integer(key), values);
       }
     }
 
