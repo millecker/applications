@@ -442,7 +442,7 @@ public class MatrixMultiplicationHybridBSP
     long startTime = System.currentTimeMillis();
     DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH);
 
-    System.out.println("MatrixMultiplicationHybrid using Hama finished in "
+    LOG.info("MatrixMultiplicationHybrid using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
     // Verification

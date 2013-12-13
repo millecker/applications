@@ -47,6 +47,11 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       aRowKey = (Integer) aKeyValuePair.getKey();
       aRowVectorStr = (String) aKeyValuePair.getValue();
 
+      System.out.print("got aRowKey: ");
+      System.out.println(aRowKey);
+      System.out.print("got aRowVectorStr: ");
+      System.out.println(aRowVectorStr);
+
       DenseDoubleVector aRowVector = new DenseDoubleVector(aRowVectorStr);
 
       int bColKey = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
@@ -61,15 +66,24 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         bColKey = (Integer) bKeyValuePair.getKey();
         bColVectorStr = (String) bKeyValuePair.getValue();
 
+        System.out.print("got bColKey: ");
+        System.out.println(bColKey);
+        System.out.print("got bColVectorStr: ");
+        System.out.println(bColVectorStr);
+
         DenseDoubleVector bColVector = new DenseDoubleVector(bColVectorStr);
         double dot = aRowVector.dot(bColVector);
-        colValues.set(bColKey, dot);
-      }
 
+        System.out.print("calculated dot: ");
+        System.out.println(dot);
+
+        colValues.add(dot);
+      }
       // Submit one calculated row
       String message = ":" + aRowKey + ":" + colValues.toString();
       System.out.print("send message: ");
       System.out.println(message);
+
       HamaPeer.send(m_masterTask, message);
 
       reopenMatrixB();
@@ -81,8 +95,8 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
     if (m_peerName.equals(m_masterTask)) {
 
       int msgCount = HamaPeer.getNumCurrentMessages();
-
       for (int i = 0; i < msgCount; i++) {
+
         // :key:value1,value2,value3
         String message = HamaPeer.getCurrentStringMessage();
         System.out.print("got message: ");
@@ -91,9 +105,15 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         // split delimiter and value
         String delimiter = message.substring(0, 1);
         String keyValueStr = message.substring(1);
+        // System.out.print("delimiter: ");
+        // System.out.println(delimiter);
+        // System.out.print("keyValueStr: ");
+        // System.out.println(keyValueStr);
 
         // find position of delimiter
         int pos = keyValueStr.indexOf(delimiter);
+        // System.out.print("pos: ");
+        // System.out.println(pos);
 
         int key = Integer.parseInt(keyValueStr.substring(0, pos));
         System.out.print("write key: ");
@@ -104,9 +124,11 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         System.out.println(values);
 
         // TODO valueOf(0) will fail
-        HamaPeer.write(((key == 0) ? new Integer(1) : key), values);
+        HamaPeer.write(new Integer(key), new String(
+            "81.000000, 48.000000, 120.000000, 166.000000"));
       }
     }
+
   }
 
   void reopenMatrixB() {
