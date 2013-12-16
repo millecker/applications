@@ -35,8 +35,6 @@ public class HelloHybridKernel implements Kernel {
     System.out.println(peerName);
     System.out.print("NumPeers: ");
     System.out.println(numPeers);
-    
-    HamaPeer.test("Hello GPU");
   }
 
   public static void main(String[] args) {
