@@ -39,17 +39,17 @@ public class DenseDoubleVector {
   }
 
   public DenseDoubleVector(String values) {
-    System.out.print("DenseDoubleVector started: ");
-    System.out.println(values);
+    // System.out.print("DenseDoubleVector started: ");
+    // System.out.println(values);
     String[] vals = values.split(",");
     if (vals != null) {
-      System.out.print("DenseDoubleVector length: ");
-      System.out.println(vals.length);
+      // System.out.print("DenseDoubleVector length: ");
+      // System.out.println(vals.length);
       m_vector = new double[vals.length];
       for (int i = 0; i < vals.length; i++) {
         m_vector[i] = Double.parseDouble(vals[i]);
-        System.out.print("DenseDoubleVector add: ");
-        System.out.println(m_vector[i]);
+        // System.out.print("DenseDoubleVector add: ");
+        // System.out.println(m_vector[i]);
       }
       m_index = vals.length;
     } else {
@@ -67,20 +67,21 @@ public class DenseDoubleVector {
     return m_index;
   }
 
-  public void add(double value) {
-    // check if element was last in array
-    if (m_index == m_vector.length) {
+  public void set(int index, double value) {
+    if (index >= m_vector.length) {
       double[] new_data = new double[m_index * 2];
-      for (int i = 0; i < m_index; ++i) {
+      for (int i = 0; i < m_index; i++) {
         new_data[i] = m_vector[i];
       }
       m_vector = new_data;
     }
 
-    m_vector[m_index] = value;
-    System.out.print("DenseDoubleVector add: ");
-    System.out.println(m_vector[m_index]);
-    m_index++;
+    m_vector[index] = value;
+    // System.out.print("DenseDoubleVector add: ");
+    // System.out.println(m_vector[index]);
+    if (index > m_index) {
+      m_index = index + 1; // update end index
+    }
   }
 
   public double get(int index) {
@@ -101,7 +102,7 @@ public class DenseDoubleVector {
     String delimiter = ",";
     for (int i = 0; i < m_index; i++) {
       String val = Double.toString(m_vector[i]);
-      System.out.println(val);
+      // System.out.println(val);
       if (i == 0) {
         str += "" + val;
       } else {

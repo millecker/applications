@@ -46,11 +46,10 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
     while (HamaPeer.readNext(aKeyValuePair)) {
       aRowKey = (Integer) aKeyValuePair.getKey();
       aRowVectorStr = (String) aKeyValuePair.getValue();
-
-      System.out.print("got aRowKey: ");
-      System.out.println(aRowKey);
-      System.out.print("got aRowVectorStr: ");
-      System.out.println(aRowVectorStr);
+      // System.out.print("got aRowKey: ");
+      // System.out.println(aRowKey);
+      // System.out.print("got aRowVectorStr: ");
+      // System.out.println(aRowVectorStr);
 
       DenseDoubleVector aRowVector = new DenseDoubleVector(aRowVectorStr);
 
@@ -65,19 +64,17 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
       while (HamaPeer.sequenceFileReadNext(m_seqFileId, bKeyValuePair)) {
         bColKey = (Integer) bKeyValuePair.getKey();
         bColVectorStr = (String) bKeyValuePair.getValue();
-
-        System.out.print("got bColKey: ");
-        System.out.println(bColKey);
-        System.out.print("got bColVectorStr: ");
-        System.out.println(bColVectorStr);
+        // System.out.print("got bColKey: ");
+        // System.out.println(bColKey);
+        // System.out.print("got bColVectorStr: ");
+        // System.out.println(bColVectorStr);
 
         DenseDoubleVector bColVector = new DenseDoubleVector(bColVectorStr);
         double dot = aRowVector.dot(bColVector);
+        // System.out.print("calculated dot: ");
+        // System.out.println(dot);
 
-        System.out.print("calculated dot: ");
-        System.out.println(dot);
-
-        colValues.add(dot);
+        colValues.set(bColKey, dot);
       }
       // Submit one calculated row
       String message = ":" + aRowKey + ":" + colValues.toString();
@@ -123,7 +120,7 @@ public class MatrixMultiplicationHybridKernel implements Kernel {
         System.out.print("write value: ");
         System.out.println(values);
 
-        // TODO valueOf(0) will fail
+        // Attention valueOf(0) will fail
         HamaPeer.write(new Integer(key), values);
       }
     }
