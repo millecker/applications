@@ -43,7 +43,6 @@ import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.commons.io.PipesVectorWritable;
-import org.apache.hama.commons.io.VectorWritable;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 
@@ -80,13 +79,14 @@ public class KMeansHybridBSP
   private FSDataOutputStream m_logger;
 
   // a task local copy of our cluster centers
-  private DoubleVector[] centers;
+  private DoubleVector[] m_centers;
   // simple cache to speed up computation, because the algorithm is disk based
-  private List<DoubleVector> cache;
+  // normally we want to rely on OS caching, but if not, we can cache in heap
+  private List<DoubleVector> m_cache = new ArrayList<DoubleVector>();
   // numbers of maximum iterations to do
-  private int maxIterations;
+  private int m_maxIterations;
 
-  private Configuration conf;
+  private Configuration m_conf;
 
   private int m_gridSize;
   private int m_blockSize;
@@ -102,15 +102,16 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException {
 
-    conf = peer.getConfiguration();
-    this.m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
+    this.m_conf = peer.getConfiguration();
+    this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
+    this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS_KEY, -1);
 
     // Init logging
     if (m_isDebuggingEnabled) {
       try {
-        FileSystem fs = FileSystem.get(conf);
+        FileSystem fs = FileSystem.get(m_conf);
         m_logger = fs.create(new Path(FileOutputFormat
-            .getOutputPath(new BSPJob((HamaConfiguration) conf))
+            .getOutputPath(new BSPJob((HamaConfiguration) m_conf))
             + "/BSP_"
             + peer.getTaskId() + ".log"));
 
@@ -119,14 +120,15 @@ public class KMeansHybridBSP
       }
     }
 
-    Path centroids = new Path(conf.get(CONF_CENTER_IN_PATH));
-    FileSystem fs = FileSystem.get(conf);
+    // Init center vectors
+    Path centroids = new Path(m_conf.get(CONF_CENTER_IN_PATH));
+    FileSystem fs = FileSystem.get(m_conf);
 
     final ArrayList<DoubleVector> centers = new ArrayList<DoubleVector>();
     SequenceFile.Reader reader = null;
     try {
-      reader = new SequenceFile.Reader(fs, centroids, conf);
-      VectorWritable key = new VectorWritable();
+      reader = new SequenceFile.Reader(fs, centroids, m_conf);
+      PipesVectorWritable key = new PipesVectorWritable();
       NullWritable value = NullWritable.get();
       while (reader.next(key, value)) {
         DoubleVector center = key.getVector();
@@ -140,19 +142,10 @@ public class KMeansHybridBSP
       }
     }
 
-    // TODO rename precondition
     Preconditions.checkArgument(centers.size() > 0,
         "Centers file must contain at least a single center!");
 
-    this.centers = centers.toArray(new DoubleVector[centers.size()]);
-
-    // TODO
-    // distanceMeasurer = new EuclidianDistance();
-
-    maxIterations = conf.getInt(CONF_MAX_ITERATIONS_KEY, -1);
-
-    // normally we want to rely on OS caching, but if not, we can cache in heap
-    cache = new ArrayList<DoubleVector>();
+    this.m_centers = centers.toArray(new DoubleVector[centers.size()]);
   }
 
   @Override
@@ -169,13 +162,18 @@ public class KMeansHybridBSP
       converged = updateCenters(peer);
 
       peer.reopenInput();
-      if (converged == 0)
+
+      if (converged == 0) {
         break;
-      if (maxIterations > 0 && maxIterations < peer.getSuperstepCount())
+      }
+      if ((m_maxIterations > 0) && (m_maxIterations < peer.getSuperstepCount())) {
         break;
+      }
     }
     LOG.info("Finished! Writing the assignments...");
+
     recalculateAssignmentsAndWrite(peer);
+
     LOG.info("Done.");
 
     // Logging
@@ -186,80 +184,29 @@ public class KMeansHybridBSP
     // }
   }
 
-  private long updateCenters(
-      BSPPeer<VectorWritable, NullWritable, IntWritable, VectorWritable, CenterMessage> peer)
-      throws IOException {
-    // this is the update step
-    DoubleVector[] msgCenters = new DoubleVector[centers.length];
-    int[] incrementSum = new int[centers.length];
-    CenterMessage msg;
-    // basically just summing incoming vectors
-    while ((msg = peer.getCurrentMessage()) != null) {
-      DoubleVector oldCenter = msgCenters[msg.getCenterIndex()];
-      DoubleVector newCenter = msg.getData();
-      incrementSum[msg.getCenterIndex()] += msg.getIncrementCounter();
-      if (oldCenter == null) {
-        msgCenters[msg.getCenterIndex()] = newCenter;
-      } else {
-        msgCenters[msg.getCenterIndex()] = oldCenter.addUnsafe(newCenter);
-      }
-    }
-    // divide by how often we globally summed vectors
-    for (int i = 0; i < msgCenters.length; i++) {
-      // and only if we really have an update for c
-      if (msgCenters[i] != null) {
-        msgCenters[i] = msgCenters[i].divide(incrementSum[i]);
-      }
-    }
-    // finally check for convergence by the absolute difference
-    long convergedCounter = 0L;
-    for (int i = 0; i < msgCenters.length; i++) {
-      final DoubleVector oldCenter = centers[i];
-      if (msgCenters[i] != null) {
-        double calculateError = oldCenter.subtractUnsafe(msgCenters[i]).abs()
-            .sum();
-        if (calculateError > 0.0d) {
-          centers[i] = msgCenters[i];
-          convergedCounter++;
-        }
-      }
-    }
-    return convergedCounter;
-  }
-
   private void assignCenters(
-      BSPPeer<VectorWritable, NullWritable, IntWritable, VectorWritable, CenterMessage> peer)
+      BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException {
+
     // each task has all the centers, if a center has been updated it
     // needs to be broadcasted.
-    final DoubleVector[] newCenterArray = new DoubleVector[centers.length];
-    final int[] summationCount = new int[centers.length];
+    final DoubleVector[] newCenterArray = new DoubleVector[m_centers.length];
+    final int[] summationCount = new int[m_centers.length];
 
-    // if our cache is not enabled, iterate over the disk items
-    if (cache == null) {
-      // we have an assignment step
+    // if our cache is empty, we have to read it from disk first
+    if (m_cache.isEmpty()) {
+      final PipesVectorWritable key = new PipesVectorWritable();
       final NullWritable value = NullWritable.get();
-      final VectorWritable key = new VectorWritable();
       while (peer.readNext(key, value)) {
-        assignCentersInternal(newCenterArray, summationCount, key.getVector()
-            .deepCopy());
+        DoubleVector deepCopy = key.getVector().deepCopy();
+        m_cache.add(deepCopy);
+        // but do the assignment directly
+        assignCentersInternal(newCenterArray, summationCount, deepCopy);
       }
     } else {
-      // if our cache is enabled but empty, we have to read it from disk first
-      if (cache.isEmpty()) {
-        final NullWritable value = NullWritable.get();
-        final VectorWritable key = new VectorWritable();
-        while (peer.readNext(key, value)) {
-          DoubleVector deepCopy = key.getVector().deepCopy();
-          cache.add(deepCopy);
-          // but do the assignment directly
-          assignCentersInternal(newCenterArray, summationCount, deepCopy);
-        }
-      } else {
-        // now we can iterate in memory and check against the centers
-        for (DoubleVector v : cache) {
-          assignCentersInternal(newCenterArray, summationCount, v);
-        }
+      // now we can iterate in memory and check against the centers
+      for (DoubleVector v : m_cache) {
+        assignCentersInternal(newCenterArray, summationCount, v);
       }
     }
 
@@ -272,10 +219,12 @@ public class KMeansHybridBSP
         }
       }
     }
+
   }
 
   private void assignCentersInternal(final DoubleVector[] newCenterArray,
       final int[] summationCount, final DoubleVector key) {
+
     final int lowestDistantCenter = getNearestCenter(key);
     final DoubleVector clusterCenter = newCenterArray[lowestDistantCenter];
 
@@ -293,9 +242,10 @@ public class KMeansHybridBSP
     int lowestDistantCenter = 0;
     double lowestDistance = Double.MAX_VALUE;
 
-    for (int i = 0; i < centers.length; i++) {
-      final double estimatedDistance = distanceMeasurer.measureDistance(
-          centers[i], key);
+    for (int i = 0; i < m_centers.length; i++) {
+      final double estimatedDistance = measureEuclidianDistance(m_centers[i],
+          key);
+
       // check if we have a can assign a new center, because we
       // got a lower distance
       if (estimatedDistance < lowestDistance) {
@@ -306,37 +256,91 @@ public class KMeansHybridBSP
     return lowestDistantCenter;
   }
 
-  private void recalculateAssignmentsAndWrite(
-      BSPPeer<VectorWritable, NullWritable, IntWritable, VectorWritable, CenterMessage> peer)
+  private double measureEuclidianDistance(double[] set1, double[] set2) {
+    double sum = 0;
+    int length = set1.length;
+    for (int i = 0; i < length; i++) {
+      double diff = set2[i] - set1[i];
+      // multiplication is faster than Math.pow() for ^2.
+      sum += (diff * diff);
+    }
+
+    return Math.sqrt(sum);
+  }
+
+  private double measureEuclidianDistance(DoubleVector vec1, DoubleVector vec2) {
+    return Math.sqrt(vec2.subtractUnsafe(vec1).pow(2).sum());
+  }
+
+  private long updateCenters(
+      BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException {
-    final NullWritable value = NullWritable.get();
-    // also use our cache to speed up the final writes if exists
-    if (cache == null) {
-      final VectorWritable key = new VectorWritable();
-      IntWritable keyWrite = new IntWritable();
-      while (peer.readNext(key, value)) {
-        final int lowestDistantCenter = getNearestCenter(key.getVector());
-        keyWrite.set(lowestDistantCenter);
-        peer.write(keyWrite, key);
-      }
-    } else {
-      IntWritable keyWrite = new IntWritable();
-      for (DoubleVector v : cache) {
-        final int lowestDistantCenter = getNearestCenter(v);
-        keyWrite.set(lowestDistantCenter);
-        peer.write(keyWrite, new VectorWritable(v));
+
+    // this is the update step
+    DoubleVector[] msgCenters = new DoubleVector[m_centers.length];
+    int[] incrementSum = new int[m_centers.length];
+
+    CenterMessage msg;
+    // basically just summing incoming vectors
+    while ((msg = peer.getCurrentMessage()) != null) {
+      DoubleVector oldCenter = msgCenters[msg.getCenterIndex()];
+      DoubleVector newCenter = msg.getData();
+      incrementSum[msg.getCenterIndex()] += msg.getIncrementCounter();
+
+      if (oldCenter == null) {
+        msgCenters[msg.getCenterIndex()] = newCenter;
+      } else {
+        msgCenters[msg.getCenterIndex()] = oldCenter.addUnsafe(newCenter);
       }
     }
+    // divide by how often we globally summed vectors
+    for (int i = 0; i < msgCenters.length; i++) {
+      // and only if we really have an update for c
+      if (msgCenters[i] != null) {
+        msgCenters[i] = msgCenters[i].divide(incrementSum[i]);
+      }
+    }
+
+    // finally check for convergence by the absolute difference
+    long convergedCounter = 0L;
+    for (int i = 0; i < msgCenters.length; i++) {
+      final DoubleVector oldCenter = m_centers[i];
+      if (msgCenters[i] != null) {
+        double calculateError = oldCenter.subtractUnsafe(msgCenters[i]).abs()
+            .sum();
+        if (calculateError > 0.0d) {
+          m_centers[i] = msgCenters[i];
+          convergedCounter++;
+        }
+      }
+    }
+    return convergedCounter;
+  }
+
+  private void recalculateAssignmentsAndWrite(
+      BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
+      throws IOException {
+
+    final NullWritable value = NullWritable.get();
+
+    IntWritable keyWrite = new IntWritable();
+    for (DoubleVector v : m_cache) {
+      final int lowestDistantCenter = getNearestCenter(v);
+      keyWrite.set(lowestDistantCenter);
+      peer.write(keyWrite, new PipesVectorWritable(v));
+    }
+
     // just on the first task write the centers to filesystem to prevent
     // collisions
     if (peer.getPeerName().equals(peer.getPeerName(0))) {
-      String pathString = conf.get(CONF_CENTER_OUT_PATH);
+      String pathString = m_conf.get(CONF_CENTER_OUT_PATH);
       if (pathString != null) {
-        final SequenceFile.Writer dataWriter = SequenceFile.createWriter(
-            FileSystem.get(conf), conf, new Path(pathString),
-            VectorWritable.class, NullWritable.class, CompressionType.NONE);
-        for (DoubleVector center : centers) {
-          dataWriter.append(new VectorWritable(center), value);
+        final SequenceFile.Writer dataWriter = SequenceFile
+            .createWriter(FileSystem.get(m_conf), m_conf, new Path(pathString),
+                PipesVectorWritable.class, NullWritable.class,
+                CompressionType.NONE);
+        for (DoubleVector center : m_centers) {
+          dataWriter.append(new PipesVectorWritable(center), value);
         }
         dataWriter.close();
       }
@@ -349,8 +353,7 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    HamaConfiguration conf = peer.getConfiguration();
-    this.m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
+    this.setup(peer);
 
     this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
         CONF_BLOCKSIZE));
@@ -358,21 +361,6 @@ public class KMeansHybridBSP
     this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
         CONF_GRIDSIZE));
 
-    // Init logging
-    if (m_isDebuggingEnabled) {
-      try {
-        FileSystem fs = FileSystem.get(conf);
-        m_logger = fs.create(new Path(FileOutputFormat
-            .getOutputPath(new BSPJob((HamaConfiguration) conf))
-            + "/BSP_"
-            + peer.getTaskId() + ".log"));
-
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    // TODO
   }
 
   @Override

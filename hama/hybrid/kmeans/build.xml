@@ -16,7 +16,7 @@
 	<property name="bench.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask numRowsA numColsA numRowsB numColsB debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="application.args" value="numBspTask n k vectorDimension maxIterations debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>
