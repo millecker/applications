@@ -24,23 +24,35 @@ public class HelloHybridKernel implements Kernel {
   public int numPeers = 0;
   public String peerName;
 
-  public HelloHybridKernel() {
+  public String splitString;
+  public String delimiter;
+  public String[] splits1;
+  public String[] splits2;
+  public String[] splits3;
+  public String[] splits4;
+  public String[] splits5;
+
+  public HelloHybridKernel(String splitString, String delimiter) {
+    this.splitString = splitString;
+    this.delimiter = delimiter;
   }
 
   public void gpuMethod() {
     peerName = HamaPeer.getPeerName();
     numPeers = HamaPeer.getNumPeers();
 
-    System.out.print("PeerName: ");
-    System.out.println(peerName);
-    System.out.print("NumPeers: ");
-    System.out.println(numPeers);
+    // test String.split
+    splits1 = splitString.split(delimiter);
+    splits2 = splitString.split(delimiter, 2);
+    splits3 = splitString.split(delimiter, 5);
+    splits4 = splitString.split(delimiter, -2);
+    splits5 = splitString.split(";");
   }
 
   public static void main(String[] args) {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new HelloHybridKernel();
+    new HelloHybridKernel(new String(""), new String(""));
   }
 }

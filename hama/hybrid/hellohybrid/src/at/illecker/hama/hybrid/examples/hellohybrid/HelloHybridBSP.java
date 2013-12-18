@@ -17,6 +17,7 @@
 package at.illecker.hama.hybrid.examples.hellohybrid;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -65,6 +66,33 @@ public class HelloHybridBSP
         .getOutputPath(job), peer.getTaskId() + ".log"));
 
     outStream.writeChars("HelloHybrid.bsp executed on CPU!\n");
+
+    // test String.split
+    String splitString = "boo:and:foo";
+    String[] splits;
+
+    outStream.writeChars("splitString: '" + splitString + "'\n");
+
+    splits = splitString.split(":");
+    outStream.writeChars("split(\":\") len: " + splits.length + " values: '"
+        + Arrays.toString(splits) + "'\n");
+
+    splits = splitString.split(":", 2);
+    outStream.writeChars("split(\":\",2) len: " + splits.length + " values: '"
+        + Arrays.toString(splits) + "'\n");
+
+    splits = splitString.split(":", 5);
+    outStream.writeChars("split(\":\",5) len: " + splits.length + " values: '"
+        + Arrays.toString(splits) + "'\n");
+
+    splits = splitString.split(":", -2);
+    outStream.writeChars("split(\":\",-2) len: " + splits.length + " values: '"
+        + Arrays.toString(splits) + "'\n");
+
+    splits = splitString.split(";");
+    outStream.writeChars("split(\";\") len: " + splits.length + " values: '"
+        + Arrays.toString(splits) + "'\n");
+
     outStream.close();
   }
 
@@ -81,7 +109,7 @@ public class HelloHybridBSP
 
     outStream.writeChars("HelloHybrid.bspGpu executed on GPU!\n");
 
-    HelloHybridKernel kernel = new HelloHybridKernel();
+    HelloHybridKernel kernel = new HelloHybridKernel("boo:and:foo", ":");
     // 1 Kernel within 1 Block
     rootbeer.setThreadConfig(1, 1, 1);
 
@@ -110,6 +138,24 @@ public class HelloHybridBSP
         + "'\n");
     outStream.writeChars("HelloHybridKernel,numPeers: '" + kernel.numPeers
         + "'\n");
+
+    // test String.split
+    outStream.writeChars("splitString: '" + kernel.splitString + "'\n");
+    outStream.writeChars("split(\"" + kernel.delimiter + "\") len: "
+        + kernel.splits1.length + " values: '"
+        + Arrays.toString(kernel.splits1) + "'\n");
+    outStream.writeChars("split(\"" + kernel.delimiter + "\",2) len: "
+        + kernel.splits2.length + " values: '"
+        + Arrays.toString(kernel.splits2) + "'\n");
+    outStream.writeChars("split(\"" + kernel.delimiter + "\",5) len: "
+        + kernel.splits3.length + " values: '"
+        + Arrays.toString(kernel.splits3) + "'\n");
+    outStream.writeChars("split(\"" + kernel.delimiter + "\",-2) len: "
+        + kernel.splits4.length + " values: '"
+        + Arrays.toString(kernel.splits4) + "'\n");
+    outStream.writeChars("split(\";\") len: " + kernel.splits5.length
+        + " values: '" + Arrays.toString(kernel.splits5) + "'\n");
+
     outStream.close();
   }
 
