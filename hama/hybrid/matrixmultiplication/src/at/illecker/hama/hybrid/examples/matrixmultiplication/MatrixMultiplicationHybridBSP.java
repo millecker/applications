@@ -401,6 +401,7 @@ public class MatrixMultiplicationHybridBSP
       conf.setInt("bsp.peers.gpu.num", 1);
     }
 
+    conf.setBoolean("hama.pipes.logging", isDebugging);
     conf.setBoolean(CONF_DEBUG, isDebugging);
     conf.set(CONF_BLOCKSIZE, "" + BLOCK_SIZE);
     conf.set(CONF_GRIDSIZE, "" + GRID_SIZE);

@@ -23,6 +23,7 @@ public class HelloHybridKernel implements Kernel {
 
   public int numPeers = 0;
   public String peerName;
+  public String[] allPeerNames;
 
   public String splitString;
   public String delimiter;
@@ -40,6 +41,7 @@ public class HelloHybridKernel implements Kernel {
   public void gpuMethod() {
     peerName = HamaPeer.getPeerName();
     numPeers = HamaPeer.getNumPeers();
+    allPeerNames = HamaPeer.getAllPeerNames();
 
     // test String.split
     splits1 = splitString.split(delimiter);

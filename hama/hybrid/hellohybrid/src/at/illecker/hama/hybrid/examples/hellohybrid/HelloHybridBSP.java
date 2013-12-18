@@ -67,6 +67,9 @@ public class HelloHybridBSP
 
     outStream.writeChars("HelloHybrid.bsp executed on CPU!\n");
 
+    outStream.writeChars("getAllPeerNames: '"
+        + Arrays.toString(peer.getAllPeerNames()) + "'\n");
+
     // test String.split
     String splitString = "boo:and:foo";
     String[] splits;
@@ -139,22 +142,27 @@ public class HelloHybridBSP
     outStream.writeChars("HelloHybridKernel,numPeers: '" + kernel.numPeers
         + "'\n");
 
+    outStream.writeChars("HelloHybridKernel,getAllPeerNames: '"
+        + Arrays.toString(kernel.allPeerNames) + "'\n");
+
     // test String.split
-    outStream.writeChars("splitString: '" + kernel.splitString + "'\n");
-    outStream.writeChars("split(\"" + kernel.delimiter + "\") len: "
-        + kernel.splits1.length + " values: '"
+    outStream.writeChars("HelloHybridKernel,splitString: '"
+        + kernel.splitString + "'\n");
+    outStream.writeChars("HelloHybridKernel,split(\"" + kernel.delimiter
+        + "\") len: " + kernel.splits1.length + " values: '"
         + Arrays.toString(kernel.splits1) + "'\n");
-    outStream.writeChars("split(\"" + kernel.delimiter + "\",2) len: "
-        + kernel.splits2.length + " values: '"
+    outStream.writeChars("HelloHybridKernel,split(\"" + kernel.delimiter
+        + "\",2) len: " + kernel.splits2.length + " values: '"
         + Arrays.toString(kernel.splits2) + "'\n");
-    outStream.writeChars("split(\"" + kernel.delimiter + "\",5) len: "
-        + kernel.splits3.length + " values: '"
+    outStream.writeChars("HelloHybridKernel,split(\"" + kernel.delimiter
+        + "\",5) len: " + kernel.splits3.length + " values: '"
         + Arrays.toString(kernel.splits3) + "'\n");
-    outStream.writeChars("split(\"" + kernel.delimiter + "\",-2) len: "
-        + kernel.splits4.length + " values: '"
+    outStream.writeChars("HelloHybridKernel,split(\"" + kernel.delimiter
+        + "\",-2) len: " + kernel.splits4.length + " values: '"
         + Arrays.toString(kernel.splits4) + "'\n");
-    outStream.writeChars("split(\";\") len: " + kernel.splits5.length
-        + " values: '" + Arrays.toString(kernel.splits5) + "'\n");
+    outStream.writeChars("HelloHybridKernel,split(\";\") len: "
+        + kernel.splits5.length + " values: '"
+        + Arrays.toString(kernel.splits5) + "'\n");
 
     outStream.close();
   }
@@ -208,6 +216,8 @@ public class HelloHybridBSP
       job.setNumBspTask(2); // 1 CPU and 1 GPU
     }
     job.setNumBspGpuTask(1);
+
+    job.setBoolean("hama.pipes.logging", true);
 
     LOG.info("NumBspTask: " + job.getNumBspTask());
     LOG.info("NumBspGpuTask: " + job.getNumBspGpuTask());

@@ -62,6 +62,7 @@ public class KMeansHybridBSP
   public static final String CONF_MAX_ITERATIONS_KEY = "kmeans.max.iterations";
   public static final String CONF_CENTER_IN_PATH = "kmeans.center.in.path";
   public static final String CONF_CENTER_OUT_PATH = "kmeans.center.out.path";
+
   private static final Path CONF_TMP_DIR = new Path(
       "output/hama/hybrid/examples/kmeans/hybrid-" + System.currentTimeMillis());
   private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
@@ -499,8 +500,10 @@ public class KMeansHybridBSP
       conf.setInt("bsp.peers.gpu.num", 1);
     }
 
-    conf.setInt(CONF_MAX_ITERATIONS_KEY, maxIteration);
     conf.setBoolean(CONF_DEBUG, isDebugging);
+    conf.setBoolean("hama.pipes.logging", isDebugging);
+
+    conf.setInt(CONF_MAX_ITERATIONS_KEY, maxIteration);
 
     conf.set(CONF_BLOCKSIZE, "" + BLOCK_SIZE);
     conf.set(CONF_GRIDSIZE, "" + GRID_SIZE);
