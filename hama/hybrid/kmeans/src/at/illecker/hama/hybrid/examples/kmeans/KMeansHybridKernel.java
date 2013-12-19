@@ -16,8 +16,6 @@
  */
 package at.illecker.hama.hybrid.examples.kmeans;
 
-import at.illecker.hama.hybrid.examples.kmeans.util.DenseDoubleVector;
-import at.illecker.hama.hybrid.examples.kmeans.util.ObjectList;
 import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
 import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
