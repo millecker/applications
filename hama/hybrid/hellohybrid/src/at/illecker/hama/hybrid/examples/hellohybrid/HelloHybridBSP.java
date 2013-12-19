@@ -98,7 +98,9 @@ public class HelloHybridBSP
       int i = 0;
       while (reader.next(key, nullValue)) {
         outStream.writeChars("sequenceFileReader: key: '" + key.get() + "'\n");
-        summation.set(i, summation.get(i) + key.get());
+        if (i < summation.size()) {
+          summation.set(i, summation.get(i) + key.get());
+        }
         i++;
       }
     } catch (IOException e) {
@@ -192,7 +194,8 @@ public class HelloHybridBSP
         + "'\n");
     outStream.writeChars("HelloHybridKernel,numPeers: '" + kernel.numPeers
         + "'\n");
-
+    outStream.writeChars("HelloHybridKernel,summation: '"
+        + Arrays.toString(kernel.summation) + "'\n");
     outStream.writeChars("HelloHybridKernel,getAllPeerNames: '"
         + Arrays.toString(kernel.allPeerNames) + "'\n");
 
@@ -325,7 +328,7 @@ public class HelloHybridBSP
     // Enable one GPU task
     conf.setInt("bsp.peers.gpu.num", 1);
 
-    conf.setBoolean("hama.pipes.logging", true);
+    conf.setBoolean("hama.pipes.logging", false);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("NumBspGpuTask: " + conf.getInt("bsp.peers.gpu.num", 0));
@@ -334,7 +337,7 @@ public class HelloHybridBSP
     LOG.info("outputPath: " + CONF_OUTPUT_DIR);
 
     Path input = new Path(CONF_INPUT_DIR, "input.seq");
-    Path example = new Path(CONF_INPUT_DIR, "example.seq");
+    Path example = new Path(CONF_INPUT_DIR, "/example/example.seq");
 
     conf.set(CONF_EXAMPLE_PATH, example.toString());
 

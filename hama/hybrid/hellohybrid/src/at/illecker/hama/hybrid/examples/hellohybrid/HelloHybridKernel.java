@@ -60,6 +60,7 @@ public class HelloHybridKernel implements Kernel {
       System.out.print("input: key: '");
       System.out.print(key);
       System.out.println("'");
+      i++;
     }
 
     // test sequenceFileReader
@@ -67,21 +68,27 @@ public class HelloHybridKernel implements Kernel {
         .sequenceFileOpen(examplePath, 'r', "org.apache.hadoop.io.IntWritable",
             "org.apache.hadoop.io.NullWritable");
 
+    int j = 0;
     while (HamaPeer.sequenceFileReadNext(seqFileId, keyValuePair)) {
       key = (Integer) keyValuePair.getKey();
-      summation[i] += key;
+      if (j < i) {
+        summation[j] += key;
+      }
       System.out.print("sequenceFileReader: key: '");
       System.out.print(key);
       System.out.println("'");
+      j++;
     }
     HamaPeer.sequenceFileClose(seqFileId);
 
     // test output
-    for (int j = 0; j < this.n; j++) {
+    j = 0;
+    while (j < i) {
       System.out.print("output: key: '");
       System.out.print(summation[j]);
       System.out.println("'");
       HamaPeer.write(summation[j], null);
+      j++;
     }
 
     // test getAllPeerNames
