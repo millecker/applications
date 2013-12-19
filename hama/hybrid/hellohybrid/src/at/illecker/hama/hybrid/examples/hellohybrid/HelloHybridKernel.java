@@ -18,11 +18,15 @@ package at.illecker.hama.hybrid.examples.hellohybrid;
 
 import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
 
 public class HelloHybridKernel implements Kernel {
 
   public int numPeers = 0;
   public String peerName;
+  public String examplePath;
+  public int n;
+  public int[] summation;
   public String[] allPeerNames;
 
   public String splitString;
@@ -33,7 +37,11 @@ public class HelloHybridKernel implements Kernel {
   public String[] splits4;
   public String[] splits5;
 
-  public HelloHybridKernel(String splitString, String delimiter) {
+  public HelloHybridKernel(String examplePath, int n, String splitString,
+      String delimiter) {
+    this.examplePath = examplePath;
+    this.n = n;
+    this.summation = new int[n];
     this.splitString = splitString;
     this.delimiter = delimiter;
   }
@@ -41,6 +49,42 @@ public class HelloHybridKernel implements Kernel {
   public void gpuMethod() {
     peerName = HamaPeer.getPeerName();
     numPeers = HamaPeer.getNumPeers();
+
+    // test input
+    int key = 1;
+    int i = 0;
+    KeyValuePair keyValuePair = new KeyValuePair(key, null);
+    while (HamaPeer.readNext(keyValuePair)) {
+      key = (Integer) keyValuePair.getKey();
+      summation[i] = key;
+      System.out.print("input: key: '");
+      System.out.print(key);
+      System.out.println("'");
+    }
+
+    // test sequenceFileReader
+    int seqFileId = HamaPeer
+        .sequenceFileOpen(examplePath, 'r', "org.apache.hadoop.io.IntWritable",
+            "org.apache.hadoop.io.NullWritable");
+
+    while (HamaPeer.sequenceFileReadNext(seqFileId, keyValuePair)) {
+      key = (Integer) keyValuePair.getKey();
+      summation[i] += key;
+      System.out.print("sequenceFileReader: key: '");
+      System.out.print(key);
+      System.out.println("'");
+    }
+    HamaPeer.sequenceFileClose(seqFileId);
+
+    // test output
+    for (int j = 0; j < this.n; j++) {
+      System.out.print("output: key: '");
+      System.out.print(summation[j]);
+      System.out.println("'");
+      HamaPeer.write(summation[j], null);
+    }
+
+    // test getAllPeerNames
     allPeerNames = HamaPeer.getAllPeerNames();
 
     // test String.split
@@ -55,6 +99,6 @@ public class HelloHybridKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new HelloHybridKernel(new String(""), new String(""));
+    new HelloHybridKernel(new String(""), 0, new String(""), new String(""));
   }
 }
