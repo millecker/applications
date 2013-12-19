@@ -66,9 +66,8 @@ public class KMeansHybridKernel implements Kernel {
           if (m_cache == null) {
             m_cache = new ObjectList();
 
-            String nullValue = "";
             String vectorStr = "";
-            KeyValuePair keyValuePair = new KeyValuePair(vectorStr, nullValue);
+            KeyValuePair keyValuePair = new KeyValuePair(vectorStr, null);
 
             while ((inputHasMore = HamaPeer.readNext(keyValuePair)) == true) {
               vectorStr = (String) keyValuePair.getKey();
