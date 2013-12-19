@@ -21,8 +21,9 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hama.commons.io.PipesVectorWritable;
+import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 
 public final class CenterMessage implements Writable {
@@ -47,16 +48,29 @@ public final class CenterMessage implements Writable {
 
   @Override
   public final void readFields(DataInput in) throws IOException {
-    centerIndex = in.readInt();
-    incrementCounter = in.readInt();
-    newCenter = PipesVectorWritable.readVector(in);
+    String str = Text.readString(in);
+    String[] values = str.split(":", 3);
+
+    centerIndex = Integer.parseInt(values[0]);
+    incrementCounter = Integer.parseInt(values[1]);
+
+    String[] vectorStr = values[2].split(",");
+    int len = vectorStr.length;
+    DoubleVector vector = new DenseDoubleVector(len);
+    for (int i = 0; i < len; i++) {
+      vector.set(i, Double.parseDouble(vectorStr[i]));
+    }
+    newCenter = vector;
   }
 
   @Override
   public final void write(DataOutput out) throws IOException {
-    out.writeInt(centerIndex);
-    out.writeInt(incrementCounter);
-    PipesVectorWritable.writeVector(newCenter, out);
+    String str = centerIndex + ":" + incrementCounter + ":";
+    for (int i = 0; i < newCenter.getLength(); i++) {
+      str += (i < newCenter.getLength() - 1) ? newCenter.get(i) + ", "
+          : newCenter.get(i);
+    }
+    Text.writeString(out, str);
   }
 
   public int getCenterIndex() {

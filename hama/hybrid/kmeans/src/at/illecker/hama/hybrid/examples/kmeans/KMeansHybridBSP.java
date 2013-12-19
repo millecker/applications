@@ -18,6 +18,7 @@ package at.illecker.hama.hybrid.examples.kmeans;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -80,7 +81,9 @@ public class KMeansHybridBSP
   private FSDataOutputStream m_logger;
 
   // a task local copy of our cluster centers
-  private DoubleVector[] m_centers;
+  private DoubleVector[] m_centers_cpu = null;
+  private double[][] m_centers_gpu = null;
+
   // simple cache to speed up computation, because the algorithm is disk based
   // normally we want to rely on OS caching, but if not, we can cache in heap
   private List<DoubleVector> m_cache = new ArrayList<DoubleVector>();
@@ -146,7 +149,7 @@ public class KMeansHybridBSP
     Preconditions.checkArgument(centers.size() > 0,
         "Centers file must contain at least a single center!");
 
-    this.m_centers = centers.toArray(new DoubleVector[centers.size()]);
+    this.m_centers_cpu = centers.toArray(new DoubleVector[centers.size()]);
   }
 
   @Override
@@ -191,8 +194,8 @@ public class KMeansHybridBSP
 
     // each task has all the centers, if a center has been updated it
     // needs to be broadcasted.
-    final DoubleVector[] newCenterArray = new DoubleVector[m_centers.length];
-    final int[] summationCount = new int[m_centers.length];
+    final DoubleVector[] newCenterArray = new DoubleVector[m_centers_cpu.length];
+    final int[] summationCount = new int[m_centers_cpu.length];
 
     // if our cache is empty, we have to read it from disk first
     if (m_cache.isEmpty()) {
@@ -243,9 +246,9 @@ public class KMeansHybridBSP
     int lowestDistantCenter = 0;
     double lowestDistance = Double.MAX_VALUE;
 
-    for (int i = 0; i < m_centers.length; i++) {
-      final double estimatedDistance = measureEuclidianDistance(m_centers[i],
-          key);
+    for (int i = 0; i < m_centers_cpu.length; i++) {
+      final double estimatedDistance = measureEuclidianDistance(
+          m_centers_cpu[i], key);
 
       // check if we have a can assign a new center, because we
       // got a lower distance
@@ -257,18 +260,6 @@ public class KMeansHybridBSP
     return lowestDistantCenter;
   }
 
-  private double measureEuclidianDistance(double[] set1, double[] set2) {
-    double sum = 0;
-    int length = set1.length;
-    for (int i = 0; i < length; i++) {
-      double diff = set2[i] - set1[i];
-      // multiplication is faster than Math.pow() for ^2.
-      sum += (diff * diff);
-    }
-
-    return Math.sqrt(sum);
-  }
-
   private double measureEuclidianDistance(DoubleVector vec1, DoubleVector vec2) {
     return Math.sqrt(vec2.subtractUnsafe(vec1).pow(2).sum());
   }
@@ -278,8 +269,8 @@ public class KMeansHybridBSP
       throws IOException {
 
     // this is the update step
-    DoubleVector[] msgCenters = new DoubleVector[m_centers.length];
-    int[] incrementSum = new int[m_centers.length];
+    DoubleVector[] msgCenters = new DoubleVector[m_centers_cpu.length];
+    int[] incrementSum = new int[m_centers_cpu.length];
 
     CenterMessage msg;
     // basically just summing incoming vectors
@@ -305,12 +296,12 @@ public class KMeansHybridBSP
     // finally check for convergence by the absolute difference
     long convergedCounter = 0L;
     for (int i = 0; i < msgCenters.length; i++) {
-      final DoubleVector oldCenter = m_centers[i];
+      final DoubleVector oldCenter = m_centers_cpu[i];
       if (msgCenters[i] != null) {
         double calculateError = oldCenter.subtractUnsafe(msgCenters[i]).abs()
             .sum();
         if (calculateError > 0.0d) {
-          m_centers[i] = msgCenters[i];
+          m_centers_cpu[i] = msgCenters[i];
           convergedCounter++;
         }
       }
@@ -321,8 +312,6 @@ public class KMeansHybridBSP
   private void recalculateAssignmentsAndWrite(
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException {
-
-    final NullWritable value = NullWritable.get();
 
     IntWritable keyWrite = new IntWritable();
     for (DoubleVector v : m_cache) {
@@ -340,7 +329,9 @@ public class KMeansHybridBSP
             .createWriter(FileSystem.get(m_conf), m_conf, new Path(pathString),
                 PipesVectorWritable.class, NullWritable.class,
                 CompressionType.NONE);
-        for (DoubleVector center : m_centers) {
+        final NullWritable value = NullWritable.get();
+
+        for (DoubleVector center : m_centers_cpu) {
           dataWriter.append(new PipesVectorWritable(center), value);
         }
         dataWriter.close();
@@ -354,14 +345,64 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    this.setup(peer);
+    this.m_conf = peer.getConfiguration();
+    this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
+    this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS_KEY, -1);
 
-    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
-        CONF_BLOCKSIZE));
+    this.m_blockSize = Integer.parseInt(this.m_conf.get(CONF_BLOCKSIZE));
+    this.m_gridSize = Integer.parseInt(this.m_conf.get(CONF_GRIDSIZE));
 
-    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
-        CONF_GRIDSIZE));
+    // Init logging
+    if (m_isDebuggingEnabled) {
+      try {
+        FileSystem fs = FileSystem.get(m_conf);
+        m_logger = fs.create(new Path(FileOutputFormat
+            .getOutputPath(new BSPJob((HamaConfiguration) m_conf))
+            + "/BSP_"
+            + peer.getTaskId() + ".log"));
 
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    // Init center vectors
+    Path centroids = new Path(m_conf.get(CONF_CENTER_IN_PATH));
+    FileSystem fs = FileSystem.get(m_conf);
+
+    final ArrayList<double[]> centers = new ArrayList<double[]>();
+    SequenceFile.Reader reader = null;
+    try {
+      reader = new SequenceFile.Reader(fs, centroids, m_conf);
+      PipesVectorWritable key = new PipesVectorWritable();
+      NullWritable value = NullWritable.get();
+      while (reader.next(key, value)) {
+        centers.add(key.getVector().toArray());
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      if (reader != null) {
+        reader.close();
+      }
+    }
+
+    Preconditions.checkArgument(centers.size() > 0,
+        "Centers file must contain at least a single center!");
+
+    // build double[][]
+    this.m_centers_gpu = new double[centers.size()][centers.get(0).length];
+    for (int i = 0; i < centers.size(); i++) {
+      double[] vector = centers.get(i);
+      for (int j = 0; j < vector.length; j++) {
+        this.m_centers_gpu[i][j] = vector[j];
+      }
+    }
+
+    for (int i = 0; i < m_centers_gpu.length; i++) {
+      LOG.debug("m_centers_gpu[" + i + "]: "
+          + Arrays.toString(m_centers_gpu[i]));
+    }
   }
 
   @Override
@@ -378,7 +419,9 @@ public class KMeansHybridBSP
           + m_blockSize + " gridSize: " + m_gridSize + "\n");
     }
 
-    KMeansHybridKernel kernel = new KMeansHybridKernel();
+    KMeansHybridKernel kernel = new KMeansHybridKernel(m_centers_gpu,
+        m_maxIterations);
+
     // 1 Kernel within 1 Block
     rootbeer.setThreadConfig(1, 1, 1);
     // rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize *
@@ -389,6 +432,26 @@ public class KMeansHybridBSP
     watch.start();
     rootbeer.runAll(kernel);
     watch.stop();
+
+    // just on the first task write the centers to filesystem to prevent
+    // collisions
+    if (peer.getPeerName().equals(peer.getPeerName(0))) {
+      String pathString = m_conf.get(CONF_CENTER_OUT_PATH);
+      if (pathString != null) {
+        final SequenceFile.Writer dataWriter = SequenceFile
+            .createWriter(FileSystem.get(m_conf), m_conf, new Path(pathString),
+                PipesVectorWritable.class, NullWritable.class,
+                CompressionType.NONE);
+
+        final NullWritable value = NullWritable.get();
+
+        for (int i = 0; i < kernel.m_centers.length; i++) {
+          dataWriter.append(new PipesVectorWritable(new DenseDoubleVector(
+              kernel.m_centers[i])), value);
+        }
+        dataWriter.close();
+      }
+    }
 
     List<StatsRow> stats = rootbeer.getStats();
     for (StatsRow row : stats) {
@@ -405,10 +468,6 @@ public class KMeansHybridBSP
 
     m_logger.writeChars("MatrixMultiplicationHybrid,GPUTime="
         + watch.elapsedTimeMillis() + "ms\n");
-    m_logger.writeChars("MatrixMultiplicationHybrid,peerName: '"
-        + kernel.m_peerName + "'\n");
-    m_logger.writeChars("MatrixMultiplicationHybrid,masterTask: '"
-        + kernel.m_masterTask + "'\n");
     m_logger.close();
   }
 
@@ -497,7 +556,7 @@ public class KMeansHybridBSP
     } else {
       conf.setInt("bsp.peers.num", 1); // cluster.getMaxTasks());
       // Enable one GPU task
-      //conf.setInt("bsp.peers.gpu.num", 1);
+      conf.setInt("bsp.peers.gpu.num", 1);
     }
 
     conf.setBoolean(CONF_DEBUG, isDebugging);
