@@ -11,9 +11,9 @@
 	<property name="rootbeer.package.dir" value="at/illecker/hama/hybrid/examples/kmeans" />
 	<property name="rootbeer.classes" value="KMeansHybridKernel.class" />
 	<property name="kernel.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansHybridKernel.class" />
-	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansBSP" />
-	<property name="cpu.class" value="" />
-	<property name="bench.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansBenchmark" />
+	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBSP" />
+	<property name="cpu.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBSP" />
+	<property name="bench.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
 	<property name="application.args" value="numBspTask n k vectorDimension maxIterations debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />

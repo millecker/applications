@@ -22,7 +22,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.hadoop.io.Writable;
-import org.apache.hama.commons.io.VectorWritable;
+import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.math.DoubleVector;
 
 public final class CenterMessage implements Writable {
@@ -49,14 +49,14 @@ public final class CenterMessage implements Writable {
   public final void readFields(DataInput in) throws IOException {
     centerIndex = in.readInt();
     incrementCounter = in.readInt();
-    newCenter = VectorWritable.readVector(in);
+    newCenter = PipesVectorWritable.readVector(in);
   }
 
   @Override
   public final void write(DataOutput out) throws IOException {
     out.writeInt(centerIndex);
     out.writeInt(incrementCounter);
-    VectorWritable.writeVector(newCenter, out);
+    PipesVectorWritable.writeVector(newCenter, out);
   }
 
   public int getCenterIndex() {

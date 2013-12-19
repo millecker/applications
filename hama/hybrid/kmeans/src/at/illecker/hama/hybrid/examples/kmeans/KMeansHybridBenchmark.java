@@ -17,7 +17,6 @@
 package at.illecker.hama.hybrid.examples.kmeans;
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -28,8 +27,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-
-import at.illecker.hama.hybrid.examples.matrixmultiplication.util.DistributedRowMatrix;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
@@ -51,19 +48,12 @@ public class KMeansHybridBenchmark extends Benchmark {
   private static final String OUTPUT_DIR = "output/hama/rootbeer/examples/matrixmultiplication/bench";
 
   private Path m_OUTPUT_DIR_PATH;
-  private Path m_MATRIX_A_PATH;
-  private Path m_MATRIX_B_PATH;
-  private Path m_MATRIX_C_PATH;
-  private Path m_MATRIX_D_PATH;
 
   private Configuration m_conf = null;
   private boolean m_runLocally = false;
 
   private int m_blockSize;
   private int m_gridSize;
-
-  private DistributedRowMatrix m_matrixA;
-  private DistributedRowMatrix m_matrixB;
 
   @Override
   protected void setUp() throws Exception {
@@ -110,33 +100,8 @@ public class KMeansHybridBenchmark extends Benchmark {
         + System.currentTimeMillis());
     System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
 
-    m_MATRIX_A_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixA.seq");
-    m_MATRIX_B_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixB.seq");
-    m_MATRIX_C_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixC.seq");
-    m_MATRIX_D_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixD.seq");
+    // TODO
 
-    m_blockSize = MatrixMultiplicationHybridBSP.BLOCK_SIZE;
-    m_gridSize = MatrixMultiplicationHybridBSP.GRID_SIZE;
-
-    System.out.println("Benchmark MatrixMultiplication " + type
-        + " [blockSize=" + m_blockSize + ",gridSize=" + m_gridSize + "] " + n
-        + " x " + n + " matrix");
-
-    // Create random DistributedRowMatrix
-    DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
-        new Random(42L), m_MATRIX_A_PATH, false);
-
-    DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
-        new Random(1337L), m_MATRIX_B_PATH, (type == CalcType.CPU) ? true
-            : false);
-
-    // Load DistributedRowMatrix a and b
-    m_matrixA = new DistributedRowMatrix(m_MATRIX_A_PATH, m_OUTPUT_DIR_PATH, n,
-        n);
-    m_matrixB = new DistributedRowMatrix(m_MATRIX_B_PATH, m_OUTPUT_DIR_PATH, n,
-        n);
-    m_matrixA.setConf(m_conf);
-    m_matrixB.setConf(m_conf);
   }
 
   @Override
@@ -144,39 +109,11 @@ public class KMeansHybridBenchmark extends Benchmark {
 
     verify();
 
-    // Cleanup
-    FileSystem fs = FileSystem.get(m_conf);
-    fs.delete(m_MATRIX_A_PATH, true);
-    fs.delete(m_MATRIX_B_PATH, true);
-    fs.delete(m_MATRIX_C_PATH, true);
-    fs.delete(m_MATRIX_D_PATH, true);
-
     printOutput(m_conf);
   }
 
   private void verify() throws Exception {
 
-    DistributedRowMatrix matrixC = new DistributedRowMatrix(m_MATRIX_C_PATH,
-        m_OUTPUT_DIR_PATH, n, n);
-    matrixC.setConf(m_conf);
-
-    if (type == CalcType.CPU) {
-      // Overwrite matrix B, NOT transposed for verification check
-      DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
-          new Random(1337L), m_MATRIX_B_PATH, false);
-      m_matrixB = new DistributedRowMatrix(m_MATRIX_B_PATH, m_OUTPUT_DIR_PATH,
-          n, n);
-      m_matrixB.setConf(m_conf);
-    }
-
-    DistributedRowMatrix matrixD = m_matrixA.multiplyJava(m_matrixB,
-        m_MATRIX_D_PATH);
-
-    if (matrixC.verify(matrixD)) {
-      System.out.println("Verify PASSED!");
-    } else {
-      System.out.println("Verify FAILED!");
-    }
   }
 
   static void printOutput(Configuration conf) throws IOException {
@@ -210,14 +147,11 @@ public class KMeansHybridBenchmark extends Benchmark {
 
   public int doBenchmark(int sum) {
     switch (type) {
-    /*
-     * case JAVA: sum = matrixMultiplyJava(sum); break;
-     */
       case CPU:
-        sum = matrixMultiplyHamaCPU(sum);
+        sum = kmeansHamaCPU(sum);
         break;
       case GPU:
-        sum = matrixMultiplyHamaGPU(sum);
+        sum = kmeansHamaGPU(sum);
         break;
       default:
         break;
@@ -225,10 +159,10 @@ public class KMeansHybridBenchmark extends Benchmark {
     return sum;
   }
 
-  private class MatrixMultiplication extends Configured implements Tool {
+  private class KMeans extends Configured implements Tool {
     private boolean useGPU;
 
-    public MatrixMultiplication(boolean useGPU) {
+    public KMeans(boolean useGPU) {
       this.useGPU = useGPU;
     }
 
@@ -236,36 +170,25 @@ public class KMeansHybridBenchmark extends Benchmark {
     public int run(String[] arg0) throws Exception {
 
       if (useGPU) {
-        m_conf.set(MatrixMultiplicationHybridBSP.CONF_BLOCKSIZE, ""
-            + m_blockSize);
-        m_conf
-            .set(MatrixMultiplicationHybridBSP.CONF_GRIDSIZE, "" + m_gridSize);
-        m_conf.setBoolean(MatrixMultiplicationHybridBSP.CONF_DEBUG, false);
-        m_conf.setInt("bsp.peers.num", 1);
 
-        m_matrixA.setConf(m_conf);
-        m_matrixB.setConf(m_conf);
       }
 
-      DistributedRowMatrix resultMatrix = m_matrixA.multiplyBSP(m_matrixB,
-          m_MATRIX_C_PATH);
-
-      return resultMatrix.numRows();
+      return 0;
     }
   }
 
-  private int matrixMultiplyHamaCPU(int sum) {
+  private int kmeansHamaCPU(int sum) {
     try {
-      sum += ToolRunner.run(new MatrixMultiplication(false), null);
+      sum += ToolRunner.run(new KMeans(false), null);
     } catch (Exception e) {
       e.printStackTrace();
     }
     return sum;
   }
 
-  private int matrixMultiplyHamaGPU(int sum) {
+  private int kmeansHamaGPU(int sum) {
     try {
-      sum += ToolRunner.run(new MatrixMultiplication(true), null);
+      sum += ToolRunner.run(new KMeans(true), null);
     } catch (Exception e) {
       e.printStackTrace();
     }

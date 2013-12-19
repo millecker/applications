@@ -497,7 +497,7 @@ public class KMeansHybridBSP
     } else {
       conf.setInt("bsp.peers.num", 1); // cluster.getMaxTasks());
       // Enable one GPU task
-      conf.setInt("bsp.peers.gpu.num", 1);
+      //conf.setInt("bsp.peers.gpu.num", 1);
     }
 
     conf.setBoolean(CONF_DEBUG, isDebugging);
