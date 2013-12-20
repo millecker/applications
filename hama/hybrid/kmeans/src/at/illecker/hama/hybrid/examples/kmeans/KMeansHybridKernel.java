@@ -23,7 +23,7 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class KMeansHybridKernel implements Kernel {
 
-  public ObjectList m_cache = null;
+  public DenseDoubleVectorList m_cache = null;
   public double[][] m_centers = null;
   public int m_maxIterations;
 
@@ -52,8 +52,17 @@ public class KMeansHybridKernel implements Kernel {
 
       // loop until input is empty
       boolean inputHasMore = true;
+      boolean fillCache = false;
       int startIndex = 0;
 
+      if (global_thread_idxx == 0) {
+        m_newCenters = new double[m_centers.length][m_centers[0].length];
+        m_summationCount = new int[m_centers.length];
+        for (int j = 0; j < m_centers.length; j++) {
+          m_summationCount[j] = -1;
+        }
+      }
+      
       while (inputHasMore) {
 
         double[][] inputs = null;
@@ -63,60 +72,70 @@ public class KMeansHybridKernel implements Kernel {
         if (global_thread_idxx == 0) {
 
           // if cache is empty read from HamaPeer
-          if (m_cache == null) {
-            m_cache = new ObjectList();
+          if ((m_cache == null) || (fillCache)) {
+
+            if (m_cache == null) {
+              m_cache = new DenseDoubleVectorList();
+              fillCache = true;
+            }
 
             String vectorStr = "";
             KeyValuePair keyValuePair = new KeyValuePair(vectorStr, null);
 
-            while ((inputHasMore = HamaPeer.readNext(keyValuePair)) == true) {
-              vectorStr = (String) keyValuePair.getKey();
+            while (i < threadCount) {
+              inputHasMore = HamaPeer.readNext(keyValuePair);
+              fillCache = inputHasMore;
+              if (!inputHasMore) {
+                break;
+              }
 
+              vectorStr = (String) keyValuePair.getKey();
+              
               DenseDoubleVector vector = new DenseDoubleVector(vectorStr);
 
               if (inputs == null) {
                 inputs = new double[threadCount][vector.getLength()];
               }
+              
               inputs[i] = vector.toArray();
               m_cache.add(vector);
 
               i++;
-              if (i >= threadCount) {
-                break;
-              }
             }
 
           } else { // fill inputs from m_cache
+            
+            int j = startIndex;           
+            while (i < threadCount) {
 
-            for (int j = startIndex; j < m_cache.getLength(); j++) {
-
-              DenseDoubleVector vector = (DenseDoubleVector) m_cache.get(j);
+              System.out.print("get from cache j: ");
+              System.out.println(j);
+              
+              DenseDoubleVector vector = m_cache.get(j);
 
               if (inputs == null) {
                 inputs = new double[threadCount][vector.getLength()];
               }
+              
               inputs[i] = vector.toArray();
 
-              if (j + 1 == m_cache.getLength()) {
-                inputHasMore = false;
-              }
-              // check threadCount
               i++;
-              if (i >= threadCount) {
+              j++;
+              if (j == m_cache.getLength()) {
+                inputHasMore = false;
                 break;
               }
             }
-            startIndex = i;
+            startIndex = j;
+            
           }
-
-          m_newCenters = new double[m_centers.length][m_centers[0].length];
-          m_summationCount = new int[m_centers.length];
         }
 
         RootbeerGpu.syncthreads();
 
         // Parallelism Start
         if (global_thread_idxx < i) {
+
           // Each thread gets his own vector
           double[] vector = inputs[global_thread_idxx];
 
@@ -133,20 +152,35 @@ public class KMeansHybridKernel implements Kernel {
 
       }
 
+      RootbeerGpu.syncthreads();
+      
       // sendMessages *****************************************************
       // thread 0 sends messages about the local updates to each other peer
       if (global_thread_idxx == 0) {
-        for (int i = 0; i < m_centers.length; i++) {
+        String[] allPeerNames = HamaPeer.getAllPeerNames();
 
-          if (m_summationCount[i] != 0) {
-            for (String peerName : HamaPeer.getAllPeerNames()) {
+        for (int i = 0; i < m_newCenters.length; i++) {
 
-              // centerIndex:incrementCounter:VectorValue1,VectorValue2,VectorValue3
-              String message = i + ":" + m_summationCount[i] + ":";
-              for (int j = 0; j < m_newCenters[i].length; j++) {
-                message += (j < m_newCenters[i].length - 1) ? m_newCenters[i]
-                    + ", " : m_newCenters[i];
+          if (m_summationCount[i] != -1) {
+            
+            // centerIndex:incrementCounter:VectorValue1,VectorValue2,VectorValue3
+            String message = "";
+            message += Integer.toString(i);
+            message += ":";
+            message += Integer.toString(m_summationCount[i]);
+            message += ":";
+            for (int j = 0; j < m_newCenters[i].length; j++) {
+              message += Double.toString(m_newCenters[i][j]);
+              if (j < m_newCenters[i].length - 1) {
+                message += ", ";
               }
+            }
+            
+            System.out.print("send message: '");
+            System.out.print(message);
+            System.out.println("'");
+            
+            for (String peerName : allPeerNames) {
               HamaPeer.send(peerName, message);
             }
           }
@@ -159,7 +193,7 @@ public class KMeansHybridKernel implements Kernel {
       // updateCenters *****************************************************
       double[][] msgCenters = new double[m_centers.length][m_centers[0].length];
       int[] msgIncrementSum = new int[m_centers.length];
-
+      
       // thread 0 fetch messages
       if (global_thread_idxx == 0) {
 
@@ -169,17 +203,22 @@ public class KMeansHybridKernel implements Kernel {
           // centerIndex:incrementCounter:VectorValue1,VectorValue2,VectorValue3
           String message = HamaPeer.getCurrentStringMessage();
 
+          System.out.print("got message: '");
+          System.out.print(message);
+          System.out.println("'");
+          
           // parse message
           String[] values = message.split(":", 3);
           int centerIndex = Integer.parseInt(values[0]);
           int incrementCounter = Integer.parseInt(values[1]);
+          
           String[] vectorStr = values[2].split(",");
           int len = vectorStr.length;
           double[] msgVector = new double[len];
           for (int j = 0; j < len; j++) {
             msgVector[j] = Double.parseDouble(vectorStr[j]);
           }
-
+          
           // Update
           if (msgIncrementSum[centerIndex] == 0) {
             msgCenters[centerIndex] = msgVector;
@@ -215,7 +254,10 @@ public class KMeansHybridKernel implements Kernel {
             for (int j = 0; j < m_centers[i].length; j++) {
               calculateError += Math.abs(m_centers[i][j] - msgCenters[i][j]);
             }
-
+            
+            System.out.print("calculateError: ");
+            System.out.println(calculateError);
+            
             if (calculateError > 0.0d) {
               m_centers[i] = msgCenters[i];
               convergedCounter++;
@@ -230,19 +272,22 @@ public class KMeansHybridKernel implements Kernel {
 
       RootbeerGpu.syncthreads();
 
+      System.out.print("m_converged: ");
+      System.out.println(m_converged);
+      
       if (m_converged == 0) {
         break;
       }
       if ((m_maxIterations > 0) && (m_maxIterations < m_superstepCount)) {
         break;
       }
-
+      
     }
 
     System.out.println("Finished! Writing the assignments...");
 
     // recalculateAssignmentsAndWrite *****************************************
-
+/*
     boolean inputHasMore = true;
     int startIndex = 0;
 
@@ -294,15 +339,16 @@ public class KMeansHybridKernel implements Kernel {
       RootbeerGpu.syncthreads();
       // Parallelism End
     }
-
+*/
     System.out.println("Done.");
   }
 
   private synchronized void assignCenters(int lowestDistantCenter,
       double[] vector) {
 
-    if (m_summationCount[lowestDistantCenter] == 0) {
+    if (m_summationCount[lowestDistantCenter] == -1) {
       m_newCenters[lowestDistantCenter] = vector;
+      m_summationCount[lowestDistantCenter] = 0;
     } else {
       // add the vector to the center
       // m_newCenters[lowestDistantCenter] = addVector(
@@ -310,6 +356,7 @@ public class KMeansHybridKernel implements Kernel {
       for (int j = 0; j < m_newCenters[lowestDistantCenter].length; j++) {
         m_newCenters[lowestDistantCenter][j] += vector[j];
       }
+      // TODO
       m_summationCount[lowestDistantCenter]++;
     }
   }
@@ -320,11 +367,18 @@ public class KMeansHybridKernel implements Kernel {
 
     for (int i = 0; i < m_centers.length; i++) {
       double estimatedDistance = measureEuclidianDistance(m_centers[i], vector);
+      
+      System.out.print("estimatedDistance: ");
+      System.out.println(estimatedDistance);
+      
       // check if we have a can assign a new center, because we
       // got a lower distance
       if (estimatedDistance < lowestDistance) {
         lowestDistance = estimatedDistance;
         lowestDistantCenter = i;
+
+        System.out.print("new lowestDistantCenter: ");
+        System.out.println(lowestDistantCenter);
       }
     }
     return lowestDistantCenter;

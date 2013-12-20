@@ -25,10 +25,12 @@ import java.util.Random;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.SequenceFile;
@@ -179,13 +181,6 @@ public class KMeansHybridBSP
     recalculateAssignmentsAndWrite(peer);
 
     LOG.info("Done.");
-
-    // Logging
-    // if (m_isDebuggingEnabled) {
-    // m_logger.writeChars("bsp,input,key=" + aKey + ",value="
-    // + aVector.getVector().toString() + "\n");
-    // m_logger.flush();
-    // }
   }
 
   private void assignCenters(
@@ -220,6 +215,13 @@ public class KMeansHybridBSP
         for (String peerName : peer.getAllPeerNames()) {
           peer.send(peerName, new CenterMessage(i, summationCount[i],
               newCenterArray[i]));
+          // Logging
+          if (m_isDebuggingEnabled) {
+            m_logger.writeChars("assignCenters,sent,peerName=" + peerName
+                + ",CenterMessage=" + i + "," + summationCount[i] + ","
+                + Arrays.toString(newCenterArray[i].toArray()) + "\n");
+            m_logger.flush();
+          }
         }
       }
     }
@@ -275,6 +277,15 @@ public class KMeansHybridBSP
     CenterMessage msg;
     // basically just summing incoming vectors
     while ((msg = peer.getCurrentMessage()) != null) {
+
+      // Logging
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("updateCenters,receive,CenterMessage="
+            + msg.getCenterIndex() + "," + msg.getIncrementCounter() + ","
+            + Arrays.toString(msg.getData().toArray()) + "\n");
+        m_logger.flush();
+      }
+
       DoubleVector oldCenter = msgCenters[msg.getCenterIndex()];
       DoubleVector newCenter = msg.getData();
       incrementSum[msg.getCenterIndex()] += msg.getIncrementCounter();
@@ -476,11 +487,27 @@ public class KMeansHybridBSP
     FileStatus[] files = fs.listStatus(CONF_OUTPUT_DIR);
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
-        if (files[i].getPath().getName().endsWith(".log")) {
-          System.out.println("File " + files[i].getPath());
-          // FSDataInputStream in = fs.open(files[i].getPath());
-          // IOUtils.copyBytes(in, System.out, conf, false);
-          // in.close();
+        System.out.println("File " + files[i].getPath());
+        SequenceFile.Reader reader = null;
+        try {
+          reader = new SequenceFile.Reader(fs, files[i].getPath(), conf);
+
+          IntWritable key = new IntWritable();
+          PipesVectorWritable value = new PipesVectorWritable();
+          while (reader.next(key, value)) {
+            System.out.println("key: '" + key.get() + "' value: '"
+                + value.getVector().toString() + "'\n");
+          }
+        } catch (IOException e) {
+          FSDataInputStream in = fs.open(files[i].getPath());
+          IOUtils.copyBytes(in, System.out, conf, false);
+          in.close();
+        } catch (NullPointerException e) {
+          LOG.error(e);
+        } finally {
+          if (reader != null) {
+            reader.close();
+          }
         }
       }
     }
@@ -521,8 +548,8 @@ public class KMeansHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    long n = 100000; // input vectors
-    int k = 10; // start vectors
+    long n = 10; // input vectors
+    int k = 2; // start vectors
     int vectorDimension = 2;
     int maxIteration = 10;
     boolean isDebugging = true;
@@ -579,7 +606,7 @@ public class KMeansHybridBSP
     LOG.info("maxIteration: " + maxIteration);
 
     Path input = new Path(CONF_INPUT_DIR, "input.seq");
-    Path centerIn = new Path(CONF_INPUT_DIR, "center.seq");
+    Path centerIn = new Path(CONF_INPUT_DIR, "/center/center.seq");
     Path centerOut = new Path(CONF_OUTPUT_DIR, "center.seq");
     conf.set(CONF_CENTER_IN_PATH, centerIn.toString());
     conf.set(CONF_CENTER_OUT_PATH, centerOut.toString());

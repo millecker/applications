@@ -19,30 +19,30 @@ package at.illecker.hama.hybrid.examples.kmeans;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ObjectList {
-  private Object m_values[];
+public class DenseDoubleVectorList {
+  private DenseDoubleVector m_values[];
   private int m_index;
 
-  public ObjectList() {
-    m_values = new Object[8];
+  public DenseDoubleVectorList() {
+    m_values = new DenseDoubleVector[8];
     m_index = 0;
   }
 
-  public ObjectList(int length) {
-    m_values = new Object[length];
+  public DenseDoubleVectorList(int length) {
+    m_values = new DenseDoubleVector[length];
     m_index = 0;
   }
 
   public int getLength() {
     return m_index;
   }
-  
-  public void add(Object o) {
-    m_values[m_index] = o;
+
+  public void add(DenseDoubleVector v) {
+    m_values[m_index] = v;
     m_index++;
 
     if (m_index == m_values.length) {
-      Object[] new_data = new Object[m_index * 2];
+      DenseDoubleVector[] new_data = new DenseDoubleVector[m_index * 2];
       for (int i = 0; i < m_index; i++) {
         new_data[i] = m_values[i];
       }
@@ -50,12 +50,12 @@ public class ObjectList {
     }
   }
 
-  public Object get(int index) {
+  public DenseDoubleVector get(int index) {
     return m_values[index];
   }
 
-  public List<Object> getList() {
-    List<Object> ret = new ArrayList<Object>();
+  public List<DenseDoubleVector> getList() {
+    List<DenseDoubleVector> ret = new ArrayList<DenseDoubleVector>();
     for (int i = 0; i < m_index; ++i) {
       ret.add(m_values[i]);
     }
