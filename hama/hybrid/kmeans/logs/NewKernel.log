@@ -50,13 +50,13 @@ Count: 3
 Output
 SharedMemorySize: 124 bytes
 Start loop...
-send message: '0:5:27.000000, 6.000000'
+send message: '0:4:26.000000, 5.000000'
 send message: '1:1:9.000000, 6.000000'
 send message: '2:2:26.000000, 24.000000'
-got message: '0:5:27.000000, 6.000000'
+got message: '0:4:26.000000, 5.000000'
 got message: '1:1:9.000000, 6.000000'
 got message: '2:2:26.000000, 24.000000'
-calculateError: 1.400000e+00
+calculateError: 1.250000e+00
 calculateError: 6.000000e+00
 calculateError: 9.000000e+00
 m_converged: 3
@@ -66,7 +66,7 @@ send message: '0:6:35.000000, 11.000000'
 send message: '1:2:26.000000, 24.000000'
 got message: '0:6:35.000000, 11.000000'
 got message: '1:2:26.000000, 24.000000'
-calculateError: 1.066667e+00
+calculateError: 1.250000e+00
 calculateError: 1.000000e+01
 m_converged: 2
 
@@ -112,7 +112,6 @@ got message: '0:6:53.000000, 31.000000'
 got message: '2:2:8.000000, 4.000000'
 calculateError: 0.000000e+00
 calculateError: 0.000000e+00
-gpu_Thread 0 GOT LOCK lock_thread_id: 0
 m_converged: 0
 
 Finished! Writing the assignments...
@@ -121,73 +120,3 @@ runBlocks - stopMonitoring...
 HostMonitor.stopMonitoring...
 HostMonitor.stopMonitoring stopped! done: true
 runBlocks - stopMonitoring finished!
-
-
-Detail
-SharedMemorySize: 124 bytes
-Start loop...
-estimatedDistance: 0.000000e+00
-estimatedDistance: 1.000000e+00
-estimatedDistance: 5.830952e+00
-lowestDistantCenter: 0
-
-estimatedDistance: 1.000000e+00
-estimatedDistance: 0.000000e+00
-estimatedDistance: 5.000000e+00
-lowestDistantCenter: 1
-
-estimatedDistance: 5.830952e+00
-estimatedDistance: 5.000000e+00
-estimatedDistance: 0.000000e+00
-lowestDistantCenter: 2
-
-estimatedDistance: 6.708204e+00
-estimatedDistance: 5.830952e+00
-estimatedDistance: 1.000000e+00
-lowestDistantCenter: 2
-
-estimatedDistance: 2.828427e+00
-estimatedDistance: 3.605551e+00
-estimatedDistance: 8.602325e+00
-lowestDistantCenter: 0
-
-estimatedDistance: 3.000000e+00
-estimatedDistance: 3.162278e+00
-estimatedDistance: 5.000000e+00
-lowestDistantCenter: 0
-
-estimatedDistance: 3.162278e+00
-estimatedDistance: 3.000000e+00
-estimatedDistance: 7.211103e+00
-lowestDistantCenter: 1
-
-estimatedDistance: 7.280110e+00
-estimatedDistance: 6.324555e+00
-estimatedDistance: 2.236068e+00
-lowestDistantCenter: 2
-
-estimatedDistance: 2.000000e+00
-estimatedDistance: 3.000000e+00
-estimatedDistance: 7.615773e+00
-lowestDistantCenter: 0
-
-estimatedDistance: 5.099020e+00
-estimatedDistance: 5.385165e+00
-estimatedDistance: 1.000000e+01
-lowestDistantCenter: 0
-
-estimatedDistance: 5.099020e+00
-estimatedDistance: 5.385165e+00
-estimatedDistance: 1.000000e+01
-lowestDistantCenter: 0
-
-send message: '0:5:27.000000, 6.000000'
-send message: '1:1:9.000000, 6.000000'
-send message: '2:2:26.000000, 24.000000'
-got message: '0:5:27.000000, 6.000000'
-got message: '1:1:9.000000, 6.000000'
-got message: '2:2:26.000000, 24.000000'
-calculateError: 1.400000e+00
-calculateError: 6.000000e+00
-calculateError: 9.000000e+00
-m_converged: 3

@@ -236,7 +236,7 @@ public class KMeansHybridBSP
   }
 
   private void assignCentersInternal(final DoubleVector[] newCenterArray,
-      final int[] summationCount, final DoubleVector key) {
+      final int[] summationCount, final DoubleVector key) throws IOException {
 
     final int lowestDistantCenter = getNearestCenter(key);
     final DoubleVector clusterCenter = newCenterArray[lowestDistantCenter];
@@ -251,7 +251,7 @@ public class KMeansHybridBSP
     }
   }
 
-  private int getNearestCenter(DoubleVector key) {
+  private int getNearestCenter(DoubleVector key) throws IOException {
     int lowestDistantCenter = 0;
     double lowestDistance = Double.MAX_VALUE;
 
@@ -259,12 +259,24 @@ public class KMeansHybridBSP
       final double estimatedDistance = measureEuclidianDistance(
           m_centers_cpu[i], key);
 
+      // Logging
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("getNearestCenter,estimatedDistance: "
+            + estimatedDistance + "\n");
+        m_logger.flush();
+      }
       // check if we have a can assign a new center, because we
       // got a lower distance
       if (estimatedDistance < lowestDistance) {
         lowestDistance = estimatedDistance;
         lowestDistantCenter = i;
       }
+    }
+    // Logging
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("getNearestCenter,lowestDistantCenter: "
+          + lowestDistantCenter + "\n");
+      m_logger.flush();
     }
     return lowestDistantCenter;
   }
