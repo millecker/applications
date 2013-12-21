@@ -168,6 +168,12 @@ public class KMeansHybridBSP
 
       converged = updateCenters(peer);
 
+      // Logging
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("bsp,converged: " + converged + "\n");
+        m_logger.flush();
+      }
+
       peer.reopenInput();
 
       if (converged == 0) {
@@ -315,6 +321,12 @@ public class KMeansHybridBSP
         if (calculateError > 0.0d) {
           m_centers_cpu[i] = msgCenters[i];
           convergedCounter++;
+        }
+        // Logging
+        if (m_isDebuggingEnabled) {
+          m_logger.writeChars("updateCenters,calculateError: " + calculateError
+              + "\n");
+          m_logger.flush();
         }
       }
     }

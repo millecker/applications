@@ -1,0 +1,93 @@
+Java CPU Log
+
+INFO kmeans.KMeansHybridBSP: n: 10
+INFO kmeans.KMeansHybridBSP: k: 3
+INFO kmeans.KMeansHybridBSP: vectorDimension: 2
+INFO kmeans.KMeansHybridBSP: maxIteration: 10
+
+INFO bsp.BSPJobClient: The total number of supersteps: 6
+DEBUG bsp.Counters: Adding SUPERSTEPS
+INFO bsp.BSPJobClient: Counters: 8
+INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+INFO bsp.BSPJobClient:     SUPERSTEPS=6
+INFO bsp.BSPJobClient:     LAUNCHED_TASKS=1
+INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+INFO bsp.BSPJobClient:     SUPERSTEP_SUM=6
+INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=248
+INFO bsp.BSPJobClient:     IO_BYTES_READ=170
+INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=11
+INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=10
+INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=11
+
+Inputs
+Key: [6.0, 2.0]: Value: (null)
+Key: [6.0, 3.0]: Value: (null)
+Key: [9.0, 7.0]: Value: (null)
+Key: [9.0, 8.0]: Value: (null)
+Key: [4.0, 0.0]: Value: (null)
+Key: [9.0, 2.0]: Value: (null)
+Key: [3.0, 3.0]: Value: (null)
+Key: [8.0, 9.0]: Value: (null)
+Key: [6.0, 0.0]: Value: (null)
+Key: [1.0, 1.0]: Value: (null)
+Count: 1
+
+Centers
+Key: [6.0, 2.0]: Value: (null)
+Key: [6.0, 3.0]: Value: (null)
+Key: [9.0, 7.0]: Value: (null)
+Count: 3
+
+Output
+Key: 0: Value: [6.0, 2.0]
+Key: 0: Value: [6.0, 3.0]
+Key: 0: Value: [9.0, 7.0]
+Key: 0: Value: [9.0, 8.0]
+Key: 0: Value: [4.0, 0.0]
+Key: 0: Value: [9.0, 2.0]
+Key: 0: Value: [3.0, 3.0]
+Key: 0: Value: [8.0, 9.0]
+Key: 0: Value: [6.0, 0.0]
+Key: 0: Value: [1.0, 1.0]
+Count: 10
+
+Output
+assignCenters,sent,peerName=localhost:36161,CenterMessage=0,4,[26.0, 5.0]
+assignCenters,sent,peerName=localhost:36161,CenterMessage=1,1,[9.0, 6.0]
+assignCenters,sent,peerName=localhost:36161,CenterMessage=2,2,[26.0, 24.0]
+updateCenters,receive,CenterMessage=0,4,[26.0, 5.0]
+updateCenters,receive,CenterMessage=1,1,[9.0, 6.0]
+updateCenters,receive,CenterMessage=2,2,[26.0, 24.0]
+updateCenters,calculateError: 1.25
+updateCenters,calculateError: 6.0
+updateCenters,calculateError: 9.0
+bsp,converged: 3
+assignCenters,sent,peerName=localhost:36161,CenterMessage=0,6,[35.0, 11.0]
+assignCenters,sent,peerName=localhost:36161,CenterMessage=1,2,[26.0, 24.0]
+updateCenters,receive,CenterMessage=0,6,[35.0, 11.0]
+updateCenters,receive,CenterMessage=1,2,[26.0, 24.0]
+updateCenters,calculateError: 1.2500000000000002
+updateCenters,calculateError: 10.0
+bsp,converged: 2
+assignCenters,sent,peerName=localhost:36161,CenterMessage=0,7,[44.0, 18.0]
+assignCenters,sent,peerName=localhost:36161,CenterMessage=1,1,[17.0, 17.0]
+updateCenters,receive,CenterMessage=0,7,[44.0, 18.0]
+updateCenters,receive,CenterMessage=1,1,[17.0, 17.0]
+updateCenters,calculateError: 1.190476190476191
+updateCenters,calculateError: 9.0
+bsp,converged: 2
+assignCenters,sent,peerName=localhost:36161,CenterMessage=0,7,[44.0, 18.0]
+assignCenters,sent,peerName=localhost:36161,CenterMessage=2,1,[17.0, 17.0]
+updateCenters,receive,CenterMessage=0,7,[44.0, 18.0]
+updateCenters,receive,CenterMessage=2,1,[17.0, 17.0]
+updateCenters,calculateError: 0.0
+updateCenters,calculateError: 9.0
+bsp,converged: 1
+assignCenters,sent,peerName=localhost:36161,CenterMessage=0,9,[61.0, 35.0]
+updateCenters,receive,CenterMessage=0,9,[61.0, 35.0]
+updateCenters,calculateError: 1.8095238095238093
+bsp,converged: 1
+assignCenters,sent,peerName=localhost:36161,CenterMessage=0,9,[61.0, 35.0]
+updateCenters,receive,CenterMessage=0,9,[61.0, 35.0]
+updateCenters,calculateError: 0.0
+bsp,converged: 0

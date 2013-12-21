@@ -1,0 +1,123 @@
+NewKernel Log
+
+INFO kmeans.KMeansHybridBSP: n: 10
+INFO kmeans.KMeansHybridBSP: k: 3
+INFO kmeans.KMeansHybridBSP: vectorDimension: 2
+INFO kmeans.KMeansHybridBSP: maxIteration: 10
+
+INFO bsp.BSPJobClient: The total number of supersteps: 7
+DEBUG bsp.Counters: Adding SUPERSTEPS
+INFO bsp.BSPJobClient: Counters: 8
+INFO bsp.BSPJobClient:   org.apache.hama.bsp.JobInProgress$JobCounter
+INFO bsp.BSPJobClient:     SUPERSTEPS=7
+INFO bsp.BSPJobClient:     LAUNCHED_TASKS=1
+INFO bsp.BSPJobClient:   org.apache.hama.bsp.BSPPeerImpl$PeerCounter
+INFO bsp.BSPJobClient:     SUPERSTEP_SUM=7
+INFO bsp.BSPJobClient:     TIME_IN_SYNC_MS=144
+INFO bsp.BSPJobClient:     IO_BYTES_READ=170
+INFO bsp.BSPJobClient:     TOTAL_MESSAGES_SENT=15
+INFO bsp.BSPJobClient:     TASK_INPUT_RECORDS=10
+INFO bsp.BSPJobClient:     TOTAL_MESSAGES_RECEIVED=15
+
+  StatsRow:
+    init time: 0
+    serial time: 8
+    exec time: 250
+    deserial time: 1
+    num blocks: 1
+    num threads: 1
+MatrixMultiplicationHybrid,GPUTime=275ms
+
+Inputs
+Key: [6.0, 2.0]: Value: (null)
+Key: [6.0, 3.0]: Value: (null)
+Key: [9.0, 7.0]: Value: (null)
+Key: [9.0, 8.0]: Value: (null)
+Key: [4.0, 0.0]: Value: (null)
+Key: [9.0, 2.0]: Value: (null)
+Key: [3.0, 3.0]: Value: (null)
+Key: [8.0, 9.0]: Value: (null)
+Key: [6.0, 0.0]: Value: (null)
+Key: [1.0, 1.0]: Value: (null)
+Count: 1
+
+Centers
+Key: [6.0, 2.0]: Value: (null)
+Key: [6.0, 3.0]: Value: (null)
+Key: [9.0, 7.0]: Value: (null)
+Count: 3
+
+Output
+SharedMemorySize: 124 bytes
+Start loop...
+send message: '0:5:27.000000, 6.000000'
+send message: '1:1:9.000000, 6.000000'
+send message: '2:2:26.000000, 24.000000'
+got message: '0:5:27.000000, 6.000000'
+got message: '1:1:9.000000, 6.000000'
+got message: '2:2:26.000000, 24.000000'
+calculateError: 1.400000e+00
+calculateError: 6.000000e+00
+calculateError: 9.000000e+00
+m_converged: 3
+
+Start loop...
+send message: '0:6:35.000000, 11.000000'
+send message: '1:2:26.000000, 24.000000'
+got message: '0:6:35.000000, 11.000000'
+got message: '1:2:26.000000, 24.000000'
+calculateError: 1.066667e+00
+calculateError: 1.000000e+01
+m_converged: 2
+
+Start loop...
+send message: '0:7:44.000000, 18.000000'
+send message: '1:1:17.000000, 17.000000'
+got message: '0:7:44.000000, 18.000000'
+got message: '1:1:17.000000, 17.000000'
+calculateError: 1.190476e+00
+calculateError: 9.000000e+00
+m_converged: 2
+
+Start loop...
+send message: '0:7:44.000000, 18.000000'
+send message: '2:1:17.000000, 17.000000'
+got message: '0:7:44.000000, 18.000000'
+got message: '2:1:17.000000, 17.000000'
+calculateError: 0.000000e+00
+calculateError: 2.500000e+01
+m_converged: 1
+
+Start loop...
+send message: '0:8:60.000000, 34.000000'
+send message: '2:0:1.000000, 1.000000'
+got message: '0:8:60.000000, 34.000000'
+got message: '2:0:1.000000, 1.000000'
+calculateError: 2.892857e+00
+m_converged: 1
+
+Start loop...
+send message: '0:6:53.000000, 31.000000'
+send message: '2:2:8.000000, 4.000000'
+got message: '0:6:53.000000, 31.000000'
+got message: '2:2:8.000000, 4.000000'
+calculateError: 2.250000e+00
+calculateError: 0.000000e+00
+m_converged: 1
+
+Start loop...
+send message: '0:6:53.000000, 31.000000'
+send message: '2:2:8.000000, 4.000000'
+got message: '0:6:53.000000, 31.000000'
+got message: '2:2:8.000000, 4.000000'
+calculateError: 0.000000e+00
+calculateError: 0.000000e+00
+gpu_Thread 0 GOT LOCK lock_thread_id: 0
+m_converged: 0
+
+Finished! Writing the assignments...
+Done.
+runBlocks - stopMonitoring...
+HostMonitor.stopMonitoring...
+HostMonitor.stopMonitoring stopped! done: true
+runBlocks - stopMonitoring finished!
