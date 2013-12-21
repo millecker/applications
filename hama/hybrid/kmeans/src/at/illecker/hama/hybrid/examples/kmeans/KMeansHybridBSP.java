@@ -549,7 +549,7 @@ public class KMeansHybridBSP
 
     // Defaults
     long n = 10; // input vectors
-    int k = 2; // start vectors
+    int k = 3; // start vectors
     int vectorDimension = 2;
     int maxIteration = 10;
     boolean isDebugging = true;
