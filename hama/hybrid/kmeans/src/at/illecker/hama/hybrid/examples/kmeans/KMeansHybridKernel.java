@@ -66,6 +66,7 @@ public class KMeansHybridKernel implements Kernel {
     // Start KMeans clustering algorithm
     while (true) {
 
+      // TODO without the following statement SIGSEGV
       System.out.println("Start loop...");
 
       // Setup SharedMemory
@@ -95,8 +96,6 @@ public class KMeansHybridKernel implements Kernel {
 
       // Sync all threads within a block
       RootbeerGpu.syncthreads();
-
-      System.out.println("Loaded SharedMemory...");
 
       // assignCenters *****************************************************
       boolean inputHasMore = true;
@@ -152,8 +151,8 @@ public class KMeansHybridKernel implements Kernel {
 
             int j = startIndex;
             while (i < blockSize) {
-              System.out.print("get from cache j: ");
-              System.out.println(j);
+              // System.out.print("get from cache j: ");
+              // System.out.println(j);
               DenseDoubleVector vector = m_cache.get(j);
 
               double[] inputs = vector.toArray(); // inputs.len = centerDim

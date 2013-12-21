@@ -70,6 +70,7 @@ public class KMeansHybridBSP
       "output/hama/hybrid/examples/kmeans/hybrid-" + System.currentTimeMillis());
   private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
   private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
+  private static final Path CONF_CENTER_DIR = new Path(CONF_TMP_DIR, "centers");
 
   public static final String CONF_BLOCKSIZE = "kmeans.hybrid.blockSize";
   public static final String CONF_GRIDSIZE = "kmeans.hybrid.gridSize";
@@ -599,6 +600,7 @@ public class KMeansHybridBSP
     LOG.info("bsp.tasks.maximum: " + conf.get("bsp.tasks.maximum"));
     LOG.info("isDebugging: " + isDebugging);
     LOG.info("inputPath: " + CONF_INPUT_DIR);
+    LOG.info("centersPath: " + CONF_CENTER_DIR);
     LOG.info("outputPath: " + CONF_OUTPUT_DIR);
     LOG.info("n: " + n);
     LOG.info("k: " + k);
@@ -606,8 +608,8 @@ public class KMeansHybridBSP
     LOG.info("maxIteration: " + maxIteration);
 
     Path input = new Path(CONF_INPUT_DIR, "input.seq");
-    Path centerIn = new Path(CONF_INPUT_DIR, "/center/center.seq");
-    Path centerOut = new Path(CONF_OUTPUT_DIR, "center.seq");
+    Path centerIn = new Path(CONF_CENTER_DIR, "center_in.seq");
+    Path centerOut = new Path(CONF_CENTER_DIR, "center_out.seq");
     conf.set(CONF_CENTER_IN_PATH, centerIn.toString());
     conf.set(CONF_CENTER_OUT_PATH, centerOut.toString());
 
@@ -654,7 +656,7 @@ public class KMeansHybridBSP
             NullWritable.class, CompressionType.NONE);
 
     final NullWritable value = NullWritable.get();
-    Random r = new Random();
+    Random r = new Random(3337L);
 
     for (long i = 0; i < n; i++) {
 
