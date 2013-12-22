@@ -98,62 +98,65 @@ getNearestCenter,estimatedDistance: 0.0
 getNearestCenter,estimatedDistance: 1.0
 getNearestCenter,estimatedDistance: 5.830951894845301
 getNearestCenter,lowestDistantCenter: 0
-
 getNearestCenter,estimatedDistance: 1.0
 getNearestCenter,estimatedDistance: 0.0
 getNearestCenter,estimatedDistance: 5.0
 getNearestCenter,lowestDistantCenter: 1
-
 getNearestCenter,estimatedDistance: 5.830951894845301
 getNearestCenter,estimatedDistance: 5.0
 getNearestCenter,estimatedDistance: 0.0
 getNearestCenter,lowestDistantCenter: 2
-
 getNearestCenter,estimatedDistance: 6.708203932499369
 getNearestCenter,estimatedDistance: 5.830951894845301
 getNearestCenter,estimatedDistance: 1.0
 getNearestCenter,lowestDistantCenter: 2
-
 getNearestCenter,estimatedDistance: 2.8284271247461903
 getNearestCenter,estimatedDistance: 3.605551275463989
 getNearestCenter,estimatedDistance: 8.602325267042627
 getNearestCenter,lowestDistantCenter: 0
-
 getNearestCenter,estimatedDistance: 3.0
 getNearestCenter,estimatedDistance: 3.1622776601683795
 getNearestCenter,estimatedDistance: 5.0
 getNearestCenter,lowestDistantCenter: 0
-
 getNearestCenter,estimatedDistance: 3.1622776601683795
 getNearestCenter,estimatedDistance: 3.0
 getNearestCenter,estimatedDistance: 7.211102550927978
 getNearestCenter,lowestDistantCenter: 1
-
 getNearestCenter,estimatedDistance: 7.280109889280518
 getNearestCenter,estimatedDistance: 6.324555320336759
 getNearestCenter,estimatedDistance: 2.23606797749979
 getNearestCenter,lowestDistantCenter: 2
-
 getNearestCenter,estimatedDistance: 2.0
 getNearestCenter,estimatedDistance: 3.0
 getNearestCenter,estimatedDistance: 7.615773105863909
 getNearestCenter,lowestDistantCenter: 0
-
 getNearestCenter,estimatedDistance: 5.0990195135927845
 getNearestCenter,estimatedDistance: 5.385164807134504
 getNearestCenter,estimatedDistance: 10.0
 getNearestCenter,lowestDistantCenter: 0
-
-assignCenters,sent,peerName=localhost:38125,CenterMessage=0,4,[26.0, 5.0]
-assignCenters,sent,peerName=localhost:38125,CenterMessage=1,1,[9.0, 6.0]
-assignCenters,sent,peerName=localhost:38125,CenterMessage=2,2,[26.0, 24.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=0,4,[26.0, 5.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=1,1,[9.0, 6.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=2,2,[26.0, 24.0]
 updateCenters,receive,CenterMessage=0,4,[26.0, 5.0]
 updateCenters,receive,CenterMessage=1,1,[9.0, 6.0]
 updateCenters,receive,CenterMessage=2,2,[26.0, 24.0]
+updateCenters,oldCenter: [6.0, 2.0]
+updateCenters,msgCenters[i]: [6.5, 1.25]
 updateCenters,calculateError: 1.25
+updateCenters,i: 0
+updateCenters,m_centers_cpu: [6.5, 1.25]
+updateCenters,oldCenter: [6.0, 3.0]
+updateCenters,msgCenters[i]: [9.0, 6.0]
 updateCenters,calculateError: 6.0
+updateCenters,i: 1
+updateCenters,m_centers_cpu: [9.0, 6.0]
+updateCenters,oldCenter: [9.0, 7.0]
+updateCenters,msgCenters[i]: [13.0, 12.0]
 updateCenters,calculateError: 9.0
+updateCenters,i: 2
+updateCenters,m_centers_cpu: [13.0, 12.0]
 bsp,converged: 3
+
 getNearestCenter,estimatedDistance: 0.9013878188659973
 getNearestCenter,estimatedDistance: 5.0
 getNearestCenter,estimatedDistance: 12.206555615733702
@@ -194,13 +197,22 @@ getNearestCenter,estimatedDistance: 5.50567888638631
 getNearestCenter,estimatedDistance: 9.433981132056603
 getNearestCenter,estimatedDistance: 16.278820596099706
 getNearestCenter,lowestDistantCenter: 0
-assignCenters,sent,peerName=localhost:38125,CenterMessage=0,6,[35.0, 11.0]
-assignCenters,sent,peerName=localhost:38125,CenterMessage=1,2,[26.0, 24.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=0,6,[35.0, 11.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=1,2,[26.0, 24.0]
 updateCenters,receive,CenterMessage=0,6,[35.0, 11.0]
 updateCenters,receive,CenterMessage=1,2,[26.0, 24.0]
+updateCenters,oldCenter: [6.5, 1.25]
+updateCenters,msgCenters[i]: [5.833333333333333, 1.8333333333333333]
 updateCenters,calculateError: 1.2500000000000002
+updateCenters,i: 0
+updateCenters,m_centers_cpu: [5.833333333333333, 1.8333333333333333]
+updateCenters,oldCenter: [9.0, 6.0]
+updateCenters,msgCenters[i]: [13.0, 12.0]
 updateCenters,calculateError: 10.0
+updateCenters,i: 1
+updateCenters,m_centers_cpu: [13.0, 12.0]
 bsp,converged: 2
+
 getNearestCenter,estimatedDistance: 0.2357022603955161
 getNearestCenter,estimatedDistance: 12.206555615733702
 getNearestCenter,estimatedDistance: 12.206555615733702
@@ -241,13 +253,22 @@ getNearestCenter,estimatedDistance: 4.904646323187387
 getNearestCenter,estimatedDistance: 16.278820596099706
 getNearestCenter,estimatedDistance: 16.278820596099706
 getNearestCenter,lowestDistantCenter: 0
-assignCenters,sent,peerName=localhost:38125,CenterMessage=0,7,[44.0, 18.0]
-assignCenters,sent,peerName=localhost:38125,CenterMessage=1,1,[17.0, 17.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=0,7,[44.0, 18.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=1,1,[17.0, 17.0]
 updateCenters,receive,CenterMessage=0,7,[44.0, 18.0]
 updateCenters,receive,CenterMessage=1,1,[17.0, 17.0]
+updateCenters,oldCenter: [5.833333333333333, 1.8333333333333333]
+updateCenters,msgCenters[i]: [6.285714285714286, 2.5714285714285716]
 updateCenters,calculateError: 1.190476190476191
+updateCenters,i: 0
+updateCenters,m_centers_cpu: [6.285714285714286, 2.5714285714285716]
+updateCenters,oldCenter: [13.0, 12.0]
+updateCenters,msgCenters[i]: [17.0, 17.0]
 updateCenters,calculateError: 9.0
+updateCenters,i: 1
+updateCenters,m_centers_cpu: [17.0, 17.0]
 bsp,converged: 2
+
 getNearestCenter,estimatedDistance: 0.63887656499994
 getNearestCenter,estimatedDistance: 18.601075237738275
 getNearestCenter,estimatedDistance: 12.206555615733702
@@ -288,13 +309,21 @@ getNearestCenter,estimatedDistance: 5.514359733033938
 getNearestCenter,estimatedDistance: 22.627416997969522
 getNearestCenter,estimatedDistance: 16.278820596099706
 getNearestCenter,lowestDistantCenter: 0
-assignCenters,sent,peerName=localhost:38125,CenterMessage=0,7,[44.0, 18.0]
-assignCenters,sent,peerName=localhost:38125,CenterMessage=2,1,[17.0, 17.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=0,7,[44.0, 18.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=2,1,[17.0, 17.0]
 updateCenters,receive,CenterMessage=0,7,[44.0, 18.0]
 updateCenters,receive,CenterMessage=2,1,[17.0, 17.0]
+updateCenters,oldCenter: [6.285714285714286, 2.5714285714285716]
+updateCenters,msgCenters[i]: [6.285714285714286, 2.5714285714285716]
 updateCenters,calculateError: 0.0
+updateCenters,i: 0
+updateCenters,oldCenter: [13.0, 12.0]
+updateCenters,msgCenters[i]: [17.0, 17.0]
 updateCenters,calculateError: 9.0
+updateCenters,i: 2
+updateCenters,m_centers_cpu: [17.0, 17.0]
 bsp,converged: 1
+
 getNearestCenter,estimatedDistance: 0.63887656499994
 getNearestCenter,estimatedDistance: 18.601075237738275
 getNearestCenter,estimatedDistance: 18.601075237738275
@@ -335,10 +364,15 @@ getNearestCenter,estimatedDistance: 5.514359733033938
 getNearestCenter,estimatedDistance: 22.627416997969522
 getNearestCenter,estimatedDistance: 22.627416997969522
 getNearestCenter,lowestDistantCenter: 0
-assignCenters,sent,peerName=localhost:38125,CenterMessage=0,9,[61.0, 35.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=0,9,[61.0, 35.0]
 updateCenters,receive,CenterMessage=0,9,[61.0, 35.0]
+updateCenters,oldCenter: [6.285714285714286, 2.5714285714285716]
+updateCenters,msgCenters[i]: [6.777777777777778, 3.888888888888889]
 updateCenters,calculateError: 1.8095238095238093
+updateCenters,i: 0
+updateCenters,m_centers_cpu: [6.777777777777778, 3.888888888888889]
 bsp,converged: 1
+
 getNearestCenter,estimatedDistance: 2.042752923427804
 getNearestCenter,estimatedDistance: 18.601075237738275
 getNearestCenter,estimatedDistance: 18.601075237738275
@@ -379,10 +413,14 @@ getNearestCenter,estimatedDistance: 6.459751934999392
 getNearestCenter,estimatedDistance: 22.627416997969522
 getNearestCenter,estimatedDistance: 22.627416997969522
 getNearestCenter,lowestDistantCenter: 0
-assignCenters,sent,peerName=localhost:38125,CenterMessage=0,9,[61.0, 35.0]
+assignCenters,sent,peerName=localhost:35617,CenterMessage=0,9,[61.0, 35.0]
 updateCenters,receive,CenterMessage=0,9,[61.0, 35.0]
+updateCenters,oldCenter: [6.777777777777778, 3.888888888888889]
+updateCenters,msgCenters[i]: [6.777777777777778, 3.888888888888889]
 updateCenters,calculateError: 0.0
+updateCenters,i: 0
 bsp,converged: 0
+
 getNearestCenter,estimatedDistance: 2.042752923427804
 getNearestCenter,estimatedDistance: 18.601075237738275
 getNearestCenter,estimatedDistance: 18.601075237738275

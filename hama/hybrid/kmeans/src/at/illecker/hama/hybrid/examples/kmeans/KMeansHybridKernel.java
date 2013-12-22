@@ -315,7 +315,7 @@ public class KMeansHybridKernel implements Kernel {
             for (int j = 0; j < centerDim; j++) {
 
               int newCenterIndex = sharedMemoryNewCentersStartPos
-                  + (((i * centerDim) + j) * 8);
+                  + (((centerIndex * centerDim) + j) * 8);
 
               RootbeerGpu.setSharedDouble(newCenterIndex, messageVector[j]);
             }
@@ -329,7 +329,7 @@ public class KMeansHybridKernel implements Kernel {
               // msgCenters[centerIndex][j] += messageVector[j];
 
               int newCenterIndex = sharedMemoryNewCentersStartPos
-                  + (((i * centerDim) + j) * 8);
+                  + (((centerIndex * centerDim) + j) * 8);
 
               RootbeerGpu.setSharedDouble(newCenterIndex,
                   RootbeerGpu.getSharedDouble(newCenterIndex)

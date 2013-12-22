@@ -328,18 +328,34 @@ public class KMeansHybridBSP
     for (int i = 0; i < msgCenters.length; i++) {
       final DoubleVector oldCenter = m_centers_cpu[i];
       if (msgCenters[i] != null) {
+        
         double calculateError = oldCenter.subtractUnsafe(msgCenters[i]).abs()
             .sum();
-        if (calculateError > 0.0d) {
-          m_centers_cpu[i] = msgCenters[i];
-          convergedCounter++;
-        }
+
         // Logging
         if (m_isDebuggingEnabled) {
+          m_logger.writeChars("updateCenters,i: " + i + "\n");
+          m_logger.writeChars("updateCenters,oldCenter: " + Arrays.toString(oldCenter.toArray())
+              + "\n");
+          m_logger.writeChars("updateCenters,msgCenters[i]: " + Arrays.toString(msgCenters[i].toArray())
+              + "\n");
           m_logger.writeChars("updateCenters,calculateError: " + calculateError
               + "\n");
           m_logger.flush();
         }
+
+        if (calculateError > 0.0d) {
+          m_centers_cpu[i] = msgCenters[i];
+          convergedCounter++;
+
+          // Logging
+          if (m_isDebuggingEnabled) {
+            m_logger.writeChars("updateCenters,m_centers_cpu: "
+                + Arrays.toString(msgCenters[i].toArray()) + "\n");
+            m_logger.flush();
+          }
+        }
+
       }
     }
     return convergedCounter;

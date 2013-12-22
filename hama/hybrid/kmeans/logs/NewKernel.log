@@ -66,8 +66,14 @@ send message: '0:6:35.000000, 11.000000'
 send message: '1:2:26.000000, 24.000000'
 got message: '0:6:35.000000, 11.000000'
 got message: '1:2:26.000000, 24.000000'
+calculateError +=  |6.500000e+00 - 5.833333e+00|  |1.250000e+00 - 1.833333e+00|
 calculateError: 1.250000e+00
+i: 0
+Update m_centers: 5.833333e+00 1.833333e+00  
+calculateError +=  |9.000000e+00 - 1.300000e+01|  |6.000000e+00 - 1.200000e+01|
 calculateError: 1.000000e+01
+i: 1
+Update m_centers: 1.300000e+01 1.200000e+01  
 m_converged: 2
 
 Start loop...
@@ -75,43 +81,86 @@ send message: '0:7:44.000000, 18.000000'
 send message: '1:1:17.000000, 17.000000'
 got message: '0:7:44.000000, 18.000000'
 got message: '1:1:17.000000, 17.000000'
+calculateError +=  |5.833333e+00 - 6.285714e+00|  |1.833333e+00 - 2.571429e+00| 
 calculateError: 1.190476e+00
+i: 0
+Update m_centers: 6.285714e+00 2.571429e+00  
+calculateError +=  |1.300000e+01 - 1.700000e+01|  |1.200000e+01 - 1.700000e+01|
 calculateError: 9.000000e+00
+i: 1
+Update m_centers: 1.700000e+01 1.700000e+01 
 m_converged: 2
 
 Start loop...
+estimatedDistance: 6.388766e-01
+estimatedDistance: 1.860108e+01
+estimatedDistance: 1.220656e+01
+lowestDistantCenter: 0
+estimatedDistance: 5.150788e-01
+estimatedDistance: 1.780449e+01
+estimatedDistance: 1.140175e+01
+lowestDistantCenter: 0
+estimatedDistance: 5.194188e+00
+estimatedDistance: 1.280625e+01
+estimatedDistance: 6.403124e+00
+lowestDistantCenter: 0
+estimatedDistance: 6.069327e+00
+estimatedDistance: 1.204159e+01
+estimatedDistance: 5.656854e+00
+lowestDistantCenter: 2
+estimatedDistance: 3.440456e+00
+estimatedDistance: 2.140093e+01
+estimatedDistance: 1.500000e+01
+lowestDistantCenter: 0
+estimatedDistance: 2.773784e+00
+estimatedDistance: 1.700000e+01
+estimatedDistance: 1.077033e+01
+lowestDistantCenter: 0
+estimatedDistance: 3.313547e+00
+estimatedDistance: 1.979899e+01
+estimatedDistance: 1.345362e+01
+lowestDistantCenter: 0
+estimatedDistance: 6.653218e+00
+estimatedDistance: 1.204159e+01
+estimatedDistance: 5.830952e+00
+lowestDistantCenter: 2
+estimatedDistance: 2.587253e+00
+estimatedDistance: 2.024846e+01
+estimatedDistance: 1.389244e+01
+lowestDistantCenter: 0
+estimatedDistance: 5.514360e+00
+estimatedDistance: 2.262742e+01
+estimatedDistance: 1.627882e+01
+lowestDistantCenter: 0
 send message: '0:7:44.000000, 18.000000'
 send message: '2:1:17.000000, 17.000000'
 got message: '0:7:44.000000, 18.000000'
 got message: '2:1:17.000000, 17.000000'
+calculateError +=  |6.285714e+00 - 6.285714e+00|  |2.571429e+00 - 2.571429e+00| 
 calculateError: 0.000000e+00
-calculateError: 2.500000e+01
+i: 0
+calculateError +=  |1.300000e+01 - 1.700000e+01|  |1.200000e+01 - 1.700000e+01| 
+calculateError: 9.000000e+00
+i: 2
+Update m_centers: 1.700000e+01 1.700000e+01  
 m_converged: 1
 
 Start loop...
-send message: '0:8:60.000000, 34.000000'
-send message: '2:0:1.000000, 1.000000'
-got message: '0:8:60.000000, 34.000000'
-got message: '2:0:1.000000, 1.000000'
-calculateError: 2.892857e+00
+send message: '0:9:61.000000, 35.000000'
+got message: '0:9:61.000000, 35.000000'
+calculateError +=  |6.285714e+00 - 6.777778e+00|  |2.571429e+00 - 3.888889e+00| 
+calculateError: 1.809524e+00
+i: 0
+Update m_centers: 6.777778e+00 3.888889e+00
 m_converged: 1
 
 Start loop...
-send message: '0:6:53.000000, 31.000000'
-send message: '2:2:8.000000, 4.000000'
-got message: '0:6:53.000000, 31.000000'
-got message: '2:2:8.000000, 4.000000'
-calculateError: 2.250000e+00
+send message: '0:9:61.000000, 35.000000'
+got message: '0:9:61.000000, 35.000000'
+calculateError +=  |6.777778e+00 - 6.777778e+00|  |3.888889e+00 - 3.888889e+00| 
 calculateError: 0.000000e+00
-m_converged: 1
-
-Start loop...
-send message: '0:6:53.000000, 31.000000'
-send message: '2:2:8.000000, 4.000000'
-got message: '0:6:53.000000, 31.000000'
-got message: '2:2:8.000000, 4.000000'
-calculateError: 0.000000e+00
-calculateError: 0.000000e+00
+i: 0
+gpu_Thread 0 GOT LOCK lock_thread_id: 0
 m_converged: 0
 
 Finished! Writing the assignments...
