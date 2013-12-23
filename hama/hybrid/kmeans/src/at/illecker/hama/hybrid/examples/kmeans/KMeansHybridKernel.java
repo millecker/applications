@@ -90,7 +90,7 @@ public class KMeansHybridKernel implements Kernel {
           // summationCount[]
           int summationCountIndex = sharedMemorySummationCountStartPos
               + (i * 4);
-          RootbeerGpu.setSharedInteger(summationCountIndex, -1);
+          RootbeerGpu.setSharedInteger(summationCountIndex, 0);
         }
       }
 
@@ -212,7 +212,7 @@ public class KMeansHybridKernel implements Kernel {
           int summationCount = RootbeerGpu
               .getSharedInteger(summationCountIndex);
 
-          if (summationCount != -1) {
+          if (summationCount != 0) {
 
             // centerIndex:incrementCounter:VectorValue1,VectorValue2,VectorValue3
             String message = "";

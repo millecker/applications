@@ -20,7 +20,7 @@ ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
  -DtestExample=false -Ddebug=false]
 
 # Run precompiled KMeans-GPU.jar
-hama jar KMeans-GPU.jar 1 1 1 1 10 3 2 10 true false
+hama jar KMeans-GPU.jar 1 1 1 1 10 3 2 10 true true
 
 # Submit CPU Task to Hama
 ant run-cpu [-DnumBspTask=2 -DnumGpuBspTask=0  \
