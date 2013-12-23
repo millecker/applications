@@ -41,11 +41,30 @@ Key: [6.0, 0.0]: Value: (null)
 Key: [1.0, 1.0]: Value: (null)
 Count: 1
 
-Centers
+CentersIn
 Key: [6.0, 2.0]: Value: (null)
 Key: [6.0, 3.0]: Value: (null)
 Key: [9.0, 7.0]: Value: (null)
 Count: 3
+
+CentersOut
+Key: [6.777777777777778, 3.888888888888889]: Value: (null)
+Key: [17.0, 17.0]: Value: (null)
+Key: [17.0, 17.0]: Value: (null)
+Count: 3
+
+Output
+Key: 0: Value: [6.0, 2.0]
+Key: 0: Value: [6.0, 3.0]
+Key: 0: Value: [9.0, 7.0]
+Key: 0: Value: [9.0, 8.0]
+Key: 0: Value: [4.0, 0.0]
+Key: 0: Value: [9.0, 2.0]
+Key: 0: Value: [3.0, 3.0]
+Key: 0: Value: [8.0, 9.0]
+Key: 0: Value: [6.0, 0.0]
+Key: 0: Value: [1.0, 1.0]
+Count: 10
 
 Output
 SharedMemorySize: 124 bytes

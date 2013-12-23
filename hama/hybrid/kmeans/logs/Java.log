@@ -32,10 +32,16 @@ Key: [6.0, 0.0]: Value: (null)
 Key: [1.0, 1.0]: Value: (null)
 Count: 1
 
-Centers
+CentersIn
 Key: [6.0, 2.0]: Value: (null)
 Key: [6.0, 3.0]: Value: (null)
 Key: [9.0, 7.0]: Value: (null)
+Count: 3
+
+CentersOut
+Key: [6.777777777777778, 3.888888888888889]: Value: (null)
+Key: [17.0, 17.0]: Value: (null)
+Key: [17.0, 17.0]: Value: (null)
 Count: 3
 
 Output
