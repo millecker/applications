@@ -248,8 +248,8 @@ public class KMeansHybridBSP
       // add the vector to the center
       newCenterArray[lowestDistantCenter] = newCenterArray[lowestDistantCenter]
           .addUnsafe(key);
-      summationCount[lowestDistantCenter]++;
     }
+    summationCount[lowestDistantCenter]++;
   }
 
   private int getNearestCenter(DoubleVector key) throws IOException {
@@ -750,8 +750,8 @@ public class KMeansHybridBSP
    * 25.2090909090909037, 10.7454545454545425, 2.83636363636363642,
    * 6.65454545454545521]]):
    * 
-   * inc := Vector([1, 1, 3, 2, 3, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1,
-   * 3]):
+   * inc := Vector([0, 0, 2, 1, 2, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0,
+   * 2]):
    * 
    * nic := Vector([6, 3, 11]):
    * 
