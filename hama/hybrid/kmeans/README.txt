@@ -14,24 +14,19 @@ ant jar-gpu
 ant jar-cpu
 
 # Submit GPU Task to Hama
-ant run-gpu [-DnumBspTask=1 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
+ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
+ -DblockSize=1 -DgridSize=1 \
+ -Dn=10 -Dk=3 -DvectorDimension=2 -DmaxIterations=10 \
+ -DtestExample=false -Ddebug=false]
 
-# Submit GPU native emulated Task to Hama
-ant run-gpu-nemu [-DnumBspTask=1 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
-
-# Submit GPU Java emulated Task to Hama
-ant run-gpu-jemu [-DnumBspTask=1 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
+# Run precompiled KMeans-GPU.jar
+hama jar KMeans-GPU.jar 1 1 1 1 10 3 2 10 true false
 
 # Submit CPU Task to Hama
-ant run-cpu [-DnumBspTask=8 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
- 
- # Build and run GPU Kernel
-ant run-kernel
-# java -jar MatrixMultiplication-GPU.jar 1024 1024 14 false
+ant run-cpu [-DnumBspTask=2 -DnumGpuBspTask=0  \
+ -DblockSize=0 -DgridSize=0 \
+ -Dn=10 -Dk=3 -DvectorDimension=2 -DmaxIterations=10 \
+ -DtestExample=false -Ddebug=false]
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 600s' \

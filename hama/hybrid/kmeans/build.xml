@@ -1,8 +1,8 @@
 <project>
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<!-- <property name="rootbeer.args" value="-maxrregcount 64" /> -->
-	<!-- -shared-mem-size 8204 -64bit -->
+	<property name="rootbeer.args" value="-maxrregcount 64 -64bit" />
+	<!-- -shared-mem-size 8204 -->
 	<property name="output.file" value="KMeans" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />
@@ -15,7 +15,7 @@
 	<property name="bench.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask n k vectorDimension maxIterations debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="application.args" value="numBspTask numGpuBspTask blockSize gridSize n k vectorDimension maxIterations testExample debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>
