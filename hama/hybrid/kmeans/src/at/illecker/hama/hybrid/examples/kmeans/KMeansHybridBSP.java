@@ -506,20 +506,19 @@ public class KMeansHybridBSP
     }
 
     // Logging
-    if (m_isDebuggingEnabled) {
-      List<StatsRow> stats = rootbeer.getStats();
-      for (StatsRow row : stats) {
-        m_logger.writeChars("  StatsRow:\n");
-        m_logger.writeChars("    init time: " + row.getInitTime() + "\n");
-        m_logger.writeChars("    serial time: " + row.getSerializationTime()
-            + "\n");
-        m_logger.writeChars("    exec time: " + row.getExecutionTime() + "\n");
-        m_logger.writeChars("    deserial time: "
-            + row.getDeserializationTime() + "\n");
-        m_logger.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
-        m_logger.writeChars("    num threads: " + row.getNumThreads() + "\n");
-      }
+    List<StatsRow> stats = rootbeer.getStats();
+    for (StatsRow row : stats) {
+      System.out.println("  StatsRow:");
+      System.out.println("    init time: " + row.getInitTime());
+      System.out.println("    serial time: " + row.getSerializationTime());
+      System.out.println("    exec time: " + row.getExecutionTime());
+      System.out.println("    deserial time: " + row.getDeserializationTime());
+      System.out.println("    num blocks: " + row.getNumBlocks());
+      System.out.println("    num threads: " + row.getNumThreads());
+      System.out.println("GPUTime: " + watch.elapsedTimeMillis() + "ms");
+    }
 
+    if (m_isDebuggingEnabled) {
       m_logger.writeChars("KMeansHybrid,GPUTime=" + watch.elapsedTimeMillis()
           + "ms\n");
       m_logger.close();
@@ -644,7 +643,6 @@ public class KMeansHybridBSP
     LOG.info("vectorDimension: " + vectorDimension);
     LOG.info("maxIteration: " + maxIteration);
 
-    Path input = new Path(CONF_INPUT_DIR, "input.seq");
     Path centerIn = new Path(CONF_CENTER_DIR, "center_in.seq");
     Path centerOut = new Path(CONF_CENTER_DIR, "center_out.seq");
     conf.set(CONF_CENTER_IN_PATH, centerIn.toString());
@@ -653,10 +651,11 @@ public class KMeansHybridBSP
     // prepare Input
     if (useTestExampleInput) {
       // prepareTestInput(conf, fs, input, centerIn);
-      prepareTestInput(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
-          + numGpuBspTask, n, k, vectorDimension);
+      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
+          + numGpuBspTask, n, k, vectorDimension, null);
     } else {
-      prepareRandomInput(n, k, vectorDimension, conf, fs, input, centerIn);
+      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
+          + numGpuBspTask, n, k, vectorDimension, new Random(3337L));
     }
 
     BSPJob job = createKMeansHybridBSPConf(conf, CONF_INPUT_DIR,
@@ -676,67 +675,12 @@ public class KMeansHybridBSP
   }
 
   /**
-   * Create some random vectors as input and assign the first k vectors as
-   * intial centers.
+   * prepareInputData
+   * 
    */
-  public static void prepareRandomInput(long n, int k, int vectorDimension,
-      Configuration conf, FileSystem fs, Path in, Path centerIn)
-      throws IOException {
-
-    if (fs.exists(in)) {
-      fs.delete(in, true);
-    }
-    if (fs.exists(centerIn)) {
-      fs.delete(centerIn, true);
-    }
-
-    // Center inputs
-    final SequenceFile.Writer centerWriter = SequenceFile.createWriter(fs,
-        conf, centerIn, PipesVectorWritable.class, NullWritable.class,
-        CompressionType.NONE);
-
-    // Vector inputs
-    final SequenceFile.Writer dataWriter = SequenceFile
-        .createWriter(fs, conf, in, PipesVectorWritable.class,
-            NullWritable.class, CompressionType.NONE);
-
-    final NullWritable value = NullWritable.get();
-    Random r = new Random(3337L);
-
-    for (long i = 0; i < n; i++) {
-
-      double[] arr = new double[vectorDimension];
-      for (int d = 0; d < vectorDimension; d++) {
-        arr[d] = r.nextInt((int) n);
-      }
-
-      PipesVectorWritable vector = new PipesVectorWritable(
-          new DenseDoubleVector(arr));
-      dataWriter.append(vector, value);
-
-      if (k > i) {
-        centerWriter.append(vector, value);
-      } else if (k == i) {
-        centerWriter.close();
-      }
-    }
-    dataWriter.close();
-  }
-
-  /**
-   * Create testExample
-   * 
-   * Create 101 input vectors of dimension two
-   * 
-   * Input vectors: (0,0) (1,1) (2,2) ... (100,100)
-   * 
-   * k = 1, maxIterations = 10
-   * 
-   * Resulting center should be (50,50)
-   */
-  public static void prepareTestInput(Configuration conf, FileSystem fs,
-      Path in, Path centerIn, int numBspTask, long n, int k, int vectorDimension)
-      throws IOException {
+  public static void prepareInputData(Configuration conf, FileSystem fs,
+      Path in, Path centerIn, int numBspTask, long n, int k,
+      int vectorDimension, Random rand) throws IOException {
 
     // Delete input files if already exist
     if (fs.exists(in)) {
@@ -746,9 +690,9 @@ public class KMeansHybridBSP
       fs.delete(centerIn, true);
     }
 
-    NullWritable nullValue = NullWritable.get();
-    SequenceFile.Writer centerWriter = SequenceFile.createWriter(fs, conf,
-        centerIn, PipesVectorWritable.class, NullWritable.class,
+    final NullWritable nullValue = NullWritable.get();
+    final SequenceFile.Writer centerWriter = SequenceFile.createWriter(fs,
+        conf, centerIn, PipesVectorWritable.class, NullWritable.class,
         CompressionType.NONE);
 
     long totalNumberOfPoints = n;
@@ -757,8 +701,8 @@ public class KMeansHybridBSP
 
     for (int part = 0; part < numBspTask; part++) {
       Path partIn = new Path(in, "part" + part + ".seq");
-      SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs, conf,
-          partIn, PipesVectorWritable.class, NullWritable.class,
+      final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs,
+          conf, partIn, PipesVectorWritable.class, NullWritable.class,
           CompressionType.NONE);
 
       long start = interval * part;
@@ -766,36 +710,34 @@ public class KMeansHybridBSP
       if ((numBspTask - 1) == part) {
         end = totalNumberOfPoints;
       }
-      System.out
-          .println("Partition " + part + ": from " + start + " to " + end);
+      LOG.info("Partition " + part + ": from " + start + " to " + end);
 
       for (long i = start; i <= end; i++) {
 
         double[] arr = new double[vectorDimension];
         for (int j = 0; j < vectorDimension; j++) {
-          arr[j] = i;
+          if (rand != null) {
+            arr[j] = rand.nextInt((int) n);
+          } else {
+            arr[j] = i;
+          }
         }
         PipesVectorWritable vector = new PipesVectorWritable(
             new DenseDoubleVector(arr));
 
-        LOG.info("input[" + i + "]: " + Arrays.toString(arr));
+        // LOG.info("input[" + i + "]: " + Arrays.toString(arr));
         dataWriter.append(vector, nullValue);
 
         if (k > centers) {
-          assert centerWriter != null;
-          LOG.info("center[" + i + "]: " + Arrays.toString(arr));
+          // LOG.info("center[" + i + "]: " + Arrays.toString(arr));
           centerWriter.append(vector, nullValue);
           centers++;
         } else {
-          if (centerWriter != null) {
-            centerWriter.close();
-            centerWriter = null;
-          }
+          centerWriter.close();
         }
 
       }
       dataWriter.close();
-
     }
 
   }
