@@ -572,6 +572,7 @@ public class KMeansHybridBSP
     boolean isDebugging = false;
 
     Configuration conf = new HamaConfiguration();
+    FileSystem fs = FileSystem.get(conf);
 
     // Set numBspTask to maxTasks
     BSPJobClient jobClient = new BSPJobClient(conf);
@@ -651,9 +652,11 @@ public class KMeansHybridBSP
 
     // prepare Input
     if (useTestExampleInput) {
-      prepareTestInput(conf, input, centerIn);
+      // prepareTestInput(conf, fs, input, centerIn);
+      prepareTestInput(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
+          + numGpuBspTask, n, k, vectorDimension);
     } else {
-      prepareRandomInput(n, k, vectorDimension, conf, input, centerIn);
+      prepareRandomInput(n, k, vectorDimension, conf, fs, input, centerIn);
     }
 
     BSPJob job = createKMeansHybridBSPConf(conf, CONF_INPUT_DIR,
@@ -664,10 +667,10 @@ public class KMeansHybridBSP
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
       if (isDebugging) {
-        printOutput(conf, new IntWritable(), new PipesVectorWritable());
-        printFile(conf, centerOut, new PipesVectorWritable(),
-            NullWritable.get());
+        printOutput(conf, fs, new IntWritable(), new PipesVectorWritable());
       }
+      printFile(conf, fs, centerOut, new PipesVectorWritable(),
+          NullWritable.get());
     }
 
   }
@@ -677,9 +680,8 @@ public class KMeansHybridBSP
    * intial centers.
    */
   public static void prepareRandomInput(long n, int k, int vectorDimension,
-      Configuration conf, Path in, Path centerIn) throws IOException {
-
-    FileSystem fs = FileSystem.get(conf);
+      Configuration conf, FileSystem fs, Path in, Path centerIn)
+      throws IOException {
 
     if (fs.exists(in)) {
       fs.delete(in, true);
@@ -722,6 +724,83 @@ public class KMeansHybridBSP
   }
 
   /**
+   * Create testExample
+   * 
+   * Create 101 input vectors of dimension two
+   * 
+   * Input vectors: (0,0) (1,1) (2,2) ... (100,100)
+   * 
+   * k = 1, maxIterations = 10
+   * 
+   * Resulting center should be (50,50)
+   */
+  public static void prepareTestInput(Configuration conf, FileSystem fs,
+      Path in, Path centerIn, int numBspTask, long n, int k, int vectorDimension)
+      throws IOException {
+
+    // Delete input files if already exist
+    if (fs.exists(in)) {
+      fs.delete(in, true);
+    }
+    if (fs.exists(centerIn)) {
+      fs.delete(centerIn, true);
+    }
+
+    NullWritable nullValue = NullWritable.get();
+    SequenceFile.Writer centerWriter = SequenceFile.createWriter(fs, conf,
+        centerIn, PipesVectorWritable.class, NullWritable.class,
+        CompressionType.NONE);
+
+    long totalNumberOfPoints = n;
+    long interval = totalNumberOfPoints / numBspTask;
+    int centers = 0;
+
+    for (int part = 0; part < numBspTask; part++) {
+      Path partIn = new Path(in, "part" + part + ".seq");
+      SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs, conf,
+          partIn, PipesVectorWritable.class, NullWritable.class,
+          CompressionType.NONE);
+
+      long start = interval * part;
+      long end = start + interval - 1;
+      if ((numBspTask - 1) == part) {
+        end = totalNumberOfPoints;
+      }
+      System.out
+          .println("Partition " + part + ": from " + start + " to " + end);
+
+      for (long i = start; i <= end; i++) {
+
+        double[] arr = new double[vectorDimension];
+        for (int j = 0; j < vectorDimension; j++) {
+          arr[j] = i;
+        }
+        PipesVectorWritable vector = new PipesVectorWritable(
+            new DenseDoubleVector(arr));
+
+        LOG.info("input[" + i + "]: " + Arrays.toString(arr));
+        dataWriter.append(vector, nullValue);
+
+        if (k > centers) {
+          assert centerWriter != null;
+          LOG.info("center[" + i + "]: " + Arrays.toString(arr));
+          centerWriter.append(vector, nullValue);
+          centers++;
+        } else {
+          if (centerWriter != null) {
+            centerWriter.close();
+            centerWriter = null;
+          }
+        }
+
+      }
+      dataWriter.close();
+
+    }
+
+  }
+
+  /**
    * Create testExample vectors and centers as input from
    * http://www.maplesoft.com/support/help/Maple/view.aspx?path=NAG/g03efc
    * 
@@ -759,9 +838,8 @@ public class KMeansHybridBSP
    * 468.896363636363503]):
    * 
    */
-  public static void prepareTestInput(Configuration conf, Path in, Path centerIn)
-      throws IOException {
-    FileSystem fs = FileSystem.get(conf);
+  public static void prepareTestInput(Configuration conf, FileSystem fs,
+      Path in, Path centerIn) throws IOException {
 
     // Delete input files if already exist
     if (fs.exists(in)) {
@@ -816,21 +894,19 @@ public class KMeansHybridBSP
     centerWriter.close();
   }
 
-  static void printOutput(Configuration conf, Writable key, Writable value)
-      throws IOException {
-    FileSystem fs = CONF_OUTPUT_DIR.getFileSystem(conf);
+  static void printOutput(Configuration conf, FileSystem fs, Writable key,
+      Writable value) throws IOException {
     FileStatus[] files = fs.listStatus(CONF_OUTPUT_DIR);
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
-        printFile(conf, files[i].getPath(), key, value);
+        printFile(conf, fs, files[i].getPath(), key, value);
       }
     }
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  static void printFile(Configuration conf, Path file, Writable key,
-      Writable value) throws IOException {
-    FileSystem fs = CONF_OUTPUT_DIR.getFileSystem(conf);
+  static void printFile(Configuration conf, FileSystem fs, Path file,
+      Writable key, Writable value) throws IOException {
     System.out.println("File " + file.toString());
     SequenceFile.Reader reader = null;
     try {
