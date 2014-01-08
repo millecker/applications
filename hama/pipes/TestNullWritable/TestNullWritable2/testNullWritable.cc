@@ -29,22 +29,41 @@ using std::string;
 using HamaPipes::BSP;
 using HamaPipes::BSPContext;
 
-class TestNullWritableBSP: public BSP<string,string,void,double,void> {  
-public:
-  TestNullWritableBSP(BSPContext<string,string,void,double,void>& context) {  }
+class TestNullWritableBSP: public BSP<void,double,double,void,double> {
+private:
+  string master_task_;
 
-  void bsp(BSPContext<string,string,void,double,void>& context) {  
-    string key;
-    string value;
-    while(context.readNext(key, value)) {
-      double val = HadoopUtils::toDouble(value);
-      printf("key: '%s' value: %f\n", key.c_str(), val);
-      context.write(val);
+public:
+  TestNullWritableBSP(BSPContext<void,double,double,void,double>& context) {  }
+
+  void setup(BSPContext<void,double,double,void,double>& context) {
+    master_task_ = context.getPeerName(context.getNumPeers() / 2);
+  }
+
+  void bsp(BSPContext<void,double,double,void,double>& context) {
+    double value = 0;
+    while(context.readNext(value)) {
+      printf("value: %f\n", value);
+      context.sendMessage(master_task_, value);
+    }
+
+    context.sync();
+  }
+
+  void cleanup(BSPContext<void,double,double,void,double>& context) {
+    if (context.getPeerName().compare(master_task_)==0) {
+      
+      int msg_count = context.getNumCurrentMessages();
+      for (int i=0; i < msg_count; i++) {
+        double val = context.getCurrentMessage();
+        printf("message: %f\n", val);
+        context.write(val);
+      }
     }
   }
 };
 
 int main(int argc, char *argv[]) {
-  return HamaPipes::runTask<string,string,void,double,void>(HamaPipes::TemplateFactory<TestNullWritableBSP,string,string,void,double,void>());
+  return HamaPipes::runTask<void,double,double,void,double>(HamaPipes::TemplateFactory<TestNullWritableBSP,void,double,double,void,double>());
 }
 
