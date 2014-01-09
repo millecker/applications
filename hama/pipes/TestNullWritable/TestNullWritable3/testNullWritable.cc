@@ -78,6 +78,8 @@ public:
     context.sequenceFileClose(seq_file_id1);
     context.sequenceFileClose(seq_file_id2);
     context.sequenceFileClose(seq_file_id3);
+    context.sequenceFileClose(seq_file_id4);
+    context.sequenceFileClose(seq_file_id5);
   }
 };
 
