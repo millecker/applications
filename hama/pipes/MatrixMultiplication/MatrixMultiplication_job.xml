@@ -3,23 +3,15 @@
   <property>
     // Set the binary path on DFS
     <name>hama.pipes.executable</name>
-    <value>bin/cpu_MatrixMultiplication</value>
-  </property>
-  <property>
-    <name>hama.pipes.java.recordreader</name>
-    <value>true</value>
-  </property>
-  <property>
-    <name>hama.pipes.java.recordwriter</name>
-    <value>true</value>
+    <value>hdfs:/examples/bin/matrixmultiplication</value>
   </property>
   <property>
     <name>bsp.input.dir</name>
-    <value>input/matrixmult/matrixA_10x10.seq</value>
+    <value>/examples/input/matrixmultiplication/MatrixA.seq</value>                                            
   </property>
   <property>
     <name>hama.mat.mult.B.path</name>
-    <value>input/matrixmult/transposedMatrixB_10x10.seq</value>
+    <value>/examples/input/matrixmultiplication/MatrixB_transposed.seq</value>
   </property>
   <property>
     <name>bsp.input.format.class</name>
