@@ -20,61 +20,65 @@
 #include "hama/TemplateFactory.hh"
 #include "hadoop/StringUtils.hh"
 
-#include<stdlib.h>
-#include<string>
-#include<iostream>
+#include <stdlib.h>
+#include <string>
+#include <iostream>
 
 using std::string;
 using std::cout;
-using std::cerr;
 
 using HamaPipes::BSP;
 using HamaPipes::BSPContext;
-using namespace HadoopUtils;
 
-class SumBSP: public BSP<string,string,string,double,double> {
+class SummationBSP: public BSP<string,string,void,double,double> {
 private:
-  string masterTask;
+  string master_task_;
+
 public:
-  SumBSP(BSPContext<string,string,string,double,double>& context) {  }
+  SummationBSP(BSPContext<string,string,void,double,double>& context) {  }
   
-  void setup(BSPContext<string,string,string,double,double>& context) {
+  void setup(BSPContext<string,string,void,double,double>& context) {
     // Choose one as a master
-    masterTask = context.getPeerName(context.getNumPeers() / 2);
+    master_task_ = context.getPeerName(context.getNumPeers() / 2);
   }
   
-  void bsp(BSPContext<string,string,string,double,double>& context) {
+  void bsp(BSPContext<string,string,void,double,double>& context) {
     
-    double intermediateSum = 0.0;
+    double intermediate_sum = 0.0;
     // key and value are strings because of KeyValueTextInputFormat
     string key;
     string value;
     
     while(context.readNext(key,value)) {
       cout << "SumBSP bsp: key: " << key << " value: "  << value  << "\n";
-      intermediateSum += toDouble(value);
+      // We are using the KeyValueTextInputFormat,
+      // therefore we have to convert string value to double
+      intermediate_sum += HadoopUtils::toDouble(value);
     }
     
-    cout << "SendMessage to Master: " << masterTask << " value: "  << intermediateSum  << "\n";
-    context.sendMessage(masterTask, intermediateSum);
+    cout << "SendMessage to Master: " << master_task_ << " value: "  << intermediate_sum  << "\n";
+    context.sendMessage(master_task_, intermediate_sum);
     context.sync();
   }
   
-  void cleanup(BSPContext<string,string,string,double,double>& context) {
-    if (context.getPeerName().compare(masterTask)==0) {
+  void cleanup(BSPContext<string,string,void,double,double>& context) {
+    if (context.getPeerName().compare(master_task_)==0) {
       cout << "I'm the MasterTask fetch results!\n";
+
       double sum = 0.0;
-      int msgCount = context.getNumCurrentMessages();
-      cout << "MasterTask fetches " << msgCount << " results!\n";
-      for (int i=0; i<msgCount; i++) {
+      int msg_count = context.getNumCurrentMessages();
+      cout << "MasterTask fetches " << msg_count << " results!\n";
+
+      for (int i=0; i<msg_count; i++) {
         sum += context.getCurrentMessage();
       }
       cout << "Sum " << sum << " write results...\n";
-      context.write("Sum", sum);
+      context.write(sum);
     }
   }
 };
 
 int main(int argc, char *argv[]) {
-  return HamaPipes::runTask<string,string,string,double,double>(HamaPipes::TemplateFactory<SumBSP,string,string,string,double,double>());
+  return HamaPipes::runTask<string,string,void,double,double>(HamaPipes::TemplateFactory<SummationBSP,string,string,void,double,double>());
 }
+

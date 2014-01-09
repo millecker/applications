@@ -1,17 +1,8 @@
 <?xml version="1.0"?>
 <configuration>
   <property>
-    // Set the binary path on DFS
     <name>hama.pipes.executable</name>
-    <value>bin/cpu-Sum</value>
-  </property>
-  <property>
-    <name>hama.pipes.java.recordreader</name>
-    <value>true</value>
-  </property>
-  <property>
-    <name>hama.pipes.java.recordwriter</name>
-    <value>true</value>
+    <value>hdfs:/examples/bin/summation</value>
   </property>
   <property>
     <name>bsp.input.format.class</name>
@@ -37,7 +28,7 @@
   </property>
   <property>
     <name>bsp.output.key.class</name>
-    <value>org.apache.hadoop.io.Text</value>
+    <value>org.apache.hadoop.io.NullWritable</value>
   </property>
   <property>
     <name>bsp.output.value.class</name>
