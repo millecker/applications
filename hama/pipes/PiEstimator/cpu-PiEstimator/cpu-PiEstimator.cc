@@ -18,7 +18,6 @@
 
 #include "hama/Pipes.hh"
 #include "hama/TemplateFactory.hh"
-#include "hadoop/StringUtils.hh"
 
 #include <time.h>
 #include <math.h>
@@ -31,33 +30,33 @@ using std::cout;
 
 using HamaPipes::BSP;
 using HamaPipes::BSPContext;
-using namespace HadoopUtils;
 
-class PiCalculationBSP: public BSP<string,string,string,double,int> {
-  private:
-  string masterTask;
-  long iterations; // iterations_per_bsp_task
-  public:
-  PiCalculationBSP(BSPContext<string,string,string,double,int>& context) {
-    iterations = 1000000L;
+class PiEstimatorBSP: public BSP<void,void,void,double,int> {
+private:
+  string master_task_;
+  long iterations_; // iterations_per_bsp_task
+  
+public:
+  PiEstimatorBSP(BSPContext<void,void,void,double,int>& context) {
+    iterations_ = 10000000L;
   }
   
   inline double closed_interval_rand(double x0, double x1) {
     return x0 + (x1 - x0) * rand() / ((double) RAND_MAX);
   }
   
-  void setup(BSPContext<string,string,string,double,int>& context) {
+  void setup(BSPContext<void,void,void,double,int>& context) {
     // Choose one as a master
-    masterTask = context.getPeerName(context.getNumPeers() / 2);
+    master_task_ = context.getPeerName(context.getNumPeers() / 2);
   }
   
-  void bsp(BSPContext<string,string,string,double,int>& context) {
+  void bsp(BSPContext<void,void,void,double,int>& context) {
     
     /* initialize random seed */
     srand(time(NULL));
     
     int in = 0;
-    for (long i = 0; i < iterations; i++) {
+    for (long i = 0; i < iterations_; i++) {
       //rand() -> greater than or equal to 0.0 and less than 1.0.
       double x = 2.0 * closed_interval_rand(0, 1) - 1.0;
       double y = 2.0 * closed_interval_rand(0, 1) - 1.0;
@@ -66,13 +65,14 @@ class PiCalculationBSP: public BSP<string,string,string,double,int> {
       }
     }
     
-    context.sendMessage(masterTask, in);
+    context.sendMessage(master_task_, in);
     context.sync();
   }
   
-  void cleanup(BSPContext<string,string,string,double,int>& context) {
-    if (context.getPeerName().compare(masterTask)==0) {
+  void cleanup(BSPContext<void,void,void,double,int>& context) {
+    if (context.getPeerName().compare(master_task_)==0) {
       cout << "I'm the MasterTask fetch results!\n";
+
       long totalHits = 0;
       int msgCount = context.getNumCurrentMessages();
       cout << "MasterTask fetches " << msgCount << " results!\n";
@@ -81,12 +81,13 @@ class PiCalculationBSP: public BSP<string,string,string,double,int> {
         totalHits += context.getCurrentMessage();
       }
       
-      double pi = 4.0 * totalHits / (msgCount * iterations);
-      context.write("Estimated value of PI", pi);
+      double pi = 4.0 * totalHits / (msgCount * iterations_);
+      context.write(pi);
     }
   }
 };
 
 int main(int argc, char *argv[]) {
-  return HamaPipes::runTask<string,string,string,double,int>(HamaPipes::TemplateFactory<PiCalculationBSP,string,string,string,double,int>());
+  return HamaPipes::runTask<void,void,void,double,int>(HamaPipes::TemplateFactory<PiEstimatorBSP,void,void,void,double,int>());
 }
+
