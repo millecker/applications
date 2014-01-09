@@ -35,22 +35,22 @@ using HamaPipes::BSPContext;
 
 class TestProtocolBSP: public BSP<string,string,string,string,string> {
 private:
-    string myName;
+    string my_name_;
+
 public:
   TestProtocolBSP(BSPContext<string,string,string,string,string>& context) {  }
 
   
   void setup(BSPContext<string,string,string,string,string>& context) {
-    
-    myName = context.getPeerName();
+    my_name_ = context.getPeerName();
   }
   
   void bsp(BSPContext<string,string,string,string,string>& context) {
       
-     /*
-      virtual void clear() = 0;
-      virtual void reopenInput() = 0;
-      */
+    /*
+    virtual void clear() = 0;
+    virtual void reopenInput() = 0;
+    */
       
     /* virtual int getPeerIndex() = 0; */
     cout << "TestProtocol: context.getPeerIndex(): " << context.getPeerIndex() << endl;
@@ -64,12 +64,12 @@ public:
       
     /* TEST virtual const string& getPeerName() = 0;
             virtual const string& getPeerName(int index) = 0; */
-    cout << "TestProtocol: context.getPeerName(): " << myName << endl;
+    cout << "TestProtocol: context.getPeerName(): " << my_name_ << endl;
     cout << "TestProtocol: context.getPeerName(-1): " << context.getPeerName(-1) << endl;
     cout << "TestProtocol: context.getPeerName(10): " << context.getPeerName(10) << endl;
 
     /* TEST virtual vector<string> getAllPeerNames() = 0; */
-    vector<string> peerNames= context.getAllPeerNames(); 
+    vector<string> peerNames = context.getAllPeerNames(); 
     for (int i=0; i<peerNames.size(); i++)
       cout << "TestProtocol: context.getAllPeerNames("<< i <<"): " << peerNames[i] << endl;
       
@@ -84,7 +84,7 @@ public:
     for (int i=0; i<5; i++) {
         std::ostringstream oss;
         oss << "TestMessage " << i;
-        context.sendMessage(myName, oss.str());
+        context.sendMessage(my_name_, oss.str());
     } 
     /* TEST virtual void sync() = 0; */
     cout << "TestProtocol: context.sync();"  << endl;
@@ -103,7 +103,7 @@ public:
           string msg = context.getCurrentMessage();
           std::ostringstream oss;
           oss << "Output: " << msg;
-          context.write(myName, oss.str());	
+          context.write(my_name_, oss.str());	
       }
   }
 };
@@ -111,3 +111,4 @@ public:
 int main(int argc, char *argv[]) {
   return HamaPipes::runTask<string,string,string,string,string>(HamaPipes::TemplateFactory<TestProtocolBSP,string,string,string,string,string>());
 }
+
