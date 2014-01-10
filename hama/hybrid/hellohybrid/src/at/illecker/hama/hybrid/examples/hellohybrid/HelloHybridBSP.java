@@ -221,39 +221,6 @@ public class HelloHybridBSP
     outStream.close();
   }
 
-  static void printOutput(BSPJob job) throws IOException {
-    FileSystem fs = FileSystem.get(job.getConfiguration());
-    FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
-        System.out.println("File " + files[i].getPath());
-        SequenceFile.Reader reader = null;
-        try {
-          reader = new SequenceFile.Reader(fs, files[i].getPath(),
-              job.getConfiguration());
-
-          IntWritable key = new IntWritable();
-          NullWritable value = NullWritable.get();
-          while (reader.next(key, value)) {
-            System.out.println("key: '" + key.get() + "' value: '" + value
-                + "'\n");
-          }
-        } catch (IOException e) {
-
-          FSDataInputStream in = fs.open(files[i].getPath());
-          IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
-          in.close();
-
-        } finally {
-          if (reader != null) {
-            reader.close();
-          }
-        }
-      }
-    }
-    // fs.delete(FileOutputFormat.getOutputPath(job), true);
-  }
-
   public static BSPJob createHelloHybridBSPConf(Path inPath, Path outPath)
       throws IOException {
     return createHelloHybridBSPConf(new HamaConfiguration(), inPath, outPath);
@@ -285,10 +252,8 @@ public class HelloHybridBSP
     return job;
   }
 
-  private static void prepareInput(Configuration conf, Path input,
-      Path example, int n) throws IOException {
-
-    FileSystem fs = FileSystem.get(conf);
+  private static void prepareInput(Configuration conf, FileSystem fs,
+      Path input, Path example, int n) throws IOException {
 
     SequenceFile.Writer inputWriter = SequenceFile.createWriter(fs, conf,
         input, IntWritable.class, NullWritable.class, CompressionType.NONE);
@@ -304,6 +269,38 @@ public class HelloHybridBSP
     }
     inputWriter.close();
     exampleWriter.close();
+  }
+
+  static void printOutput(BSPJob job, FileSystem fs) throws IOException {
+    FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+    for (int i = 0; i < files.length; i++) {
+      if (files[i].getLen() > 0) {
+        System.out.println("File " + files[i].getPath());
+        SequenceFile.Reader reader = null;
+        try {
+          reader = new SequenceFile.Reader(fs, files[i].getPath(),
+              job.getConfiguration());
+
+          IntWritable key = new IntWritable();
+          NullWritable value = NullWritable.get();
+          while (reader.next(key, value)) {
+            System.out.println("key: '" + key.get() + "' value: '" + value
+                + "'\n");
+          }
+        } catch (IOException e) {
+
+          FSDataInputStream in = fs.open(files[i].getPath());
+          IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
+          in.close();
+
+        } finally {
+          if (reader != null) {
+            reader.close();
+          }
+        }
+      }
+    }
+    // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
   public static void main(String[] args) throws InterruptedException,
@@ -327,7 +324,6 @@ public class HelloHybridBSP
     }
     // Enable one GPU task
     conf.setInt("bsp.peers.gpu.num", 1);
-
     conf.setBoolean("hama.pipes.logging", false);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
@@ -338,16 +334,16 @@ public class HelloHybridBSP
 
     Path input = new Path(CONF_INPUT_DIR, "input.seq");
     Path example = new Path(CONF_INPUT_DIR, "/example/example.seq");
-
     conf.set(CONF_EXAMPLE_PATH, example.toString());
 
-    prepareInput(conf, input, example, CONF_N);
+    FileSystem fs = FileSystem.get(conf);
+    prepareInput(conf, fs, input, example, CONF_N);
 
     BSPJob job = createHelloHybridBSPConf(conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
-      printOutput(job);
+      printOutput(job, fs);
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
     }
