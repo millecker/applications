@@ -18,6 +18,8 @@ package at.illecker.hama.hybrid.examples.testrootbeer;
 
 import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
 import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
+import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class TestRootbeerKernel implements Kernel {
 
@@ -25,74 +27,76 @@ public class TestRootbeerKernel implements Kernel {
   public String peerName;
   public String examplePath;
   public int n;
-  public int[] summation;
+  public int[] input;
+  // public int[] summation;
   public String[] allPeerNames;
 
   public TestRootbeerKernel(String examplePath, int n) {
     this.examplePath = examplePath;
     this.n = n;
-    this.summation = new int[n];
+    this.input = new int[n];
+    // this.summation = new int[n];
   }
 
   public void gpuMethod() {
-    // is required for
-    // error: identifier "java_lang_String__array_new" is undefined
-    allPeerNames = new String[] { "test" };
-    
-    peerName = HamaPeer.getPeerName();
-    
-    //numPeers = HamaPeer.getNumPeers();
+    System.out.println(RootbeerGpu.getThreadId());
 
-    
-/*
-    // test input
-    int key = 1;
-    int i = 0;
-    KeyValuePair keyValuePair = new KeyValuePair(key, null);
-    while (HamaPeer.readNext(keyValuePair)) {
-      key = (Integer) keyValuePair.getKey();
-      summation[i] = key;
-      System.out.print("input: key: '");
-      System.out.print(key);
-      System.out.println("'");
-      i++;
-    }
-*/
-    
-/*    
-    // test sequenceFileReader
-    int seqFileId = HamaPeer
-        .sequenceFileOpen(examplePath, 'r', "org.apache.hadoop.io.IntWritable",
-            "org.apache.hadoop.io.NullWritable");
+    if (RootbeerGpu.getThreadId() == 0) {
+      // is required for
+      // error: identifier "java_lang_String__array_new" is undefined
+      allPeerNames = new String[] { "test" };
 
-    int j = 0;
-    while (HamaPeer.sequenceFileReadNext(seqFileId, keyValuePair)) {
-      key = (Integer) keyValuePair.getKey();
-      if (j < i) {
-        summation[j] += key;
+      System.out.print("BlockSize: ");
+      System.out.println(RootbeerGpu.getBlockDimx());
+      System.out.print("GridSize: ");
+      System.out.println(RootbeerGpu.getGridDimx());
+      peerName = HamaPeer.getPeerName();
+      // System.out.println("input values:");
+
+      // test input within one kernel only -> GPUTime=926 ms
+      int key = 1;
+      int value = 1;
+      KeyValuePair keyValuePair = new KeyValuePair(key, value);
+      while (HamaPeer.readNext(keyValuePair)) {
+        key = (Integer) keyValuePair.getKey();
+        value = (Integer) keyValuePair.getValue();
+        input[key] = value; //
+        System.out.println(value);
       }
-      System.out.print("sequenceFileReader: key: '");
-      System.out.print(key);
-      System.out.println("'");
-      j++;
+
     }
-    HamaPeer.sequenceFileClose(seqFileId);
-*/
-    
-/*
-    // test output
-    j = 0;
-    while (j < i) {
-      System.out.print("output: key: '");
-      System.out.print(summation[j]);
-      System.out.println("'");
-      HamaPeer.write(summation[j], null);
-      j++;
-    }
-*/
-    
+
+    RootbeerGpu.syncthreads();
+
+    // test input within each kernel -> GPUTime=18165 ms sync overhead!!!
+    // int key = 1;
+    // int value = 1;
+    // KeyValuePair keyValuePair = new KeyValuePair(key, value);
+    // if (HamaPeer.readNext(keyValuePair)) {
+    // key = (Integer) keyValuePair.getKey();
+    // value = (Integer) keyValuePair.getValue();
+    // input[key] = value; //
+    // System.out.println(value);
+    // }
+
+    /*
+     * // test sequenceFileReader int seqFileId = HamaPeer
+     * .sequenceFileOpen(examplePath, 'r', "org.apache.hadoop.io.IntWritable",
+     * "org.apache.hadoop.io.NullWritable"); int j = 0; while
+     * (HamaPeer.sequenceFileReadNext(seqFileId, keyValuePair)) { key =
+     * (Integer) keyValuePair.getKey(); if (j < i) { summation[j] += key; }
+     * System.out.print("sequenceFileReader: key: '"); System.out.print(key);
+     * System.out.println("'"); j++; } HamaPeer.sequenceFileClose(seqFileId);
+     */
+
+    /*
+     * // test output j = 0; while (j < i) { System.out.print("output: key: '");
+     * System.out.print(summation[j]); System.out.println("'");
+     * HamaPeer.write(summation[j], null); j++; }
+     */
+
     // test getAllPeerNames
-    //allPeerNames = HamaPeer.getAllPeerNames();
+    // allPeerNames = HamaPeer.getAllPeerNames();
 
   }
 

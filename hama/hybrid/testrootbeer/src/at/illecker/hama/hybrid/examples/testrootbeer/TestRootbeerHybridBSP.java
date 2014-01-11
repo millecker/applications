@@ -17,10 +17,11 @@
 package at.illecker.hama.hybrid.examples.testrootbeer;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import junit.framework.Assert;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,7 +51,7 @@ import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class TestRootbeerHybridBSP
     extends
-    HybridBSP<IntWritable, NullWritable, IntWritable, NullWritable, NullWritable> {
+    HybridBSP<IntWritable, IntWritable, NullWritable, IntWritable, NullWritable> {
 
   private static final Log LOG = LogFactory.getLog(TestRootbeerHybridBSP.class);
   private static final Path CONF_TMP_DIR = new Path(
@@ -59,7 +60,12 @@ public class TestRootbeerHybridBSP
   private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
   private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
   public static final String CONF_EXAMPLE_PATH = "testrootbeer.example.path";
-  public static final int CONF_N = 10;
+  // GridSize = max 14 Multiprocessors (192 CUDA Cores/MP = 2688 CUDA Cores)
+  // BlockSize = max 1024
+  // 40 register -> max blockSize 768
+  // 48 register -> max blockSize 640
+  public static final int CONF_BLOCK_SIZE = 768;
+  public static final int CONF_GRID_SIZE = 14;
 
   @Override
   public Class<NullWritable> getMessageClass() {
@@ -68,80 +74,77 @@ public class TestRootbeerHybridBSP
 
   @Override
   public void bsp(
-      BSPPeer<IntWritable, NullWritable, IntWritable, NullWritable, NullWritable> peer)
+      BSPPeer<IntWritable, IntWritable, NullWritable, IntWritable, NullWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
+    long startTime = System.currentTimeMillis();
+
+    // test input
+    int[] input = new int[CONF_BLOCK_SIZE * CONF_GRID_SIZE];
+    IntWritable key = new IntWritable();
+    IntWritable value = new IntWritable();
+    while (peer.readNext(key, value)) {
+      input[key.get()] = value.get();
+    }
+
+    String peerName = peer.getPeerName();
+
+    long stopTime = System.currentTimeMillis();
+
+    /*
+     * // test sequenceFileReader Path example = new
+     * Path(peer.getConfiguration().get(CONF_EXAMPLE_PATH)); SequenceFile.Reader
+     * reader = null; try { reader = new SequenceFile.Reader(fs, example,
+     * peer.getConfiguration()); int i = 0; while (reader.next(key, value)) {
+     * outStream.writeChars("sequenceFileReader: key: '" + key.get() +
+     * "' value: '" + value.get() + "'\n"); if (i < summation.size()) {
+     * summation.set(i, summation.get(i) + value.get()); } i++; } } catch
+     * (IOException e) { throw new RuntimeException(e); } finally { if (reader
+     * != null) { reader.close(); } } // test output NullWritable nullValue =
+     * NullWritable.get(); for (Integer i : summation) { value.set(i);
+     * outStream.writeChars("output: key: '" + value.get() + "'\n");
+     * peer.write(nullValue, value); }
+     */
+
+    // Debug output
     BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
     FileSystem fs = FileSystem.get(peer.getConfiguration());
     FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
         .getOutputPath(job), peer.getTaskId() + ".log"));
 
     outStream.writeChars("TestRootbeerHybridBSP.bsp executed on CPU!\n");
-
-    ArrayList<Integer> summation = new ArrayList<Integer>();
-
-    // test input
-    IntWritable key = new IntWritable();
-    NullWritable nullValue = NullWritable.get();
-
-    while (peer.readNext(key, nullValue)) {
-      outStream.writeChars("input: key: '" + key.get() + "'\n");
-      summation.add(key.get());
-    }
-
-    // test sequenceFileReader
-    Path example = new Path(peer.getConfiguration().get(CONF_EXAMPLE_PATH));
-    SequenceFile.Reader reader = null;
-    try {
-      reader = new SequenceFile.Reader(fs, example, peer.getConfiguration());
-
-      int i = 0;
-      while (reader.next(key, nullValue)) {
-        outStream.writeChars("sequenceFileReader: key: '" + key.get() + "'\n");
-        if (i < summation.size()) {
-          summation.set(i, summation.get(i) + key.get());
-        }
-        i++;
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } finally {
-      if (reader != null) {
-        reader.close();
-      }
-    }
-
-    // test output
-    for (Integer i : summation) {
-      key.set(i);
-      outStream.writeChars("output: key: '" + key.get() + "'\n");
-      peer.write(key, nullValue);
-    }
-
-    // test getAllPeerNames
+    outStream.writeChars("TestRootbeerHybridBSP,CPUTime="
+        + ((stopTime - startTime) / 1000.0) + " seconds\n");
+    outStream.writeChars("TestRootbeerHybridBSP,CPUTime="
+        + (stopTime - startTime) + " ms\n");
+    outStream
+        .writeChars("TestRootbeerHybridBSP,peerName: '" + peerName + "'\n");
+    // outStream.writeChars("TestRootbeerHybridBSP,input: '"
+    // + Arrays.toString(input) + "'\n");
     outStream.writeChars("getAllPeerNames: '"
         + Arrays.toString(peer.getAllPeerNames()) + "'\n");
 
+    // Verify input
+    peer.reopenInput();
+    while (peer.readNext(key, value)) {
+      Assert.assertEquals(value.get(), input[key.get()]);
+    }
+
+    outStream.writeChars("TestRootbeerHybridBSP,input verified!'\n");
     outStream.close();
   }
 
   @Override
   public void bspGpu(
-      BSPPeer<IntWritable, NullWritable, IntWritable, NullWritable, NullWritable> peer,
+      BSPPeer<IntWritable, IntWritable, NullWritable, IntWritable, NullWritable> peer,
       Rootbeer rootbeer) throws IOException, SyncException,
       InterruptedException {
 
-    BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
-    FileSystem fs = FileSystem.get(peer.getConfiguration());
-    FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
-        .getOutputPath(job), peer.getTaskId() + ".log"));
-
-    outStream.writeChars("TestRootbeerHybridBSP.bspGpu executed on GPU!\n");
-
     TestRootbeerKernel kernel = new TestRootbeerKernel(peer.getConfiguration()
-        .get(CONF_EXAMPLE_PATH), CONF_N);
-    // 1 Kernel within 1 Block
-    rootbeer.setThreadConfig(1, 1, 1);
+        .get(CONF_EXAMPLE_PATH), CONF_BLOCK_SIZE * CONF_GRID_SIZE);
+
+    rootbeer.setThreadConfig(CONF_BLOCK_SIZE, CONF_GRID_SIZE, CONF_BLOCK_SIZE
+        * CONF_GRID_SIZE);
 
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
@@ -149,6 +152,13 @@ public class TestRootbeerHybridBSP
     rootbeer.runAll(kernel);
     watch.stop();
 
+    // Debug output
+    BSPJob job = new BSPJob((HamaConfiguration) peer.getConfiguration());
+    FileSystem fs = FileSystem.get(peer.getConfiguration());
+    FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
+        .getOutputPath(job), peer.getTaskId() + ".log"));
+
+    outStream.writeChars("TestRootbeerHybridBSP.bspGpu executed on GPU!\n");
     List<StatsRow> stats = rootbeer.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
@@ -163,25 +173,37 @@ public class TestRootbeerHybridBSP
     }
 
     outStream.writeChars("TestRootbeerHybridBSP,GPUTime="
-        + watch.elapsedTimeMillis() + "ms\n");
+        + watch.elapsedTimeMillis() + " ms\n");
     outStream.writeChars("TestRootbeerHybridBSP,peerName: '" + kernel.peerName
         + "'\n");
     outStream.writeChars("TestRootbeerHybridBSP,numPeers: '" + kernel.numPeers
         + "'\n");
-    outStream.writeChars("TestRootbeerHybridBSP,summation: '"
-        + Arrays.toString(kernel.summation) + "'\n");
+    // outStream.writeChars("TestRootbeerHybridBSP,input: '"
+    // + Arrays.toString(kernel.input) + "'\n");
+    // outStream.writeChars("TestRootbeerHybridBSP,summation: '"
+    // + Arrays.toString(kernel.summation) + "'\n");
     outStream.writeChars("TestRootbeerHybridBSP,getAllPeerNames: '"
         + Arrays.toString(kernel.allPeerNames) + "'\n");
 
+    // Verify input
+    peer.reopenInput();
+    IntWritable key = new IntWritable();
+    IntWritable value = new IntWritable();
+    while (peer.readNext(key, value)) {
+      Assert.assertEquals(value.get(), kernel.input[key.get()]);
+    }
+
+    outStream.writeChars("TestRootbeerHybridBSP,input verified!'\n");
     outStream.close();
   }
 
-  public static BSPJob createHelloHybridBSPConf(Path inPath, Path outPath)
+  public static BSPJob createTestRootbeerHybridBSPConf(Path inPath, Path outPath)
       throws IOException {
-    return createHelloHybridBSPConf(new HamaConfiguration(), inPath, outPath);
+    return createTestRootbeerHybridBSPConf(new HamaConfiguration(), inPath,
+        outPath);
   }
 
-  public static BSPJob createHelloHybridBSPConf(Configuration conf,
+  public static BSPJob createTestRootbeerHybridBSPConf(Configuration conf,
       Path inPath, Path outPath) throws IOException {
 
     BSPJob job = new BSPJob(new HamaConfiguration(conf),
@@ -195,12 +217,12 @@ public class TestRootbeerHybridBSP
 
     job.setInputFormat(SequenceFileInputFormat.class);
     job.setInputKeyClass(IntWritable.class);
-    job.setInputValueClass(NullWritable.class);
+    job.setInputValueClass(IntWritable.class);
     job.setInputPath(inPath);
 
     job.setOutputFormat(SequenceFileOutputFormat.class);
-    job.setOutputKeyClass(IntWritable.class);
-    job.setOutputValueClass(NullWritable.class);
+    job.setOutputKeyClass(NullWritable.class);
+    job.setOutputValueClass(IntWritable.class);
     job.setOutputPath(outPath);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
@@ -209,22 +231,19 @@ public class TestRootbeerHybridBSP
   }
 
   private static void prepareInput(Configuration conf, FileSystem fs,
-      Path input, Path example, int n) throws IOException {
+      Path path, int n, int maxVal) throws IOException {
 
-    SequenceFile.Writer inputWriter = SequenceFile.createWriter(fs, conf,
-        input, IntWritable.class, NullWritable.class, CompressionType.NONE);
+    SequenceFile.Writer inputWriter = SequenceFile.createWriter(fs, conf, path,
+        IntWritable.class, IntWritable.class, CompressionType.NONE);
+    LOG.info("prepareInput path: " + path.toString());
 
-    SequenceFile.Writer exampleWriter = SequenceFile.createWriter(fs, conf,
-        example, IntWritable.class, NullWritable.class, CompressionType.NONE);
-
-    NullWritable nullValue = NullWritable.get();
     Random r = new Random();
-    for (long i = 0; i < n; i++) {
-      inputWriter.append(new IntWritable(r.nextInt(n)), nullValue);
-      exampleWriter.append(new IntWritable(r.nextInt(n)), nullValue);
+    for (int i = 0; i < n; i++) {
+      int val = r.nextInt(maxVal);
+      inputWriter.append(new IntWritable(i), new IntWritable(val));
+      // LOG.info("prepareInput key: '" + i + "' value: '" + val + "'");
     }
     inputWriter.close();
-    exampleWriter.close();
   }
 
   static void printOutput(BSPJob job, FileSystem fs) throws IOException {
@@ -237,10 +256,11 @@ public class TestRootbeerHybridBSP
           reader = new SequenceFile.Reader(fs, files[i].getPath(),
               job.getConfiguration());
 
-          IntWritable key = new IntWritable();
-          NullWritable value = NullWritable.get();
+          NullWritable key = NullWritable.get();
+          IntWritable value = new IntWritable();
+
           while (reader.next(key, value)) {
-            System.out.println("key: '" + key.get() + "' value: '" + value
+            System.out.println("key: '" + key + "' value: '" + value.get()
                 + "'\n");
           }
         } catch (IOException e) {
@@ -276,7 +296,7 @@ public class TestRootbeerHybridBSP
       // BSPJobClient jobClient = new BSPJobClient(conf);
       // ClusterStatus cluster = jobClient.getClusterStatus(true);
       // job.setNumBspTask(cluster.getMaxTasks());
-      conf.setInt("bsp.peers.num", 2); // 1 CPU and 1 GPU
+      conf.setInt("bsp.peers.num", 1); // (1 CPU and) 1 GPU task only
     }
     // Enable one GPU task
     conf.setInt("bsp.peers.gpu.num", 1);
@@ -293,9 +313,11 @@ public class TestRootbeerHybridBSP
     conf.set(CONF_EXAMPLE_PATH, example.toString());
 
     FileSystem fs = FileSystem.get(conf);
-    prepareInput(conf, fs, input, example, CONF_N);
+    prepareInput(conf, fs, input, CONF_BLOCK_SIZE * CONF_GRID_SIZE, 100);
+    prepareInput(conf, fs, example, CONF_BLOCK_SIZE * CONF_GRID_SIZE, 100);
 
-    BSPJob job = createHelloHybridBSPConf(conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
+    BSPJob job = createTestRootbeerHybridBSPConf(conf, CONF_INPUT_DIR,
+        CONF_OUTPUT_DIR);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
