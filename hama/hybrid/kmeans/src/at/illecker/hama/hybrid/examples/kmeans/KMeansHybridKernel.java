@@ -33,7 +33,7 @@ public class KMeansHybridKernel implements Kernel {
     m_centers = centers;
     m_maxIterations = maxIterations;
     m_superstepCount = 0;
-    m_converged = 0;
+    m_converged = 1;
   }
 
   public void gpuMethod() {
@@ -50,62 +50,70 @@ public class KMeansHybridKernel implements Kernel {
     int centerDim = m_centers[0].length;
 
     // SharedMemory per thread block
-    int sharedMemoryNewCentersStartPos = centerCount * centerDim * 8;
+    int sharedMemoryCenterSize = centerCount * centerDim * 8;
+    int sharedMemoryNewCentersStartPos = sharedMemoryCenterSize;
     int sharedMemorySummationCountStartPos = sharedMemoryNewCentersStartPos
-        + (centerCount * centerDim * 8);
+        + sharedMemoryCenterSize;
     int sharedMemoryInputVectorsStartPos = sharedMemorySummationCountStartPos
         + (centerCount * 4);
-    int sharedMemoryInputVectorsEndPos = sharedMemoryInputVectorsStartPos
+    int sharedMemoryInputHasMoreBool = sharedMemoryInputVectorsStartPos
         + (blockSize * centerDim * 8);
+    int sharedMemoryEndPos = sharedMemoryInputHasMoreBool + 4;
 
-    System.out.print("SharedMemorySize: ");
-    System.out.print(sharedMemoryInputVectorsEndPos);
-    System.out.println(" bytes");
+    if (globalThreadId == 0) {
+      System.out.print("SharedMemorySize: ");
+      System.out.print(sharedMemoryEndPos);
+      System.out.println(" bytes");
+    }
 
     // Start KMeans clustering algorithm
-    while (true) {
+    while ((m_converged != 0) && (m_superstepCount <= m_maxIterations)) {
+      // while (true) {
 
       // TODO without the following statement
       // Rootbeer misses code from GarabageCollector -> SIGSEGV
-      System.out.println("Start loop...");
+      // System.out.println("Start loop...");
 
-      // Setup SharedMemory
       // Thread 0 of each block
+      // Setup SharedMemory
+
       // Load centers into SharedMemory
       // Init newCenters and summationCount in SharedMemory
       if (thread_idxx == 0) {
 
         for (int i = 0; i < centerCount; i++) {
           for (int j = 0; j < centerDim; j++) {
-
-            // centers[][]
+            // Init centers[][]
             int centerIndex = ((i * centerDim) + j) * 8;
             RootbeerGpu.setSharedDouble(centerIndex, m_centers[i][j]);
 
-            // newCenters[][]
-            int newCenterIndex = sharedMemoryNewCentersStartPos
-                + (((i * centerDim) + j) * 8);
+            // Init newCenters[][]
+            int newCenterIndex = sharedMemoryNewCentersStartPos + centerIndex;
             RootbeerGpu.setSharedDouble(newCenterIndex, 0);
           }
-          // summationCount[]
+          // Init summationCount[]
           int summationCountIndex = sharedMemorySummationCountStartPos
               + (i * 4);
           RootbeerGpu.setSharedInteger(summationCountIndex, 0);
         }
+
+        // boolean inputHasMore = true;
+        RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBool, true);
       }
 
       // Sync all threads within a block
       RootbeerGpu.syncthreads();
 
       // assignCenters *****************************************************
-      boolean inputHasMore = true;
+      // boolean inputHasMore = true;
       boolean fillCache = false;
       int startIndex = 0;
 
       // loop until input is empty
-      while (inputHasMore) {
+      // while (inputHasMore == true)
+      while (RootbeerGpu.getSharedBoolean(sharedMemoryInputHasMoreBool)) {
 
-        int i = 0; // amount of threads
+        int i = 0; // amount of threads in block
 
         // Thread 0 of each block
         // Setup inputs for thread block
@@ -123,7 +131,10 @@ public class KMeansHybridKernel implements Kernel {
             KeyValuePair keyValuePair = new KeyValuePair(vectorStr, null);
 
             while (i < blockSize) {
-              inputHasMore = HamaPeer.readNext(keyValuePair);
+              boolean inputHasMore = HamaPeer.readNext(keyValuePair);
+              // update inputHasMore
+              RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBool,
+                  inputHasMore);
               fillCache = inputHasMore;
               if (!inputHasMore) {
                 break;
@@ -134,11 +145,12 @@ public class KMeansHybridKernel implements Kernel {
               DenseDoubleVector vector = new DenseDoubleVector(vectorStr);
               m_cache.add(vector);
 
-              double[] inputs = vector.toArray(); // inputs.len = centerDim
+              // TODO skip toArray (vector.get(j))
+              double[] inputs = vector.toArray(); // vectorDim = centerDim
 
               // Update inputs on SharedMemory
               for (int j = 0; j < centerDim; j++) {
-                // inputs[][]
+                // Init inputs[][]
                 int inputIndex = sharedMemoryInputVectorsStartPos
                     + ((i * centerDim) + j) * 8;
                 RootbeerGpu.setSharedDouble(inputIndex, inputs[j]);
@@ -149,13 +161,15 @@ public class KMeansHybridKernel implements Kernel {
 
           } else { // fill inputs from m_cache
 
+            // TODO other blocks will have other startIndex?
             int j = startIndex;
             while (i < blockSize) {
               // System.out.print("get from cache j: ");
               // System.out.println(j);
               DenseDoubleVector vector = m_cache.get(j);
 
-              double[] inputs = vector.toArray(); // inputs.len = centerDim
+              // TODO skip toArray (vector.get(j))
+              double[] inputs = vector.toArray(); // vectorDim = centerDim
 
               // Update inputs on SharedMemory
               for (int k = 0; k < centerDim; k++) {
@@ -168,7 +182,9 @@ public class KMeansHybridKernel implements Kernel {
               i++;
               j++;
               if (j == m_cache.getLength()) {
-                inputHasMore = false;
+                // update inputHasMore
+                RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBool,
+                    false);
                 break;
               }
             }
@@ -185,6 +201,8 @@ public class KMeansHybridKernel implements Kernel {
           int lowestDistantCenter = getNearestCenter(centerCount, centerDim,
               sharedMemoryInputVectorsStartPos);
 
+          // assignCenters is synchronized because it has to write into
+          // SharedMemory
           assignCenters(lowestDistantCenter, centerDim,
               sharedMemoryNewCentersStartPos,
               sharedMemorySummationCountStartPos,
@@ -203,16 +221,15 @@ public class KMeansHybridKernel implements Kernel {
       if (thread_idxx == 0) {
         String[] allPeerNames = HamaPeer.getAllPeerNames();
 
-        // centerCount = newCenters.length
         for (int i = 0; i < centerCount; i++) {
 
           int summationCountIndex = sharedMemorySummationCountStartPos
               + (i * 4);
-          // summationCount[i]
+
           int summationCount = RootbeerGpu
               .getSharedInteger(summationCountIndex);
 
-          if (summationCount != 0) {
+          if (summationCount > 0) {
 
             // centerIndex:incrementCounter:VectorValue1,VectorValue2,VectorValue3
             String message = "";
@@ -249,31 +266,25 @@ public class KMeansHybridKernel implements Kernel {
       }
 
       // Global Thread 0 of each blocks
-      // Sync all tasks
       if (globalThreadId == 0) {
+
+        // Sync all peers
         HamaPeer.sync();
-      }
 
-      // Sync all threads within a block
-      RootbeerGpu.syncthreads();
-
-      // updateCenters *****************************************************
-
-      // Global Thread 0 of each blocks
-      // Fetch messages
-      if (globalThreadId == 0) {
+        // updateCenters *****************************************************
+        // Fetch messages
 
         // Reinit SharedMemory
         // use newCenters for msgCenters
         // use summationCount for msgIncrementSum
         for (int i = 0; i < centerCount; i++) {
           for (int j = 0; j < centerDim; j++) {
-            // newCenters[][]
+            // Init newCenters[][]
             int newCenterIndex = sharedMemoryNewCentersStartPos
                 + (((i * centerDim) + j) * 8);
             RootbeerGpu.setSharedDouble(newCenterIndex, 0);
           }
-          // summationCount[]
+          // Init summationCount[]
           int summationCountIndex = sharedMemorySummationCountStartPos
               + (i * 4);
           RootbeerGpu.setSharedInteger(summationCountIndex, 0);
@@ -321,16 +332,15 @@ public class KMeansHybridKernel implements Kernel {
             }
 
           } else {
-
+            // VectorAdd
             // msgCenters[centerIndex] =
             // addVector(msgCenters[centerIndex],msgVector);
             for (int j = 0; j < centerDim; j++) {
-              // VectorAdd
-              // msgCenters[centerIndex][j] += messageVector[j];
 
               int newCenterIndex = sharedMemoryNewCentersStartPos
                   + (((centerIndex * centerDim) + j) * 8);
 
+              // msgCenters[centerIndex][j] += messageVector[j];
               RootbeerGpu.setSharedDouble(newCenterIndex,
                   RootbeerGpu.getSharedDouble(newCenterIndex)
                       + messageVector[j]);
@@ -341,7 +351,7 @@ public class KMeansHybridKernel implements Kernel {
               + incrementCounter);
         }
 
-        // TODO Possible Parallelism
+        // TODO Possible Parallelism?
 
         // divide by how often we globally summed vectors
         for (int i = 0; i < centerCount; i++) {
@@ -353,15 +363,15 @@ public class KMeansHybridKernel implements Kernel {
               .getSharedInteger(summationCountIndex);
 
           // and only if we really have an update for center
-          if (summationCount != 0) {
+          if (summationCount > 0) {
 
             // msgCenters[i] = divideVector(msgCenters[i], msgIncrementSum[i]);
             for (int j = 0; j < centerDim; j++) {
 
-              // msgCenters[i][j] /= msgIncrementSum[i];
               int newCenterIndex = sharedMemoryNewCentersStartPos
                   + (((i * centerDim) + j) * 8);
 
+              // msgCenters[i][j] /= msgIncrementSum[i];
               RootbeerGpu.setSharedDouble(newCenterIndex,
                   RootbeerGpu.getSharedDouble(newCenterIndex) / summationCount);
             }
@@ -378,7 +388,7 @@ public class KMeansHybridKernel implements Kernel {
           int summationCount = RootbeerGpu
               .getSharedInteger(summationCountIndex);
 
-          if (summationCount != 0) {
+          if (summationCount > 0) {
 
             double calculateError = 0;
             for (int j = 0; j < centerDim; j++) {
@@ -387,6 +397,7 @@ public class KMeansHybridKernel implements Kernel {
               int newCenterIndex = sharedMemoryNewCentersStartPos
                   + (((i * centerDim) + j) * 8);
 
+              // TODO m_centers is in global GPU memory
               calculateError += Math.abs(m_centers[i][j]
                   - RootbeerGpu.getSharedDouble(newCenterIndex));
             }
@@ -394,6 +405,7 @@ public class KMeansHybridKernel implements Kernel {
             System.out.print("calculateError: ");
             System.out.println(calculateError);
 
+            // Update center if calculateError > 0
             if (calculateError > 0.0d) {
 
               // m_centers[i] = msgCenters[i];
@@ -402,125 +414,73 @@ public class KMeansHybridKernel implements Kernel {
                 int newCenterIndex = sharedMemoryNewCentersStartPos
                     + (((i * centerDim) + j) * 8);
 
+                // TODO m_centers is in global GPU memory
                 m_centers[i][j] = RootbeerGpu.getSharedDouble(newCenterIndex);
               }
               convergedCounter++;
             }
           }
         }
+
+        // m_converged and m_superstepCount are in global GPU memory
         m_converged = convergedCounter;
         m_superstepCount = HamaPeer.getSuperstepCount();
-
-        // TODO Not used, because all inputs in cache
-        // HamaPeer.reopenInput();
       }
 
       // Sync all threads within a block
+      // TODO only one block will wait
       RootbeerGpu.syncthreads();
 
-      System.out.print("m_converged: ");
-      System.out.println(m_converged);
-
-      if (m_converged == 0) {
-        break;
-      }
-      if ((m_maxIterations > 0) && (m_maxIterations < m_superstepCount)) {
-        break;
-      }
-
-    }
-
-    System.out.println("Finished! Writing the assignments...");
-
-    // recalculateAssignmentsAndWrite *****************************************
-    boolean inputHasMore = true;
-    int startIndex = 0;
-
-    while (inputHasMore) {
-
-      int i = 0; // amount of threads
-
-      // Thread 0 of each block
-      // Setup inputs for thread block
       if (thread_idxx == 0) {
-
-        int j = startIndex;
-        while (i < blockSize) {
-          // System.out.print("get from cache j: ");
-          // System.out.println(j);
-          DenseDoubleVector vector = m_cache.get(j);
-
-          double[] inputs = vector.toArray(); // inputs.len = centerDim
-
-          // Update inputs on SharedMemory
-          for (int k = 0; k < centerDim; k++) {
-            // inputs[][]
-            int inputIndex = sharedMemoryInputVectorsStartPos
-                + ((i * centerDim) + k) * 8;
-            RootbeerGpu.setSharedDouble(inputIndex, inputs[k]);
-          }
-
-          i++;
-          j++;
-          if (j == m_cache.getLength()) {
-            inputHasMore = false;
-            break;
-          }
-        }
-        startIndex = j;
+        System.out.print("m_converged: ");
+        System.out.println(m_converged);
       }
 
-      // Sync all threads within a block
-      // input[][] was updated
-      RootbeerGpu.syncthreads();
-
-      // Parallelism Start
-      if (thread_idxx < i) {
-        int lowestDistantCenter = getNearestCenter(centerCount, centerDim,
-            sharedMemoryInputVectorsStartPos);
-
-        // Write out own vector and corresponding lowestDistantCenter
-        String vectorStr = "";
-        for (int k = 0; k < centerDim; k++) {
-
-          int inputIdxx = sharedMemoryInputVectorsStartPos
-              + ((RootbeerGpu.getThreadIdxx() * centerDim) + k) * 8;
-
-          vectorStr += Double.toString(RootbeerGpu.getSharedDouble(inputIdxx));
-          if (k < centerDim - 1) {
-            vectorStr += ", ";
-          }
-        }
-
-        HamaPeer.write(new Integer(lowestDistantCenter), vectorStr);
-      }
-      // Parallelism End
-
-      // Sync all threads within a block
-      RootbeerGpu.syncthreads();
+      // if (m_converged == 0) {
+      // break;
+      // }
+      // if ((m_maxIterations > 0) && (m_maxIterations < m_superstepCount)) {
+      // break;
+      // }
+      break;
     }
 
-    System.out.println("Done.");
+    // System.out.println("Finished! Writing the assignments...");
+
+    /*
+     * // recalculateAssignmentsAndWrite
+     * ***************************************** boolean inputHasMore = true;
+     * int startIndex = 0; while (inputHasMore) { int i = 0; // amount of
+     * threads // Thread 0 of each block // Setup inputs for thread block if
+     * (thread_idxx == 0) { int j = startIndex; while (i < blockSize) { //
+     * System.out.print("get from cache j: "); // System.out.println(j);
+     * DenseDoubleVector vector = m_cache.get(j); double[] inputs =
+     * vector.toArray(); // inputs.len = centerDim // Update inputs on
+     * SharedMemory for (int k = 0; k < centerDim; k++) { // inputs[][] int
+     * inputIndex = sharedMemoryInputVectorsStartPos + ((i * centerDim) + k) *
+     * 8; RootbeerGpu.setSharedDouble(inputIndex, inputs[k]); } i++; j++; if (j
+     * == m_cache.getLength()) { inputHasMore = false; break; } } startIndex =
+     * j; } // Sync all threads within a block // input[][] was updated
+     * RootbeerGpu.syncthreads(); // Parallelism Start if (thread_idxx < i) {
+     * int lowestDistantCenter = getNearestCenter(centerCount, centerDim,
+     * sharedMemoryInputVectorsStartPos); // Write out own vector and
+     * corresponding lowestDistantCenter String vectorStr = ""; for (int k = 0;
+     * k < centerDim; k++) { int inputIdxx = sharedMemoryInputVectorsStartPos +
+     * ((RootbeerGpu.getThreadIdxx() * centerDim) + k) * 8; vectorStr +=
+     * Double.toString(RootbeerGpu.getSharedDouble(inputIdxx)); if (k <
+     * centerDim - 1) { vectorStr += ", "; } } HamaPeer.write(new
+     * Integer(lowestDistantCenter), vectorStr); } // Parallelism End // Sync
+     * all threads within a block RootbeerGpu.syncthreads(); }
+     */
+    // System.out.println("Done.");
   }
 
   private synchronized void assignCenters(int lowestDistantCenter,
       int dimension, int sharedMemoryNewCentersStartPos,
       int sharedMemorySummationCountStartPos, int sharedMemoryInputStartPos) {
-    // SharedMemory
-    // m_summationCount[lowestDistantCenter]
+
     // Each thread has its own input vector
-    // double[] vector = inputs[thread_idxx]
-
-    // summationCount[lowestDistantCenter]
-    int summationCountIndex = sharedMemorySummationCountStartPos
-        + (lowestDistantCenter * 4);
-    int summationCount = RootbeerGpu.getSharedInteger(summationCountIndex);
-
-    // add own input vector to newCenters
-    // m_newCenters[lowestDistantCenter] =
-    // addVector(m_newCenters[lowestDistantCenter], vector);
-
-    // dimenstion = m_newCenters[lowestDistantCenter].length
+    // add own input vector to newCenters[lowestDistantCenter]
     for (int i = 0; i < dimension; i++) {
 
       int newCenterIndex = sharedMemoryNewCentersStartPos
@@ -529,16 +489,21 @@ public class KMeansHybridKernel implements Kernel {
       int inputIndex = sharedMemoryInputStartPos
           + ((RootbeerGpu.getThreadIdxx() * dimension) + i) * 8;
 
-      // m_newCenters[lowestDistantCenter][j] += vector[j];
-
+      // newCenters[lowestDistantCenter][j] += vector[j];
       RootbeerGpu.setSharedDouble(
           newCenterIndex,
           RootbeerGpu.getSharedDouble(newCenterIndex)
               + RootbeerGpu.getSharedDouble(inputIndex));
     }
 
+    // Update newCenter counter
+    // summationCount[lowestDistantCenter]
+    int summationCountIndex = sharedMemorySummationCountStartPos
+        + (lowestDistantCenter * 4);
+
     // summationCount[lowestDistantCenter]++;
-    RootbeerGpu.setSharedInteger(summationCountIndex, summationCount + 1);
+    RootbeerGpu.setSharedInteger(summationCountIndex,
+        RootbeerGpu.getSharedInteger(summationCountIndex) + 1);
   }
 
   private int getNearestCenter(int centerCount, int centersDim,
