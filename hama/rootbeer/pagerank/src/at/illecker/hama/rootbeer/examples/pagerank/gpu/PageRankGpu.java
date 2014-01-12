@@ -51,6 +51,7 @@ import org.apache.hama.graph.VertexInputReader;
 
 public class PageRankGpu {
   private static final Log LOG = LogFactory.getLog(PageRankGpu.class);
+  private static final String AVG_AGGREGATOR = "average.aggregator";
 
   public static class PageRankVertexGpu extends
       Vertex<Text, NullWritable, DoubleWritable> {
@@ -88,24 +89,22 @@ public class PageRankGpu {
         }
         double alpha = (1.0d - DAMPING_FACTOR) / this.getNumVertices();
         this.setValue(new DoubleWritable(alpha + (sum * DAMPING_FACTOR)));
+        this.aggregate(AVG_AGGREGATOR, this.getValue());
         /* DO AT GPU */
-
       }
 
       // if we have not reached our global error yet, then proceed.
-      DoubleWritable globalError = getLastAggregatedValue(0);
+      DoubleWritable globalError = (DoubleWritable) getAggregatedValue(AVG_AGGREGATOR);
+
       if (globalError != null && this.getSuperstepCount() > 2
           && MAXIMUM_CONVERGENCE_ERROR > globalError.get()) {
         voteToHalt();
-        return;
+      } else {
+        // in each superstep we are going to send a new rank to our neighbours
+        sendMessageToNeighbors(new DoubleWritable(this.getValue().get()
+            / this.getEdges().size()));
       }
-
-      // in each superstep we are going to send a new rank to our
-      // neighbours
-      sendMessageToNeighbors(new DoubleWritable(this.getValue().get()
-          / this.getEdges().size()));
     }
-
   }
 
   public static class PagerankSeqReader
@@ -143,8 +142,6 @@ public class PageRankGpu {
 
     if (args.length == 3) {
       job.setNumBspTask(Integer.parseInt(args[2]));
-    } else {
-      job.setNumBspTask(1);
     }
 
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask());
@@ -154,7 +151,7 @@ public class PageRankGpu {
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
 
     // error
-    job.setAggregatorClass(AverageAggregator.class);
+    job.registerAggregator(AVG_AGGREGATOR, AverageAggregator.class);
 
     // Vertex reader
     job.setVertexInputReaderClass(PagerankSeqReader.class);
