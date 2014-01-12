@@ -23,25 +23,26 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class KMeansHybridKernel implements Kernel {
 
-  public DenseDoubleVectorList m_cache = null;
-  public double[][] m_centers = null;
-  public int m_maxIterations = 0;
-  public long m_superstepCount = 0;
-  // TODO long converged rounds calculation error?
-  public long m_converged = 0;
+  private DenseDoubleVectorList m_cache = null;
+  private boolean  m_cacheIsEmpty = true;
+  private long m_superstepCount = 0;
+  // TODO m_converged rounds calculation error?
+  private long m_converged = 1;
 
-  public KMeansHybridKernel(double[][] centers, int maxIterations) {
+  public double[][] m_centers = null; // input
+  public int m_maxIterations = 0;  // input
+  
+  public KMeansHybridKernel(double[][] centers, int maxIterations, int n) {
     m_centers = centers;
     m_maxIterations = maxIterations;
-    m_superstepCount = 0;
-    m_converged = 1;
+    m_cache = new DenseDoubleVectorList(n);
   }
 
   public void gpuMethod() {
     int blockSize = RootbeerGpu.getBlockDimx();
-    // int gridSize = RootbeerGpu.getGridDimx();
+    int gridSize = RootbeerGpu.getGridDimx();
 
-    // int block_idxx = RootbeerGpu.getBlockIdxx();
+    int block_idxx = RootbeerGpu.getBlockIdxx();
     int thread_idxx = RootbeerGpu.getThreadIdxx();
 
     // globalThreadId = blockIdx.x * blockDim.x + threadIdx.x;
@@ -50,7 +51,7 @@ public class KMeansHybridKernel implements Kernel {
     int centerCount = m_centers.length;
     int centerDim = m_centers[0].length;
 
-    // SharedMemory per thread block
+    // SharedMemory per block
     int sharedMemoryCenterSize = centerCount * centerDim * 8;
     int sharedMemoryNewCentersStartPos = sharedMemoryCenterSize;
     int sharedMemorySummationCountStartPos = sharedMemoryNewCentersStartPos
@@ -68,11 +69,8 @@ public class KMeansHybridKernel implements Kernel {
     }
 
     // Start KMeans clustering algorithm
-    while ((m_converged != 0) && (m_superstepCount <= m_maxIterations)) {
-
-      // TODO without the following statement
-      // Rootbeer misses code from GarabageCollector -> SIGSEGV
-      // System.out.println("Start loop...");
+    while ( (m_converged != 0) && 
+        ( (m_maxIterations > 0) && (m_superstepCount <= m_maxIterations)) ) {
 
       // Thread 0 of each block
       // Setup SharedMemory
@@ -121,10 +119,10 @@ public class KMeansHybridKernel implements Kernel {
         if (thread_idxx == 0) {
 
           // if cache is empty read from HamaPeer
-          if ((m_cache == null) || (fillCache)) {
+          if ((m_cacheIsEmpty == true) || (fillCache)) {
 
-            if (m_cache == null) {
-              m_cache = new DenseDoubleVectorList();
+            if (m_cacheIsEmpty == true) {
+              m_cacheIsEmpty = false;
               fillCache = true;
             }
 
@@ -133,6 +131,7 @@ public class KMeansHybridKernel implements Kernel {
 
             while (i < blockSize) {
               boolean inputHasMore = HamaPeer.readNext(keyValuePair);
+              
               // update inputHasMore
               RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean,
                   inputHasMore);
@@ -146,15 +145,12 @@ public class KMeansHybridKernel implements Kernel {
               DenseDoubleVector vector = new DenseDoubleVector(vectorStr);
               m_cache.add(vector);
 
-              // TODO skip toArray (vector.get(j))
-              double[] inputs = vector.toArray(); // vectorDim = centerDim
-
               // Update inputs on SharedMemory
               for (int j = 0; j < centerDim; j++) {
                 // Init inputs[][]
                 int inputIndex = sharedMemoryInputVectorsStartPos
                     + ((i * centerDim) + j) * 8;
-                RootbeerGpu.setSharedDouble(inputIndex, inputs[j]);
+                RootbeerGpu.setSharedDouble(inputIndex, vector.get(j));
               }
 
               i++;
@@ -164,25 +160,27 @@ public class KMeansHybridKernel implements Kernel {
 
             // TODO other blocks will have other startIndex?
             int j = startIndex;
+            int cacheSize = m_cache.getSize() / gridSize;
+            System.out.print("cacheSize: ");
+            System.out.println(m_cache.getSize());
+            System.out.print("gridSize: ");
+            System.out.println(gridSize);
             while (i < blockSize) {
-              // System.out.print("get from cache j: ");
-              // System.out.println(j);
-              DenseDoubleVector vector = m_cache.get(j);
-
-              // TODO skip toArray (vector.get(j))
-              double[] inputs = vector.toArray(); // vectorDim = centerDim
+              System.out.print("get from cache j: ");
+              System.out.println((block_idxx * blockSize)+j);
+              DenseDoubleVector vector = m_cache.get((block_idxx * blockSize) + j);
 
               // Update inputs on SharedMemory
               for (int k = 0; k < centerDim; k++) {
                 // Init inputs[][]
                 int inputIndex = sharedMemoryInputVectorsStartPos
                     + ((i * centerDim) + k) * 8;
-                RootbeerGpu.setSharedDouble(inputIndex, inputs[k]);
+                RootbeerGpu.setSharedDouble(inputIndex, vector.get(k));
               }
 
               i++;
               j++;
-              if (j == m_cache.getLength()) {
+              if (j == cacheSize) {
                 // update inputHasMore
                 RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean,
                     false);
@@ -434,6 +432,7 @@ public class KMeansHybridKernel implements Kernel {
           }
         }
 
+        // TODO flush global memory
         // m_converged and m_superstepCount are in global GPU memory
         m_converged = convergedCounter;
         m_superstepCount = HamaPeer.getSuperstepCount();
@@ -441,6 +440,7 @@ public class KMeansHybridKernel implements Kernel {
 
       // Sync all threads within a block
       // TODO only one block will wait
+      // Sync all blocks
       RootbeerGpu.syncthreads();
 
       if (thread_idxx == 0) {
@@ -453,6 +453,7 @@ public class KMeansHybridKernel implements Kernel {
     // ************************************************************************
     // recalculateAssignmentsAndWrite *****************************************
     // ************************************************************************
+/*
     int startIndex = 0;
 
     if (thread_idxx == 0) {
@@ -516,6 +517,7 @@ public class KMeansHybridKernel implements Kernel {
         int lowestDistantCenter = getNearestCenter(centerCount, centerDim,
             sharedMemoryInputVectorsStartPos);
 
+        // TODO Performance issue
         // Write out own vector and corresponding lowestDistantCenter
         String vectorStr = "";
         for (int k = 0; k < centerDim; k++) {
@@ -530,6 +532,7 @@ public class KMeansHybridKernel implements Kernel {
           }
         }
 
+        // TODO Performance issue
         HamaPeer.write(new Integer(lowestDistantCenter), vectorStr);
       }
       // #################
@@ -539,7 +542,7 @@ public class KMeansHybridKernel implements Kernel {
       // Sync all threads within a block
       RootbeerGpu.syncthreads();
     }
-
+*/
   }
 
   private synchronized void assignCenters(int lowestDistantCenter,
@@ -625,6 +628,6 @@ public class KMeansHybridKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new KMeansHybridKernel(null, 0);
+    new KMeansHybridKernel(null, 0, 0);
   }
 }

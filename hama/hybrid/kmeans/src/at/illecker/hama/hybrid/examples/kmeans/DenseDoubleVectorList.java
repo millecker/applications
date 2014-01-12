@@ -23,21 +23,16 @@ public class DenseDoubleVectorList {
   private DenseDoubleVector m_values[];
   private int m_index;
 
-  public DenseDoubleVectorList() {
-    m_values = new DenseDoubleVector[8];
-    m_index = 0;
-  }
-
   public DenseDoubleVectorList(int length) {
     m_values = new DenseDoubleVector[length];
     m_index = 0;
   }
 
-  public int getLength() {
+  public int getSize() {
     return m_index;
   }
 
-  public void add(DenseDoubleVector v) {
+  public synchronized void add(DenseDoubleVector v) {
     m_values[m_index] = v;
     m_index++;
 

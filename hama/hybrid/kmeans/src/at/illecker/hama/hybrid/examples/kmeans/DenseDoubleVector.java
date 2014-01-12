@@ -20,27 +20,7 @@ public class DenseDoubleVector {
   private double m_vector[];
   private int m_index;
 
-  public DenseDoubleVector() {
-    m_vector = new double[128];
-    m_index = 0;
-  }
-
-  public DenseDoubleVector(int length) {
-    m_vector = new double[length];
-    m_index = 0;
-  }
-
-  public DenseDoubleVector(int length, double val) {
-    this(length);
-    for (int i = 0; i < length; i++) {
-      m_vector[i] = val;
-    }
-    m_index = length;
-  }
-
   public DenseDoubleVector(String values) {
-    // System.out.print("DenseDoubleVector started: ");
-    // System.out.println(values);
     String[] vals = values.split(",");
     if (vals != null) {
       // System.out.print("DenseDoubleVector length: ");
@@ -48,8 +28,6 @@ public class DenseDoubleVector {
       m_vector = new double[vals.length];
       for (int i = 0; i < vals.length; i++) {
         m_vector[i] = Double.parseDouble(vals[i]);
-        // System.out.print("DenseDoubleVector add: ");
-        // System.out.println(m_vector[i]);
       }
       m_index = vals.length;
     } else {
@@ -57,10 +35,6 @@ public class DenseDoubleVector {
       m_vector = new double[128];
       m_index = 0;
     }
-  }
-
-  public int getDimension() {
-    return m_vector.length;
   }
 
   public int getLength() {
@@ -77,8 +51,7 @@ public class DenseDoubleVector {
     }
 
     m_vector[index] = value;
-    // System.out.print("DenseDoubleVector add: ");
-    // System.out.println(m_vector[index]);
+
     if (index > m_index) {
       m_index = index + 1; // update end index
     }
@@ -94,14 +67,6 @@ public class DenseDoubleVector {
       dotProduct += m_vector[i] * otherVector.get(i);
     }
     return dotProduct;
-  }
-
-  public double[] toArray() {
-    double[] values = new double[m_index];
-    for (int i = 0; i < m_index; i++) {
-      values[i] = m_vector[i];
-    }
-    return values;
   }
 
   @Override

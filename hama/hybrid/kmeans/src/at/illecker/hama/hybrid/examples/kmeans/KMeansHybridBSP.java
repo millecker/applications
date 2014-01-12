@@ -63,7 +63,8 @@ public class KMeansHybridBSP
   private static final Log LOG = LogFactory.getLog(KMeansHybridBSP.class);
 
   public static final String CONF_DEBUG = "kmeans.is.debugging";
-  public static final String CONF_MAX_ITERATIONS_KEY = "kmeans.max.iterations";
+  public static final String CONF_MAX_ITERATIONS = "kmeans.max.iterations";
+  public static final String CONF_N = "kmeans.n";
   public static final String CONF_CENTER_IN_PATH = "kmeans.center.in.path";
   public static final String CONF_CENTER_OUT_PATH = "kmeans.center.out.path";
 
@@ -112,7 +113,7 @@ public class KMeansHybridBSP
 
     this.m_conf = peer.getConfiguration();
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
-    this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS_KEY, -1);
+    this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS, -1);
 
     // Init logging
     if (m_isDebuggingEnabled) {
@@ -400,7 +401,7 @@ public class KMeansHybridBSP
 
     this.m_conf = peer.getConfiguration();
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
-    this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS_KEY, -1);
+    this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS, -1);
 
     this.m_blockSize = Integer.parseInt(this.m_conf.get(CONF_BLOCKSIZE));
     this.m_gridSize = Integer.parseInt(this.m_conf.get(CONF_GRIDSIZE));
@@ -475,7 +476,7 @@ public class KMeansHybridBSP
     }
 
     KMeansHybridKernel kernel = new KMeansHybridKernel(m_centers_gpu,
-        m_maxIterations);
+        m_conf.getInt(CONF_MAX_ITERATIONS, 0), (int) m_conf.getLong(CONF_N, 0));
 
     rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
@@ -626,7 +627,9 @@ public class KMeansHybridBSP
     conf.set(CONF_BLOCKSIZE, "" + blockSize);
     conf.set(CONF_GRIDSIZE, "" + gridSize);
     // Set maxIterations for KMeans
-    conf.setInt(CONF_MAX_ITERATIONS_KEY, maxIteration);
+    conf.setInt(CONF_MAX_ITERATIONS, maxIteration);
+    // Set n for KMeans
+    conf.setLong(CONF_N, n);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("NumGpuBspTask: " + conf.getInt("bsp.peers.gpu.num", 0));
