@@ -41,7 +41,7 @@ public class TestRootbeerKernel implements Kernel {
   public void gpuMethod() {
     System.out.println(RootbeerGpu.getThreadId());
 
-    if (RootbeerGpu.getThreadId() == 0) {
+    if (RootbeerGpu.getThreadIdxx() == 0) {
       // is required for
       // error: identifier "java_lang_String__array_new" is undefined
       allPeerNames = new String[] { "test" };
