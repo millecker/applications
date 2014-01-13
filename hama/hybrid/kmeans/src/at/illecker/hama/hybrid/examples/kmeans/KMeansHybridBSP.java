@@ -424,7 +424,7 @@ public class KMeansHybridBSP
     Path centroids = new Path(m_conf.get(CONF_CENTER_IN_PATH));
     FileSystem fs = FileSystem.get(m_conf);
 
-    final ArrayList<double[]> centers = new ArrayList<double[]>();
+    final List<double[]> centers = new ArrayList<double[]>();
     SequenceFile.Reader reader = null;
     try {
       reader = new SequenceFile.Reader(fs, centroids, m_conf);
@@ -444,7 +444,7 @@ public class KMeansHybridBSP
     Preconditions.checkArgument(centers.size() > 0,
         "Centers file must contain at least a single center!");
 
-    // build double[][]
+    // build centers_gpu double[][]
     this.m_centers_gpu = new double[centers.size()][centers.get(0).length];
     for (int i = 0; i < centers.size(); i++) {
       double[] vector = centers.get(i);
@@ -468,15 +468,33 @@ public class KMeansHybridBSP
       Rootbeer rootbeer) throws IOException, SyncException,
       InterruptedException {
 
+    // fetch inputs
+    final List<double[]> inputs = new ArrayList<double[]>();
+    final PipesVectorWritable key = new PipesVectorWritable();
+    final NullWritable nullValue = NullWritable.get();
+    while (peer.readNext(key, nullValue)) {
+      inputs.add(key.getVector().toArray());
+    }
+    // build inputs double[][]
+    double[][] inputsArr = new double[inputs.size()][inputs.get(0).length];
+    for (int i = 0; i < inputs.size(); i++) {
+      double[] vector = inputs.get(i);
+      for (int j = 0; j < vector.length; j++) {
+        inputsArr[i][j] = vector[j];
+      }
+    }
+
     // Logging
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("KMeansHybrid.bspGpu executed on GPU!\n");
       m_logger.writeChars("KMeansHybrid.bspGpu blockSize: " + m_blockSize
           + " gridSize: " + m_gridSize + "\n");
+      m_logger.writeChars("KMeansHybrid.bspGpu inputSize: " + inputs.size()
+          + "\n");
     }
 
-    KMeansHybridKernel kernel = new KMeansHybridKernel(m_centers_gpu,
-        m_conf.getInt(CONF_MAX_ITERATIONS, 0), (int) m_conf.getLong(CONF_N, 0));
+    KMeansHybridKernel kernel = new KMeansHybridKernel(inputsArr,
+        m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0));
 
     rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
@@ -496,11 +514,9 @@ public class KMeansHybridBSP
                 PipesVectorWritable.class, NullWritable.class,
                 CompressionType.NONE);
 
-        final NullWritable value = NullWritable.get();
-
         for (int i = 0; i < kernel.m_centers.length; i++) {
           dataWriter.append(new PipesVectorWritable(new DenseDoubleVector(
-              kernel.m_centers[i])), value);
+              kernel.m_centers[i])), nullValue);
         }
         dataWriter.close();
       }
@@ -516,7 +532,7 @@ public class KMeansHybridBSP
       System.out.println("    deserial time: " + row.getDeserializationTime());
       System.out.println("    num blocks: " + row.getNumBlocks());
       System.out.println("    num threads: " + row.getNumThreads());
-      System.out.println("GPUTime: " + watch.elapsedTimeMillis() + "ms");
+      System.out.println("GPUTime: " + watch.elapsedTimeMillis() + " ms");
     }
 
     if (m_isDebuggingEnabled) {
