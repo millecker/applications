@@ -20,21 +20,9 @@ public class DenseDoubleVector {
   private double m_vector[];
   private int m_index;
 
-  public DenseDoubleVector(String values) {
-    String[] vals = values.split(",");
-    if (vals != null) {
-      // System.out.print("DenseDoubleVector length: ");
-      // System.out.println(vals.length);
-      m_vector = new double[vals.length];
-      for (int i = 0; i < vals.length; i++) {
-        m_vector[i] = Double.parseDouble(vals[i]);
-      }
-      m_index = vals.length;
-    } else {
-      System.out.println("DenseDoubleVector no values found!");
-      m_vector = new double[128];
-      m_index = 0;
-    }
+  public DenseDoubleVector(int len) {
+    m_vector = new double[len];
+    m_index = 0;
   }
 
   public int getLength() {
@@ -42,19 +30,8 @@ public class DenseDoubleVector {
   }
 
   public void set(int index, double value) {
-    if (index >= m_vector.length) {
-      double[] new_data = new double[m_index * 2];
-      for (int i = 0; i < m_index; i++) {
-        new_data[i] = m_vector[i];
-      }
-      m_vector = new_data;
-    }
-
-    m_vector[index] = value;
-
-    if (index > m_index) {
-      m_index = index + 1; // update end index
-    }
+    m_vector[m_index] = value;
+    m_index++;
   }
 
   public double get(int index) {
