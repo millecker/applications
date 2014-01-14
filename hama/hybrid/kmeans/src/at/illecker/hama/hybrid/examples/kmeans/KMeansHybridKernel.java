@@ -229,10 +229,12 @@ public class KMeansHybridKernel implements Kernel {
         // #################
         // Parallelism End
         // #################
-
+        
+        
         // Sync all threads within a block
         RootbeerGpu.syncthreads();
-
+        
+        
         // assignCenters
         // synchronized because it has to write into SharedMemory
         if (thread_idxx == 0) {
@@ -332,9 +334,11 @@ public class KMeansHybridKernel implements Kernel {
         }
       }
 
-      // Sync all threads within a block
-      RootbeerGpu.syncthreads();
 
+      // Sync all blocks Inter-Block Synchronization
+      RootbeerGpu.syncblocks(gridSize);
+
+      
       // Global Thread 0 of each blocks
       if (globalThreadId == 0) {
 
@@ -499,13 +503,13 @@ public class KMeansHybridKernel implements Kernel {
         // m_converged and m_superstepCount are in global GPU memory
         m_converged = convergedCounter;
         m_superstepCount = HamaPeer.getSuperstepCount();
-        RootbeerGpu.threadfenceSystem();
+        // RootbeerGpu.threadfenceSystem();
       }
 
-      // TODO only one block will wait
-      // Sync all blocks Interblock-Synchronization
-      // Sync all threads within a block
-      RootbeerGpu.syncthreads();
+      // Sync all blocks Inter-Block Synchronization
+      // gridSize * 2 because second syncblocks invocation ant mutex
+      // was incremented to gridSize already
+      RootbeerGpu.syncblocks(gridSize * 2);
 
       // if (thread_idxx == 0) {
       // System.out.print("m_converged: ");
