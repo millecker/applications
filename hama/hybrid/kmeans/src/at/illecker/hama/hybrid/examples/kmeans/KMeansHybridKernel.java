@@ -49,6 +49,11 @@ public class KMeansHybridKernel implements Kernel {
     int centerCount = m_centers.length;
     int centerDim = m_centers[0].length;
 
+    int inputCount = m_inputs.length;
+    int blockInputSize = divup(inputCount, gridSize);
+    // System.out.print("blockInputSize: ");
+    // System.out.println(blockInputSize);
+    
     // SharedMemory per block
     int sharedMemoryCenterSize = centerCount * centerDim * 8;
     int sharedMemoryNewCentersStartPos = sharedMemoryCenterSize;
@@ -58,8 +63,9 @@ public class KMeansHybridKernel implements Kernel {
         + (centerCount * 4);
     int sharedMemoryLowestDistantCenter = sharedMemoryInputVectorsStartPos
         + (blockSize * centerDim * 8);
-    int sharedMemoryIndex = sharedMemoryLowestDistantCenter + (blockSize * 4);
-    int sharedMemoryInputHasMoreBoolean = sharedMemoryIndex + 4;
+    int sharedMemoryInputIndex = sharedMemoryLowestDistantCenter + (blockSize * 4);
+    int sharedMemoryInputStartIndex = sharedMemoryInputIndex + 4;
+    int sharedMemoryInputHasMoreBoolean = sharedMemoryInputStartIndex + 4;
     // int sharedMemoryEndPos = sharedMemoryInputHasMoreBoolean + 1; // boolean
     // need only 1 byte
 
@@ -102,6 +108,9 @@ public class KMeansHybridKernel implements Kernel {
 
         // boolean inputHasMore = true;
         RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean, true);
+        
+        // int startIndex = 0; // used by thread 0 of each block
+        RootbeerGpu.setSharedInteger(sharedMemoryInputStartIndex, 0);
       }
 
       // Sync all threads within a block
@@ -110,8 +119,6 @@ public class KMeansHybridKernel implements Kernel {
       // **********************************************************************
       // assignCenters ********************************************************
       // **********************************************************************
-      // boolean inputHasMore = true;
-      int startIndex = 0; // used by thread 0 of each block
 
       // System.out.println(thread_idxx);
 
@@ -127,40 +134,37 @@ public class KMeansHybridKernel implements Kernel {
         if (thread_idxx == 0) {
 
           // int i = 0; // amount of threads in block
-          RootbeerGpu.setSharedInteger(sharedMemoryIndex, 0);
+          RootbeerGpu.setSharedInteger(sharedMemoryInputIndex, 0);
 
-          // TODO other blocks will have other startIndex?
-          int j = startIndex;
-          int blockInputSize = m_inputs.length / gridSize;
-          // System.out.print("blockInputSize: ");
-          // System.out.println(blockInputSize);
+          int j = RootbeerGpu.getSharedInteger(sharedMemoryInputStartIndex);
 
-          while (RootbeerGpu.getSharedInteger(sharedMemoryIndex) < blockSize) {
+          while (RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) < blockSize) {
             // System.out.print("get from cache j: ");
-            // System.out.println((block_idxx * blockSize) + j);
-
+            // System.out.println((block_idxx * blockInputSize) + j);
+            
             // Update inputs on SharedMemory
             for (int k = 0; k < centerDim; k++) {
               // Init inputs[][]
               int inputIndex = sharedMemoryInputVectorsStartPos
-                  + ((RootbeerGpu.getSharedInteger(sharedMemoryIndex) * centerDim) + k)
+                  + ((RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) * centerDim) + k)
                   * 8;
               RootbeerGpu.setSharedDouble(inputIndex,
-                  m_inputs[(block_idxx * blockSize) + j][k]);
+                  m_inputs[(block_idxx * blockInputSize) + j][k]);
             }
 
             // i++;
-            RootbeerGpu.setSharedInteger(sharedMemoryIndex,
-                RootbeerGpu.getSharedInteger(sharedMemoryIndex) + 1);
+            RootbeerGpu.setSharedInteger(sharedMemoryInputIndex,
+                RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) + 1);
+            
             j++;
-            if (j == blockInputSize) {
+            if ((j == blockInputSize) || ((block_idxx * blockInputSize) + j == inputCount)) {
               // update inputHasMore
               RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean,
                   false);
               break;
             }
           }
-          startIndex = j;
+          RootbeerGpu.setSharedInteger(sharedMemoryInputStartIndex, j);
 
           // System.out.println("SharedMemory init finished.");
         }
@@ -175,7 +179,7 @@ public class KMeansHybridKernel implements Kernel {
         // #################
         // Parallelism Start
         // #################
-        if (thread_idxx < RootbeerGpu.getSharedInteger(sharedMemoryIndex)) {
+        if (thread_idxx < RootbeerGpu.getSharedInteger(sharedMemoryInputIndex)) {
 
           // System.out.println(thread_idxx);
 
@@ -234,7 +238,7 @@ public class KMeansHybridKernel implements Kernel {
         if (thread_idxx == 0) {
 
           // for each thread in block assignCenters
-          for (int i = 0; i < RootbeerGpu.getSharedInteger(sharedMemoryIndex); i++) {
+          for (int i = 0; i < RootbeerGpu.getSharedInteger(sharedMemoryInputIndex); i++) {
 
             int lowestDistantCenterIdxx = sharedMemoryLowestDistantCenter
                 + (i * 4);
@@ -319,7 +323,7 @@ public class KMeansHybridKernel implements Kernel {
               }
             }
 
-            System.out.println(message);
+            //System.out.println(message);
 
             for (String peerName : allPeerNames) {
               HamaPeer.send(peerName, message);
@@ -495,6 +499,7 @@ public class KMeansHybridKernel implements Kernel {
         // m_converged and m_superstepCount are in global GPU memory
         m_converged = convergedCounter;
         m_superstepCount = HamaPeer.getSuperstepCount();
+        RootbeerGpu.threadfenceSystem();
       }
 
       // TODO only one block will wait
@@ -606,6 +611,15 @@ public class KMeansHybridKernel implements Kernel {
 */
 
   }
+  
+  private int divup(int x, int y) {
+    if (x % y != 0) {
+      return ((x + y - 1) / y); // round up
+    } else {
+      return x / y;
+    }
+  }
+  
 
   public static void main(String[] args) {
     // Dummy constructor invocation
