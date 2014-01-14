@@ -336,7 +336,7 @@ public class KMeansHybridKernel implements Kernel {
 
 
       // Sync all blocks Inter-Block Synchronization
-      RootbeerGpu.syncblocks(gridSize);
+      RootbeerGpu.syncblocks();
 
       
       // Global Thread 0 of each blocks
@@ -507,9 +507,7 @@ public class KMeansHybridKernel implements Kernel {
       }
 
       // Sync all blocks Inter-Block Synchronization
-      // gridSize * 2 because second syncblocks invocation ant mutex
-      // was incremented to gridSize already
-      RootbeerGpu.syncblocks(gridSize * 2);
+      RootbeerGpu.syncblocks();
 
       // if (thread_idxx == 0) {
       // System.out.print("m_converged: ");
