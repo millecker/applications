@@ -23,17 +23,14 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class TestRootbeerKernel implements Kernel {
 
-  public int numPeers = 0;
-  public String peerName;
-  public String examplePath;
-  public int n;
+  private String examplePath;
+  private String[] tmp;
+
   public int[] input;
-  // public int[] summation;
-  public String[] allPeerNames;
+  public String peerName;
 
   public TestRootbeerKernel(String examplePath, int n) {
     this.examplePath = examplePath;
-    this.n = n;
     this.input = new int[n];
     // this.summation = new int[n];
   }
@@ -44,7 +41,7 @@ public class TestRootbeerKernel implements Kernel {
     if (RootbeerGpu.getThreadIdxx() == 0) {
       // is required for
       // error: identifier "java_lang_String__array_new" is undefined
-      allPeerNames = new String[] { "test" };
+      tmp = new String[] { "test" };
 
       System.out.print("BlockSize: ");
       System.out.println(RootbeerGpu.getBlockDimx());
@@ -78,26 +75,6 @@ public class TestRootbeerKernel implements Kernel {
     // input[key] = value; //
     // System.out.println(value);
     // }
-
-    /*
-     * // test sequenceFileReader int seqFileId = HamaPeer
-     * .sequenceFileOpen(examplePath, 'r', "org.apache.hadoop.io.IntWritable",
-     * "org.apache.hadoop.io.NullWritable"); int j = 0; while
-     * (HamaPeer.sequenceFileReadNext(seqFileId, keyValuePair)) { key =
-     * (Integer) keyValuePair.getKey(); if (j < i) { summation[j] += key; }
-     * System.out.print("sequenceFileReader: key: '"); System.out.print(key);
-     * System.out.println("'"); j++; } HamaPeer.sequenceFileClose(seqFileId);
-     */
-
-    /*
-     * // test output j = 0; while (j < i) { System.out.print("output: key: '");
-     * System.out.print(summation[j]); System.out.println("'");
-     * HamaPeer.write(summation[j], null); j++; }
-     */
-
-    // test getAllPeerNames
-    // allPeerNames = HamaPeer.getAllPeerNames();
-
   }
 
   public static void main(String[] args) {

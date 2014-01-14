@@ -62,9 +62,10 @@ public class TestRootbeerHybridBSP
   public static final String CONF_EXAMPLE_PATH = "testrootbeer.example.path";
   // GridSize = max 14 Multiprocessors (192 CUDA Cores/MP = 2688 CUDA Cores)
   // BlockSize = max 1024
-  // 40 register -> max blockSize 768
-  // 48 register -> max blockSize 640
-  public static final int CONF_BLOCK_SIZE = 768;
+  // 40 registers -> max blockSize 768
+  // 45 registers -> max blockSize 640
+  // 48 registers -> max blockSize 640
+  public static final int CONF_BLOCK_SIZE = 1024;
   public static final int CONF_GRID_SIZE = 14;
 
   @Override
@@ -176,14 +177,8 @@ public class TestRootbeerHybridBSP
         + watch.elapsedTimeMillis() + " ms\n");
     outStream.writeChars("TestRootbeerHybridBSP,peerName: '" + kernel.peerName
         + "'\n");
-    outStream.writeChars("TestRootbeerHybridBSP,numPeers: '" + kernel.numPeers
-        + "'\n");
     // outStream.writeChars("TestRootbeerHybridBSP,input: '"
     // + Arrays.toString(kernel.input) + "'\n");
-    // outStream.writeChars("TestRootbeerHybridBSP,summation: '"
-    // + Arrays.toString(kernel.summation) + "'\n");
-    outStream.writeChars("TestRootbeerHybridBSP,getAllPeerNames: '"
-        + Arrays.toString(kernel.allPeerNames) + "'\n");
 
     // Verify input
     peer.reopenInput();
