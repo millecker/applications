@@ -1,0 +1,20 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<property name="rootbeer.args" value="-maxrregcount 32 -64bit" />
+	<property name="output.file" value="TestGlobalGpuSync" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="at/illecker/hama/hybrid/examples/testglobalgpusync" />
+	<property name="rootbeer.classes" value="TestGlobalGpuSyncKernel.class" />
+	<property name="kernel.class" value="at.illecker.hama.hybrid.examples.testglobalgpusync.TestGlobalGpuSyncKernel" />
+	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.testglobalgpusync.TestGlobalGpuSyncHybridBSP" />
+	<property name="cpu.class" value="at.illecker.hama.hybrid.examples.testglobalgpusync.TestGlobalGpuSyncHybridBSP" />
+	<property name="bench.class" value="" />
+	<property name="program" value="hama" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="numBspTask numGpuBspTask blockSize gridSize debug" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>

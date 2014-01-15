@@ -6,6 +6,7 @@
 	<classpathentry kind="src" path="matrixmultiplication/src"/>
 	<classpathentry kind="src" path="kmeans/src"/>
 	<classpathentry kind="src" path="testrootbeer/src"/>
+	<classpathentry kind="src" path="testglobalgpusync/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-configuration-1.7.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-io-2.4.jar"/>
