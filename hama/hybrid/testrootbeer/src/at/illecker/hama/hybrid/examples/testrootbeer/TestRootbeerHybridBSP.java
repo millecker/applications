@@ -69,11 +69,6 @@ public class TestRootbeerHybridBSP
   public static final int CONF_GRID_SIZE = 14;
 
   @Override
-  public Class<NullWritable> getMessageClass() {
-    return NullWritable.class;
-  }
-
-  @Override
   public void bsp(
       BSPPeer<IntWritable, IntWritable, NullWritable, IntWritable, NullWritable> peer)
       throws IOException, SyncException, InterruptedException {
@@ -219,6 +214,8 @@ public class TestRootbeerHybridBSP
     job.setOutputKeyClass(NullWritable.class);
     job.setOutputValueClass(IntWritable.class);
     job.setOutputPath(outPath);
+
+    job.setMessageClass(NullWritable.class);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
 

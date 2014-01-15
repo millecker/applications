@@ -220,11 +220,6 @@ public class SummationBSP extends
     return sum;
   }
 
-  @Override
-  public Class<DoubleWritable> getMessageClass() {
-    return DoubleWritable.class;
-  }
-
   static BSPJob getSummationJob(HamaConfiguration conf) throws IOException {
     BSPJob bsp = new BSPJob(conf);
     bsp.setInputFormat(KeyValueTextInputFormat.class);
@@ -233,7 +228,7 @@ public class SummationBSP extends
     bsp.setOutputFormat(SequenceFileOutputFormat.class);
     bsp.setOutputKeyClass(Text.class);
     bsp.setOutputValueClass(DoubleWritable.class);
-    bsp.set("bsp.message.class", DoubleWritable.class.getName());
+    bsp.setMessageClass(DoubleWritable.class);
     return bsp;
   }
 

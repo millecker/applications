@@ -100,11 +100,6 @@ public class KMeansHybridBSP
   private int m_gridSize;
   private int m_blockSize;
 
-  @Override
-  public Class<CenterMessage> getMessageClass() {
-    return CenterMessage.class;
-  }
-
   /********************************* CPU *********************************/
   @Override
   public void setup(
@@ -567,6 +562,8 @@ public class KMeansHybridBSP
     job.setOutputKeyClass(IntWritable.class);
     job.setOutputValueClass(PipesVectorWritable.class);
     job.setOutputPath(outPath);
+
+    job.setMessageClass(CenterMessage.class);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
 

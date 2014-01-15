@@ -67,11 +67,6 @@ public class TestGlobalGpuSyncHybridBSP
   private String m_masterTask;
 
   @Override
-  public Class<IntWritable> getMessageClass() {
-    return IntWritable.class;
-  }
-
-  @Override
   public void setup(
       BSPPeer<NullWritable, NullWritable, NullWritable, NullWritable, IntWritable> peer)
       throws IOException {
@@ -183,6 +178,8 @@ public class TestGlobalGpuSyncHybridBSP
 
     job.setInputFormat(NullInputFormat.class);
     job.setOutputFormat(NullOutputFormat.class);
+
+    job.setMessageClass(IntWritable.class);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
 

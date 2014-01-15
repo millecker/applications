@@ -62,11 +62,6 @@ public class HelloHybridBSP
   public static final int CONF_N = 10;
 
   @Override
-  public Class<NullWritable> getMessageClass() {
-    return NullWritable.class;
-  }
-
-  @Override
   public void bsp(
       BSPPeer<IntWritable, NullWritable, IntWritable, NullWritable, NullWritable> peer)
       throws IOException, SyncException, InterruptedException {
@@ -247,6 +242,7 @@ public class HelloHybridBSP
     job.setOutputValueClass(NullWritable.class);
     job.setOutputPath(outPath);
 
+    job.setMessageClass(NullWritable.class);
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     return job;

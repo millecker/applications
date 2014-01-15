@@ -93,11 +93,6 @@ public class MatrixMultiplicationHybridBSP
   // used by CPU
   private List<KeyValuePair<Integer, DoubleVector>> m_bColumns = new ArrayList<KeyValuePair<Integer, DoubleVector>>();
 
-  @Override
-  public Class<MatrixRowMessage> getMessageClass() {
-    return MatrixRowMessage.class;
-  }
-
   /********************************* CPU *********************************/
   @Override
   public void setup(
@@ -341,6 +336,8 @@ public class MatrixMultiplicationHybridBSP
     job.setOutputKeyClass(IntWritable.class);
     job.setOutputValueClass(PipesVectorWritable.class);
     job.setOutputPath(outPath);
+
+    job.setMessageClass(MatrixRowMessage.class);
 
     job.set(CONF_MATRIX_MULT_B_PATH, bPath.toString());
     job.set("bsp.child.java.opts", "-Xmx4G");

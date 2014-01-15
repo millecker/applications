@@ -75,11 +75,6 @@ public class PiEstimatorHybridBSP extends
   private int m_gridSize;
   private int m_blockSize;
 
-  @Override
-  public Class<LongWritable> getMessageClass() {
-    return LongWritable.class;
-  }
-
   /********************************* CPU *********************************/
   @Override
   public void setup(
@@ -295,6 +290,8 @@ public class PiEstimatorHybridBSP extends
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(DoubleWritable.class);
     FileOutputFormat.setOutputPath(job, outPath);
+
+    job.setMessageClass(LongWritable.class);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
 
