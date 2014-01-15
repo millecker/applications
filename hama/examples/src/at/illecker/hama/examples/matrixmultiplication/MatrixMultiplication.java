@@ -19,6 +19,8 @@ import org.apache.hama.bsp.Partitioner;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
+import org.apache.hama.bsp.message.queue.MessageTransferProtocol;
+import org.apache.hama.bsp.message.queue.SortedMemoryQueueTransfer;
 import org.apache.hama.bsp.sync.SyncException;
 
 import de.jungblut.bsp.MatrixMultiplicationBSP;
@@ -154,8 +156,8 @@ public class MatrixMultiplication
     Path outPath = new Path("output/hama/examples/matrixmult");
 
     // Order message by row index
-    conf.set(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol");
+    conf.setClass(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
+        SortedMemoryQueueTransfer.class, MessageTransferProtocol.class);
 
     // conf.set("bsp.local.tasks.maximum", "10");
 

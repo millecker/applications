@@ -347,7 +347,7 @@ public class MatrixMultiplicationHybridBSP
 
     // Order message by row index
     job.set(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
-        "org.apache.hama.bsp.message.queue.SortedMessageTransferProtocol");
+        "org.apache.hama.bsp.message.queue.SortedMemoryQueueTransfer");
 
     LOG.info("DEBUG: NumBspTask: " + job.getNumBspTask()); // "bsp.peers.num"
     LOG.info("DEBUG: bsp.job.split.file: " + job.get("bsp.job.split.file"));
