@@ -22,7 +22,7 @@ import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class TestGlobalGpuSyncKernel implements Kernel {
 
-  private String[] m_tmp = null;
+  private String[] tmp = null;
   private String m_peerName = null;
   private String m_masterTask = null; // input
 
@@ -31,31 +31,38 @@ public class TestGlobalGpuSyncKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    // is required for
-    // error: identifier "java_lang_String__array_new" is undefined
-    m_tmp = new String[] { "test" };
+    // Fix for error: identifier
+    // "java_lang_Integer_initab850b60f96d11de8a390800200c9a660_5_" is undefined
+    new Integer(0);
 
-    System.out.println(RootbeerGpu.getThreadId());
+    // Fix for error: identifier "java_lang_String__array_new" is undefined
+    // and error: identifier "java_lang_String__array_set" is undefined
+    tmp = new String[] { "test" };
+
+    int threadId = RootbeerGpu.getThreadId();
+    // System.out.println(threadId);
 
     // Each Kernel sends a message including its global threadId
-    HamaPeer.send(m_masterTask, RootbeerGpu.getThreadId());
+    HamaPeer.send(m_masterTask, threadId);
 
     // Sync all blocks Inter-Block Synchronization
     RootbeerGpu.syncblocks(1);
 
     if (RootbeerGpu.getThreadId() == 0) {
 
-      // Sync
+      // Sync with other Peers, this call blocks
       HamaPeer.sync();
 
       m_peerName = HamaPeer.getPeerName();
       if (m_peerName.equals(m_masterTask)) {
-        System.out.println("Global Thread0 fetch message.");
+        System.out.println("Global Thread0 fetch messages:");
 
         int msgCount = HamaPeer.getNumCurrentMessages();
+        System.out.println(msgCount);
+
         for (int i = 0; i < msgCount; i++) {
-          int threadId = HamaPeer.getCurrentIntMessage();
-          System.out.println(threadId);
+          int message = HamaPeer.getCurrentIntMessage();
+          System.out.println(message);
         }
       }
     }
