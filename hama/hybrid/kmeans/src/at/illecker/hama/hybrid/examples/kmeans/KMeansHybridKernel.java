@@ -170,6 +170,11 @@ public class KMeansHybridKernel implements Kernel {
               }
             }
             RootbeerGpu.setSharedInteger(sharedMemoryInputStartIndex, j);
+
+          } else { // block has no inputs
+            // System.out.println(block_idxx);
+            RootbeerGpu
+                .setSharedBoolean(sharedMemoryInputHasMoreBoolean, false);
           }
 
           // System.out.println("SharedMemory init finished.");
@@ -241,7 +246,8 @@ public class KMeansHybridKernel implements Kernel {
 
         // assignCenters
         // synchronized because it has to write into SharedMemory
-        if (thread_idxx == 0) {
+        if ((thread_idxx == 0)
+            && (RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) > 0)) {
 
           // for each thread in block assignCenters
           for (int i = 0; i < RootbeerGpu
@@ -294,7 +300,9 @@ public class KMeansHybridKernel implements Kernel {
       // **********************************************************************
       // Thread 0 of each block
       // Sends messages about the local updates to each other peer
-      if (thread_idxx == 0) {
+      if ((thread_idxx == 0)
+          && (RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) > 0)) {
+
         String[] allPeerNames = HamaPeer.getAllPeerNames();
 
         for (int i = 0; i < centerCount; i++) {
@@ -483,7 +491,7 @@ public class KMeansHybridKernel implements Kernel {
             }
 
             // System.out.print("calculateError: ");
-            // System.out.println(calculateError);
+            System.out.println(calculateError);
 
             // Update center if calculateError > 0
             if (calculateError > 0.0d) {
@@ -502,22 +510,16 @@ public class KMeansHybridKernel implements Kernel {
           }
         }
 
-        // TODO flush global memory
         // m_converged and m_superstepCount are in global GPU memory
         m_converged = convergedCounter;
         m_superstepCount = HamaPeer.getSuperstepCount();
+        System.out.println(m_converged);
         RootbeerGpu.threadfenceSystem();
       }
 
       // Sync all blocks Inter-Block Synchronization
-      // RootbeerGpu.syncblocks(2);
+      RootbeerGpu.syncblocks(2);
 
-      // if (thread_idxx == 0) {
-      // System.out.print("m_converged: ");
-      // System.out.println(m_converged);
-      // }
-
-      // TODO remove break
       break;
     }
 
@@ -614,6 +616,7 @@ public class KMeansHybridKernel implements Kernel {
       RootbeerGpu.syncthreads();
     }
 */  
+
   }
 
   private int divup(int x, int y) {
