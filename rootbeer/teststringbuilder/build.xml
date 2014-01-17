@@ -1,0 +1,22 @@
+<project>
+	<property name="root" value="../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<!--
+	<property name="rootbeer.args" value="-maxrregcount 32 -shared-mem-size 8204 -64bit" />
+	-->
+	<property name="output.file" value="TestStringBuilder" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="at/illecker/rootbeer/examples/teststringbuilder" />
+	<property name="rootbeer.classes" value="TestStringBuilderKernel.class" />
+	<property name="kernel.class" value="at.illecker.rootbeer.examples.teststringbuilder.TestStringBuilderKernel" />
+	<property name="gpu.class" value="" />
+	<property name="cpu.class" value="" />
+	<property name="bench.class" value="" />
+	<property name="program" value="java" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="blockSize gridSize" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
