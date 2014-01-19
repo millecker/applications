@@ -32,7 +32,6 @@ public class TestStringBuilderKernel implements Kernel {
 
   @Override
   public void gpuMethod() {
-
     int sharedMemoryIndex = 0;
 
     // Update sharedMemory
