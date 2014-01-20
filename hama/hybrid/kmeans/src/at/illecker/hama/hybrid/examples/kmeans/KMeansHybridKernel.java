@@ -173,7 +173,7 @@ public class KMeansHybridKernel implements Kernel {
               j++;
               if ((j == blockInputSize)
                   || ((block_idxx * blockInputSize) + j == inputCount)) {
-                // update inputHasMore
+                // Set inputHasMore to false
                 RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean,
                     false);
                 break;
@@ -183,6 +183,7 @@ public class KMeansHybridKernel implements Kernel {
 
           } else { // block has no inputs
             // System.out.println(block_idxx);
+            // Set inputHasMore to false
             RootbeerGpu
                 .setSharedBoolean(sharedMemoryInputHasMoreBoolean, false);
           }
@@ -394,7 +395,7 @@ public class KMeansHybridKernel implements Kernel {
 
           // centerIndex:incrementCounter:VectorValue1,VectorValue2,VectorValue3
           String message = HamaPeer.getCurrentStringMessage();
-          // System.out.println(message);
+          System.out.println(message);
 
           // parse message
           String[] values = message.split(":", 3);
