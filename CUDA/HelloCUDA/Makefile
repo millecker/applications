@@ -1,7 +1,8 @@
 NVCC = nvcc
 
 CUDA_INSTALL_PATH=/usr/local/cuda
-NVCCFLAGS = -g -O2 -gencode arch=compute_12,code=sm_12 -gencode arch=compute_20,code=sm_20 \
+NVCCFLAGS = -g -O2 -m64 \
+ -gencode arch=compute_12,code=sm_12 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=\"sm_35,compute_35\" \
  -I$(CUDA_INSTALL_PATH)/include
 #CPPFLAGS = -m64 -I$(HADOOP_HOME)/../../c++/Linux-amd64-64/include
 #CPPFLAGS = -m64 -I$(HADOOP_HOME)/../../src/c++/install/include
