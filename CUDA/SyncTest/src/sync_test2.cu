@@ -16,23 +16,53 @@
  */
 #include <stdio.h>
 
-__global__ void sync_test(void)
-{
-  printf("a\n");
+__constant__ unsigned int shift1[4] = {6, 2, 13, 3};
+__constant__ unsigned int shift2[4] = {13, 27, 21, 12};
+__constant__ unsigned int shift3[4] = {18, 2, 7, 13};
+__constant__ unsigned int offset[4] = {4294967294, 4294967288, 4294967280, 4294967168};
+__shared__ unsigned int randStates[32];
 
-  if(threadIdx.x == 0){
-    __syncthreads();
-    __syncthreads();
-  } else {
-    __syncthreads();
+__device__ unsigned int TausStep(unsigned int &z, int S1, int S2, int S3, unsigned int M) {
+  unsigned int b = (((z << S1) ^ z) >> S2);
+  return z = (((z &M) << S3) ^ b);
+}
+
+__device__ unsigned int randInt() {
+  TausStep(randStates[threadIdx.x&31], shift1[threadIdx.x&3], shift2[threadIdx.x&3],shift3[threadIdx.x&3],offset[threadIdx.x&3]);
+  return (randStates[(threadIdx.x)&31]^randStates[(threadIdx.x+1)&31]^randStates[(threadIdx.x+2)&31]^randStates[(threadIdx.x+3)&31]);
+}
+
+
+__global__ void sync_test(void) {
+  __shared__ int shared_int;
+  int count = 0;
+  long long timeout = 0;
+
+  if (threadIdx.x == 0) {
+    shared_int = 0;
   }
+  __syncthreads();
 
-  printf("b\n");
-
-  if(threadIdx.x != 0){
-    printf("c\n");
-    __syncthreads();
+  if (threadIdx.x == 0) {
+    // occupy thread0
+    while (count < 100) {
+      for (int i=0; i<200; i++){
+        randInt();
+      }
+      if (++timeout > 1000000) {
+        break;
+      }
+      count++;
+      if (count > 50) {
+        count = 0;
+      }
+    }
+    
+    shared_int = 1;
   }
+  __syncthreads();
+
+  printf("%d\n", shared_int);
 }
 
 int main(void)
@@ -43,29 +73,9 @@ int main(void)
 }
 
 /* prints:
-a
-a
-a
-a
-b
-b
-b
-b
-c
-c
-c
+1
+1
+1
+1
 */
 
-/* desired: 
-a
-a
-a
-a
-b
-b
-b
-c
-c
-c
-b
-*/
