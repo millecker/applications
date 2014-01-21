@@ -21,8 +21,8 @@ import org.apache.hama.bsp.Partitioner;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.message.MessageManager;
-import org.apache.hama.bsp.message.queue.MessageTransferProtocol;
-import org.apache.hama.bsp.message.queue.SortedMemoryQueueTransfer;
+import org.apache.hama.bsp.message.queue.MessageQueue;
+import org.apache.hama.bsp.message.queue.SortedMemoryQueue;
 import org.apache.hama.bsp.sync.SyncException;
 
 import de.jungblut.math.dense.DenseDoubleMatrix;
@@ -124,8 +124,8 @@ public final class MatrixMultiplicationBSP
       InterruptedException, ClassNotFoundException {
 
     HamaConfiguration conf = new HamaConfiguration();
-    conf.setClass(MessageManager.TRANSFER_QUEUE_TYPE_CLASS,
-        SortedMemoryQueueTransfer.class, MessageTransferProtocol.class);
+    conf.setClass(MessageManager.RECEIVE_QUEUE_TYPE_CLASS,
+        SortedMemoryQueue.class, MessageQueue.class);
 
     conf.set("bsp.local.tasks.maximum", "8");
     // LOG.info("DEBUG: fs.default.name: " + conf.get("fs.default.name"));
