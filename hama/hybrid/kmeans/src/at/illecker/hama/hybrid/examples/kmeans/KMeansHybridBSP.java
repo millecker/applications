@@ -82,6 +82,11 @@ public class KMeansHybridBSP
   // blockSize = amount of threads
   public static final int BLOCK_SIZE = 1024;
 
+  public long m_setupTimeCpu = 0;
+  public long m_setupTimeGpu = 0;
+  public long m_bspTimeCpu = 0;
+  public long m_bspTimeGpu = 0;
+
   private boolean m_isDebuggingEnabled;
   private FSDataOutputStream m_logger;
 
@@ -105,6 +110,8 @@ public class KMeansHybridBSP
   public void setup(
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException {
+
+    long startTime = System.currentTimeMillis();
 
     this.m_conf = peer.getConfiguration();
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
@@ -150,12 +157,16 @@ public class KMeansHybridBSP
         "Centers file must contain at least a single center!");
 
     this.m_centers_cpu = centers.toArray(new DoubleVector[centers.size()]);
+
+    this.m_setupTimeCpu = System.currentTimeMillis() - startTime;
   }
 
   @Override
   public void bsp(
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException, SyncException, InterruptedException {
+
+    long startTime = System.currentTimeMillis();
 
     long converged;
     while (true) {
@@ -180,11 +191,22 @@ public class KMeansHybridBSP
         break;
       }
     }
-    LOG.info("Finished! Writing the assignments...");
 
     recalculateAssignmentsAndWrite(peer);
 
-    LOG.info("Done.");
+    this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
+
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("KMeansHybrid,setupTimeCpu=" + this.m_setupTimeCpu
+          + " ms\n");
+      m_logger.writeChars("KMeansHybrid,setupTimeCpu="
+          + (this.m_setupTimeCpu / 1000.0) + " seconds\n");
+      m_logger.writeChars("KMeansHybrid,bspTimeCpu=" + this.m_bspTimeCpu
+          + " ms\n");
+      m_logger.writeChars("KMeansHybrid,bspTimeCpu="
+          + (this.m_bspTimeCpu / 1000.0) + " seconds\n");
+      m_logger.close();
+    }
   }
 
   private void assignCenters(
@@ -220,12 +242,12 @@ public class KMeansHybridBSP
           peer.send(peerName, new CenterMessage(i, summationCount[i],
               newCenterArray[i]));
           // Logging
-          if (m_isDebuggingEnabled) {
-            m_logger.writeChars("assignCenters,sent,peerName=" + peerName
-                + ",CenterMessage=" + i + "," + summationCount[i] + ","
-                + Arrays.toString(newCenterArray[i].toArray()) + "\n");
-            m_logger.flush();
-          }
+          // if (m_isDebuggingEnabled) {
+          // m_logger.writeChars("assignCenters,sent,peerName=" + peerName
+          // + ",CenterMessage=" + i + "," + summationCount[i] + ","
+          // + Arrays.toString(newCenterArray[i].toArray()) + "\n");
+          // m_logger.flush();
+          // }
         }
       }
     }
@@ -257,11 +279,12 @@ public class KMeansHybridBSP
           m_centers_cpu[i], key);
 
       // Logging
-      if (m_isDebuggingEnabled) {
-        m_logger.writeChars("getNearestCenter,estimatedDistance: "
-            + estimatedDistance + "\n");
-        m_logger.flush();
-      }
+      // if (m_isDebuggingEnabled) {
+      // m_logger.writeChars("getNearestCenter,estimatedDistance: "
+      // + estimatedDistance + "\n");
+      // m_logger.flush();
+      // }
+
       // check if we have a can assign a new center, because we
       // got a lower distance
       if (estimatedDistance < lowestDistance) {
@@ -270,11 +293,11 @@ public class KMeansHybridBSP
       }
     }
     // Logging
-    if (m_isDebuggingEnabled) {
-      m_logger.writeChars("getNearestCenter,lowestDistantCenter: "
-          + lowestDistantCenter + "\n");
-      m_logger.flush();
-    }
+    // if (m_isDebuggingEnabled) {
+    // m_logger.writeChars("getNearestCenter,lowestDistantCenter: "
+    // + lowestDistantCenter + "\n");
+    // m_logger.flush();
+    // }
     return lowestDistantCenter;
   }
 
@@ -330,16 +353,16 @@ public class KMeansHybridBSP
             .sum();
 
         // Logging
-        if (m_isDebuggingEnabled) {
-          m_logger.writeChars("updateCenters,i: " + i + "\n");
-          m_logger.writeChars("updateCenters,oldCenter: "
-              + Arrays.toString(oldCenter.toArray()) + "\n");
-          m_logger.writeChars("updateCenters,msgCenters[i]: "
-              + Arrays.toString(msgCenters[i].toArray()) + "\n");
-          m_logger.writeChars("updateCenters,calculateError: " + calculateError
-              + "\n");
-          m_logger.flush();
-        }
+        // if (m_isDebuggingEnabled) {
+        // m_logger.writeChars("updateCenters,i: " + i + "\n");
+        // m_logger.writeChars("updateCenters,oldCenter: "
+        // + Arrays.toString(oldCenter.toArray()) + "\n");
+        // m_logger.writeChars("updateCenters,msgCenters[i]: "
+        // + Arrays.toString(msgCenters[i].toArray()) + "\n");
+        // m_logger.writeChars("updateCenters,calculateError: " + calculateError
+        // + "\n");
+        // m_logger.flush();
+        // }
 
         if (calculateError > 0.0d) {
           m_centers_cpu[i] = msgCenters[i];
@@ -393,6 +416,8 @@ public class KMeansHybridBSP
   public void setupGpu(
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException, SyncException, InterruptedException {
+
+    long startTime = System.currentTimeMillis();
 
     this.m_conf = peer.getConfiguration();
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
@@ -448,13 +473,7 @@ public class KMeansHybridBSP
       }
     }
 
-    // Logging
-    if (m_isDebuggingEnabled) {
-      for (int i = 0; i < m_centers_gpu.length; i++) {
-        m_logger.writeChars("m_centers_gpu[" + i + "]: "
-            + Arrays.toString(m_centers_gpu[i]) + "\n");
-      }
-    }
+    this.m_setupTimeGpu = System.currentTimeMillis() - startTime;
   }
 
   @Override
@@ -462,6 +481,8 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer,
       Rootbeer rootbeer) throws IOException, SyncException,
       InterruptedException {
+
+    long startTime = System.currentTimeMillis();
 
     // fetch inputs
     final List<double[]> inputs = new ArrayList<double[]>();
@@ -517,22 +538,34 @@ public class KMeansHybridBSP
       }
     }
 
-    // Logging
-    List<StatsRow> stats = rootbeer.getStats();
-    for (StatsRow row : stats) {
-      System.out.println("  StatsRow:");
-      System.out.println("    init time: " + row.getInitTime());
-      System.out.println("    serial time: " + row.getSerializationTime());
-      System.out.println("    exec time: " + row.getExecutionTime());
-      System.out.println("    deserial time: " + row.getDeserializationTime());
-      System.out.println("    num blocks: " + row.getNumBlocks());
-      System.out.println("    num threads: " + row.getNumThreads());
-      System.out.println("GPUTime: " + watch.elapsedTimeMillis() + " ms");
-    }
+    this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
+    // Logging
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("KMeansHybrid,GPUTime=" + watch.elapsedTimeMillis()
-          + "ms\n");
+      m_logger.writeChars("KMeansHybrid,setupTimeGpu=" + this.m_setupTimeGpu
+          + " ms\n");
+      m_logger.writeChars("KMeansHybrid,setupTimeGpu="
+          + (this.m_setupTimeGpu / 1000.0) + " seconds\n");
+      m_logger.writeChars("KMeansHybrid,bspTimeGpu=" + this.m_bspTimeGpu
+          + " ms\n");
+      m_logger.writeChars("KMeansHybrid,bspTimeGpu="
+          + (this.m_bspTimeGpu / 1000.0) + " seconds\n");
+
+      List<StatsRow> stats = rootbeer.getStats();
+      for (StatsRow row : stats) {
+        m_logger.writeChars("  StatsRow:\n");
+        m_logger.writeChars("    init time: " + row.getInitTime() + "\n");
+        m_logger.writeChars("    serial time: " + row.getSerializationTime()
+            + "\n");
+        m_logger.writeChars("    exec time: " + row.getExecutionTime() + "\n");
+        m_logger.writeChars("    deserial time: "
+            + row.getDeserializationTime() + "\n");
+        m_logger.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
+        m_logger.writeChars("    num threads: " + row.getNumThreads() + "\n");
+        m_logger.writeChars("GPUTime: " + watch.elapsedTimeMillis() + " ms"
+            + "\n");
+      }
+
       m_logger.close();
     }
   }
@@ -631,7 +664,7 @@ public class KMeansHybridBSP
 
     // Set config variables
     conf.setBoolean(CONF_DEBUG, isDebugging);
-    conf.setBoolean("hama.pipes.logging", isDebugging);
+    conf.setBoolean("hama.pipes.logging", false);
     // Set CPU tasks
     conf.setInt("bsp.peers.num", numBspTask);
     // Set GPU tasks
@@ -682,7 +715,8 @@ public class KMeansHybridBSP
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
       if (isDebugging) {
-        printOutput(conf, fs, new IntWritable(), new PipesVectorWritable());
+        printOutput(conf, fs, ".log", new IntWritable(),
+            new PipesVectorWritable());
       }
       printFile(conf, fs, centerOut, new PipesVectorWritable(),
           NullWritable.get());
@@ -852,11 +886,12 @@ public class KMeansHybridBSP
     centerWriter.close();
   }
 
-  static void printOutput(Configuration conf, FileSystem fs, Writable key,
-      Writable value) throws IOException {
+  static void printOutput(Configuration conf, FileSystem fs,
+      String extensionFilter, Writable key, Writable value) throws IOException {
     FileStatus[] files = fs.listStatus(CONF_OUTPUT_DIR);
     for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
+      if ((files[i].getLen() > 0)
+          && (files[i].getPath().getName().endsWith(extensionFilter))) {
         printFile(conf, fs, files[i].getPath(), key, value);
       }
     }
