@@ -28,12 +28,14 @@ public class KMeansHybridKernel implements Kernel {
   public double[][] m_inputs; // input
   public double[][] m_centers; // input
   public int m_maxIterations; // input
+  public String[] m_allPeerNames; // input
 
   public KMeansHybridKernel(double[][] inputs, double[][] centers,
-      int maxIterations) {
+      int maxIterations, String[] allPeerNames) {
     m_inputs = inputs;
     m_centers = centers;
     m_maxIterations = maxIterations;
+    m_allPeerNames = allPeerNames;
   }
 
   public void gpuMethod() {
@@ -314,9 +316,6 @@ public class KMeansHybridKernel implements Kernel {
       if ((thread_idxx == 0)
           && (RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) > 0)) {
 
-        // TODO fetch allPeerNames only once
-        String[] allPeerNames = HamaPeer.getAllPeerNames();
-
         for (int i = 0; i < centerCount; i++) {
 
           int summationCountIndex = sharedMemorySummationCountStartPos
@@ -352,7 +351,7 @@ public class KMeansHybridKernel implements Kernel {
 
             // System.out.println(message);
 
-            for (String peerName : allPeerNames) {
+            for (String peerName : m_allPeerNames) {
               HamaPeer.send(peerName, message);
             }
           }
@@ -650,6 +649,6 @@ public class KMeansHybridKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new KMeansHybridKernel(null, null, 0);
+    new KMeansHybridKernel(null, null, 0, null);
   }
 }

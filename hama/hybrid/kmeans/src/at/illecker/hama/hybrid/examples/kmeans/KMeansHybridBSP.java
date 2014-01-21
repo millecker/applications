@@ -510,7 +510,7 @@ public class KMeansHybridBSP
     }
 
     KMeansHybridKernel kernel = new KMeansHybridKernel(inputsArr,
-        m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0));
+        m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0), peer.getAllPeerNames());
 
     rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
