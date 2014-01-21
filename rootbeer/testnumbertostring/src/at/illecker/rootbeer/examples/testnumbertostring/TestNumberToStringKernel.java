@@ -33,11 +33,33 @@ public class TestNumberToStringKernel implements Kernel {
   @Override
   public void gpuMethod() {
     if (RootbeerGpu.getThreadIdxx() == 0) {
-      for (int i = 0; i < 10000; i++) {
-        System.out.println(i);
-        System.out.println(Integer.toString(i));
-        System.out.println(Long.toString(i));
-      }
+      System.out.println("Integer.MIN_VALUE:");
+      System.out.println(Integer.MIN_VALUE);
+      System.out.println(Integer.toString(Integer.MIN_VALUE));
+      System.out.println("Integer.MAX_VALUE:");
+      System.out.println(Integer.MAX_VALUE);
+      System.out.println(Integer.toString(Integer.MAX_VALUE));
+
+      System.out.println("Long.MIN_VALUE:");
+      System.out.println(Long.MIN_VALUE);
+      System.out.println(Long.toString(Long.MIN_VALUE));
+      System.out.println("Long.MAX_VALUE:");
+      System.out.println(Long.MAX_VALUE);
+      System.out.println(Long.toString(Long.MAX_VALUE));
+
+      System.out.println("Float.MIN_VALUE:");
+      System.out.println(Float.MIN_VALUE);
+      System.out.println(Float.toString(Float.MIN_VALUE));
+      System.out.println("Float.MAX_VALUE:");
+      System.out.println(Float.MAX_VALUE);
+      System.out.println(Float.toString(Float.MAX_VALUE));
+
+      System.out.println("Double.MIN_VALUE:");
+      System.out.println(Double.MIN_VALUE);
+      System.out.println(Double.toString(Double.MIN_VALUE));
+      System.out.println("Double.MAX_VALUE:");
+      System.out.println(Double.MAX_VALUE);
+      System.out.println(Double.toString(Double.MAX_VALUE));
     }
   }
 
