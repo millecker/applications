@@ -26,9 +26,10 @@ public class KMeansHybridKernel implements Kernel {
   private long m_converged;
 
   public double[][] m_inputs; // input
-  public double[][] m_centers; // input
+  public double[][] m_centers; // input and output
   public int m_maxIterations; // input
   public String[] m_allPeerNames; // input
+  public int[] m_input_centers; // output
 
   public KMeansHybridKernel(double[][] inputs, double[][] centers,
       int maxIterations, String[] allPeerNames) {
@@ -36,6 +37,7 @@ public class KMeansHybridKernel implements Kernel {
     m_centers = centers;
     m_maxIterations = maxIterations;
     m_allPeerNames = allPeerNames;
+    m_input_centers = new int[inputs.length];
   }
 
   public void gpuMethod() {
@@ -139,9 +141,6 @@ public class KMeansHybridKernel implements Kernel {
       // while (inputHasMore == true)
       while (RootbeerGpu.getSharedBoolean(sharedMemoryInputHasMoreBoolean)) {
 
-        // Sync all threads within a block
-        RootbeerGpu.syncthreads();
-
         // Thread 0 of each block
         // Setup inputs for thread block
         if (thread_idxx == 0) {
@@ -192,7 +191,7 @@ public class KMeansHybridKernel implements Kernel {
 
           // System.out.println("SharedMemory init finished.");
         }
-
+        
         // Sync all threads within a block
         // input[][] was updated
         RootbeerGpu.syncthreads();
@@ -205,15 +204,13 @@ public class KMeansHybridKernel implements Kernel {
         // #################
         if (thread_idxx < RootbeerGpu.getSharedInteger(sharedMemoryInputIndex)) {
 
-          // System.out.println(thread_idxx);
-
           // getNearestCenter
           int lowestDistantCenter = 0;
           double lowestDistance = Double.MAX_VALUE;
 
           for (int i = 0; i < centerCount; i++) {
 
-            // measureEuclidianDistance
+            // measure Euclidean Distance
             double sum = 0;
             for (int j = 0; j < centerDim; j++) {
 
@@ -271,42 +268,58 @@ public class KMeansHybridKernel implements Kernel {
             int lowestDistantCenter = RootbeerGpu
                 .getSharedInteger(lowestDistantCenterIdxx);
 
-            // TODO if summationCount == 0 no addition is needed!
-            for (int j = 0; j < centerDim; j++) {
-
-              int newCenterIndex = sharedMemoryNewCentersStartPos
-                  + (((lowestDistantCenter * centerDim) + j) * 8);
-
-              int inputIndex = sharedMemoryInputVectorsStartPos
-                  + ((i * centerDim) + j) * 8;
-
-              // newCenters[lowestDistantCenter][j] += vector[j];
-              RootbeerGpu.setSharedDouble(
-                  newCenterIndex,
-                  RootbeerGpu.getSharedDouble(newCenterIndex)
-                      + RootbeerGpu.getSharedDouble(inputIndex));
-            }
-
-            // Update newCenter counter
             // summationCount[lowestDistantCenter]
             int summationCountIndex = sharedMemorySummationCountStartPos
                 + (lowestDistantCenter * 4);
 
-            // summationCount[lowestDistantCenter]++;
-            RootbeerGpu.setSharedInteger(summationCountIndex,
-                RootbeerGpu.getSharedInteger(summationCountIndex) + 1);
+            // if summationCount == 0 addition is not needed!
+            if (RootbeerGpu.getSharedInteger(summationCountIndex) == 0) {
 
+              for (int j = 0; j < centerDim; j++) {
+
+                int newCenterIndex = sharedMemoryNewCentersStartPos
+                    + (((lowestDistantCenter * centerDim) + j) * 8);
+
+                int inputIndex = sharedMemoryInputVectorsStartPos
+                    + ((i * centerDim) + j) * 8;
+
+                // newCenters[lowestDistantCenter][j] == vector[j];
+                RootbeerGpu.setSharedDouble(newCenterIndex,
+                    RootbeerGpu.getSharedDouble(inputIndex));
+              }
+
+              // Update newCenter counter
+              // summationCount[lowestDistantCenter]++;
+              RootbeerGpu.setSharedInteger(summationCountIndex, 1);
+
+            } else { // do vector addition
+
+              for (int j = 0; j < centerDim; j++) {
+
+                int newCenterIndex = sharedMemoryNewCentersStartPos
+                    + (((lowestDistantCenter * centerDim) + j) * 8);
+
+                int inputIndex = sharedMemoryInputVectorsStartPos
+                    + ((i * centerDim) + j) * 8;
+
+                // newCenters[lowestDistantCenter][j] += vector[j];
+                RootbeerGpu.setSharedDouble(
+                    newCenterIndex,
+                    RootbeerGpu.getSharedDouble(newCenterIndex)
+                        + RootbeerGpu.getSharedDouble(inputIndex));
+              }
+
+              // Update newCenter counter
+              // summationCount[lowestDistantCenter]++;
+              RootbeerGpu.setSharedInteger(summationCountIndex,
+                  RootbeerGpu.getSharedInteger(summationCountIndex) + 1);
+            }
           }
         }
 
         // Sync all threads within a block
         RootbeerGpu.syncthreads();
       }
-
-      // Sync all threads within a block
-      RootbeerGpu.syncthreads();
-
-      // System.out.println(thread_idxx);
 
       // **********************************************************************
       // sendMessages *********************************************************
@@ -495,7 +508,7 @@ public class KMeansHybridKernel implements Kernel {
               int newCenterIndex = sharedMemoryNewCentersStartPos
                   + (((i * centerDim) + j) * 8);
 
-              // TODO m_centers is in global GPU memory
+              // m_centers is stored in global GPU memory
               calculateError += Math.abs(m_centers[i][j]
                   - RootbeerGpu.getSharedDouble(newCenterIndex));
             }
@@ -512,7 +525,7 @@ public class KMeansHybridKernel implements Kernel {
                 int newCenterIndex = sharedMemoryNewCentersStartPos
                     + (((i * centerDim) + j) * 8);
 
-                // TODO m_centers is in global GPU memory
+                // m_centers is stored in global GPU memory
                 m_centers[i][j] = RootbeerGpu.getSharedDouble(newCenterIndex);
               }
               convergedCounter++;
@@ -523,7 +536,6 @@ public class KMeansHybridKernel implements Kernel {
         // m_converged and m_superstepCount are stored in global GPU memory
         m_converged = convergedCounter;
         m_superstepCount = HamaPeer.getSuperstepCount();
-        // RootbeerGpu.threadfenceSystem();
       }
 
       // Sync all blocks Inter-Block Synchronization
@@ -545,56 +557,82 @@ public class KMeansHybridKernel implements Kernel {
     // ************************************************************************
     // recalculateAssignmentsAndWrite *****************************************
     // ************************************************************************
-/*
-    int startIndex = 0;
-
+    // Thread 0 of each block
+    // Setup SharedMemory
+    // Load centers into SharedMemory
     if (thread_idxx == 0) {
+
+      for (int i = 0; i < centerCount; i++) {
+        for (int j = 0; j < centerDim; j++) {
+          // Init centers[][]
+          int centerIndex = ((i * centerDim) + j) * 8;
+          RootbeerGpu.setSharedDouble(centerIndex, m_centers[i][j]);
+        }
+      }
       // boolean inputHasMore = true;
       RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean, true);
+
+      // int startIndex = 0; // used by thread 0 of each block
+      RootbeerGpu.setSharedInteger(sharedMemoryInputStartIndex, 0);
     }
 
     // Sync all threads within a block
     RootbeerGpu.syncthreads();
 
     // loop until input is empty
-    // while (inputHasMore == true)
     while (RootbeerGpu.getSharedBoolean(sharedMemoryInputHasMoreBoolean)) {
-
-      int i = 0; // amount of threads in block
 
       // Thread 0 of each block
       // Setup inputs for thread block
       if (thread_idxx == 0) {
 
-        int j = startIndex;
+        // int i = 0; // amount of threads in block
+        RootbeerGpu.setSharedInteger(sharedMemoryInputIndex, 0);
 
-        while (i < blockSize) {
-          // System.out.print("get from cache j: ");
-          // System.out.println(j);
-          DenseDoubleVector vector = m_cache.get(j);
+        // check if block has some input
+        if ((block_idxx * blockInputSize) < inputCount) {
 
-          // TODO skip toArray (vector.get(j))
-          double[] inputs = vector.toArray(); // vectorDim = centerDim
+          int j = RootbeerGpu.getSharedInteger(sharedMemoryInputStartIndex);
 
-          // Update inputs on SharedMemory
-          for (int k = 0; k < centerDim; k++) {
-            // Init inputs[][]
-            int inputIndex = sharedMemoryInputVectorsStartPos
-                + ((i * centerDim) + k) * 8;
+          while (RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) < blockSize) {
+            // System.out.print("get from cache j: ");
+            // System.out.println((block_idxx * blockInputSize) + j);
 
-            RootbeerGpu.setSharedDouble(inputIndex, inputs[k]);
+            // Update inputs on SharedMemory
+            for (int k = 0; k < centerDim; k++) {
+              int inputIndex = sharedMemoryInputVectorsStartPos
+                  + ((RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) * centerDim) + k)
+                  * 8;
+              RootbeerGpu.setSharedDouble(inputIndex,
+                  m_inputs[(block_idxx * blockInputSize) + j][k]);
+            }
+
+            // Store input_id in SharedMemory
+            int inputId = sharedMemoryLowestDistantCenterStartPos
+                + (RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) * 4);
+            RootbeerGpu.setSharedInteger(inputId, (block_idxx * blockInputSize)
+                + j);
+
+            // i++;
+            RootbeerGpu.setSharedInteger(sharedMemoryInputIndex,
+                RootbeerGpu.getSharedInteger(sharedMemoryInputIndex) + 1);
+
+            j++;
+            if ((j == blockInputSize)
+                || ((block_idxx * blockInputSize) + j == inputCount)) {
+              // Set inputHasMore to false
+              RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean,
+                  false);
+              break;
+            }
           }
+          RootbeerGpu.setSharedInteger(sharedMemoryInputStartIndex, j);
 
-          i++;
-          j++;
-          if (j == m_cache.getLength()) {
-            // update inputHasMore
-            RootbeerGpu
-                .setSharedBoolean(sharedMemoryInputHasMoreBoolean, false);
-            break;
-          }
+        } else { // block has no inputs
+          // System.out.println(block_idxx);
+          // Set inputHasMore to false
+          RootbeerGpu.setSharedBoolean(sharedMemoryInputHasMoreBoolean, false);
         }
-        startIndex = j;
       }
 
       // Sync all threads within a block
@@ -604,28 +642,43 @@ public class KMeansHybridKernel implements Kernel {
       // #################
       // Parallelism Start
       // #################
-      if (thread_idxx < i) {
+      if (thread_idxx < RootbeerGpu.getSharedInteger(sharedMemoryInputIndex)) {
 
-        int lowestDistantCenter = getNearestCenter(centerCount, centerDim,
-            sharedMemoryInputVectorsStartPos);
+        // getNearestCenter
+        int lowestDistantCenterId = 0;
+        double lowestDistance = Double.MAX_VALUE;
 
-        // TODO Performance issue
-        // Write out own vector and corresponding lowestDistantCenter
-        String vectorStr = "";
-        for (int k = 0; k < centerDim; k++) {
+        for (int i = 0; i < centerCount; i++) {
+          // measure Euclidean Distance
+          double sum = 0;
+          for (int j = 0; j < centerDim; j++) {
 
-          int inputIdxx = sharedMemoryInputVectorsStartPos
-              + ((thread_idxx * centerDim) + k) * 8;
+            int inputIdxx = sharedMemoryInputVectorsStartPos
+                + ((thread_idxx * centerDim) + j) * 8;
 
-          vectorStr += Double.toString(RootbeerGpu.getSharedDouble(inputIdxx));
+            int centerIdxx = ((i * centerDim) + j) * 8;
 
-          if (k < centerDim - 1) {
-            vectorStr += ", ";
+            // double diff = vector2[i] - vector1[i];
+            double diff = RootbeerGpu.getSharedDouble(inputIdxx)
+                - RootbeerGpu.getSharedDouble(centerIdxx);
+
+            // multiplication is faster than Math.pow() for ^2.
+            sum += (diff * diff);
+          }
+          double estimatedDistance = Math.sqrt(sum);
+
+          // check if we have a can assign a new center, because we
+          // got a lower distance
+          if (estimatedDistance < lowestDistance) {
+            lowestDistance = estimatedDistance;
+            lowestDistantCenterId = i;
           }
         }
 
-        // TODO Performance issue
-        HamaPeer.write(new Integer(lowestDistantCenter), vectorStr);
+        // Update m_input_centers with lowestDistantCenterId at inputId
+        int inputId = sharedMemoryLowestDistantCenterStartPos
+            + (thread_idxx * 4);
+        m_input_centers[RootbeerGpu.getSharedInteger(inputId)] = lowestDistantCenterId;
       }
       // #################
       // Parallelism End
@@ -634,7 +687,6 @@ public class KMeansHybridKernel implements Kernel {
       // Sync all threads within a block
       RootbeerGpu.syncthreads();
     }
-*/
   }
 
   private int divup(int x, int y) {

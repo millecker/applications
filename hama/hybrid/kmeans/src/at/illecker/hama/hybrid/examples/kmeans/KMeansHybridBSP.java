@@ -484,17 +484,17 @@ public class KMeansHybridBSP
 
     long startTime = System.currentTimeMillis();
 
-    // fetch inputs
-    final List<double[]> inputs = new ArrayList<double[]>();
+    // Fetch inputs
+    final List<DoubleVector> inputs = new ArrayList<DoubleVector>();
     final PipesVectorWritable key = new PipesVectorWritable();
     final NullWritable nullValue = NullWritable.get();
     while (peer.readNext(key, nullValue)) {
-      inputs.add(key.getVector().toArray());
+      inputs.add(key.getVector());
     }
-    // build inputs double[][]
-    double[][] inputsArr = new double[inputs.size()][inputs.get(0).length];
+    // Convert inputs to double[][]
+    double[][] inputsArr = new double[inputs.size()][inputs.get(0).getLength()];
     for (int i = 0; i < inputs.size(); i++) {
-      double[] vector = inputs.get(i);
+      double[] vector = inputs.get(i).toArray();
       for (int j = 0; j < vector.length; j++) {
         inputsArr[i][j] = vector[j];
       }
@@ -510,7 +510,8 @@ public class KMeansHybridBSP
     }
 
     KMeansHybridKernel kernel = new KMeansHybridKernel(inputsArr,
-        m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0), peer.getAllPeerNames());
+        m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0),
+        peer.getAllPeerNames());
 
     rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
@@ -520,8 +521,14 @@ public class KMeansHybridBSP
     rootbeer.runAll(kernel);
     watch.stop();
 
-    // just on the first task write the centers to filesystem to prevent
-    // collisions
+    // Output inputs with corresponding new center id
+    for (int i = 0; i < inputs.size(); i++) {
+      peer.write(new IntWritable(kernel.m_input_centers[i]),
+          new PipesVectorWritable(inputs.get(i)));
+    }
+
+    // Output new Centers only on first task
+    // to prevent collisions
     if (peer.getPeerName().equals(peer.getPeerName(0))) {
       String pathString = m_conf.get(CONF_CENTER_OUT_PATH);
       if (pathString != null) {
