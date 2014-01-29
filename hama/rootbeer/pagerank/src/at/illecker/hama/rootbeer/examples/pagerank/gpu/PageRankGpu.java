@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -51,7 +50,6 @@ import org.apache.hama.graph.VertexInputReader;
 
 public class PageRankGpu {
   private static final Log LOG = LogFactory.getLog(PageRankGpu.class);
-  private static final String AVG_AGGREGATOR = "average.aggregator";
 
   public static class PageRankVertexGpu extends
       Vertex<Text, NullWritable, DoubleWritable> {
@@ -75,8 +73,7 @@ public class PageRankGpu {
 
     @Override
     public void compute(Iterable<DoubleWritable> messages) throws IOException {
-      // initialize this vertex to 1 / count of global vertices in this
-      // graph
+      // initialize this vertex to 1 / count of global vertices in this graph
       if (this.getSuperstepCount() == 0) {
         this.setValue(new DoubleWritable(1.0 / this.getNumVertices()));
 
@@ -89,15 +86,16 @@ public class PageRankGpu {
         }
         double alpha = (1.0d - DAMPING_FACTOR) / this.getNumVertices();
         this.setValue(new DoubleWritable(alpha + (sum * DAMPING_FACTOR)));
-        this.aggregate(AVG_AGGREGATOR, this.getValue());
+        this.aggregate(0, this.getValue());
         /* DO AT GPU */
       }
 
       // if we have not reached our global error yet, then proceed.
-      DoubleWritable globalError = (DoubleWritable) getAggregatedValue(AVG_AGGREGATOR);
+      DoubleWritable globalError = getAggregatedValue(0);
 
       if (globalError != null && this.getSuperstepCount() > 2
           && MAXIMUM_CONVERGENCE_ERROR > globalError.get()) {
+        System.out.println(globalError);
         voteToHalt();
       } else {
         // in each superstep we are going to send a new rank to our neighbours
@@ -151,7 +149,7 @@ public class PageRankGpu {
     LOG.info("DEBUG: bsp.input.dir: " + job.get("bsp.input.dir"));
 
     // error
-    job.registerAggregator(AVG_AGGREGATOR, AverageAggregator.class);
+    job.setAggregatorClass(AverageAggregator.class);
 
     // Vertex reader
     job.setVertexInputReaderClass(PagerankSeqReader.class);
@@ -179,7 +177,7 @@ public class PageRankGpu {
     if (args.length < 2)
       printUsage();
 
-    HamaConfiguration conf = new HamaConfiguration(new Configuration());
+    HamaConfiguration conf = new HamaConfiguration();
     GraphJob pageJob = createJob(args, conf);
 
     long startTime = System.currentTimeMillis();
