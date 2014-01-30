@@ -22,7 +22,11 @@
   9 "(n*1024*14)" "(sec)" false true false
 
 ./CaliperResults.R \
-  results/hama/piestimator_hybrid/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2013-08-27T08:29:35Z.json \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2013-08-27T08:29:35Z.json \
   9 "(n*1024*14)" "(sec)" true false true
+
+./CaliperResults.R \
+  results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-01-30T10\:31\:22Z.json \
+  9 "" "(sec)" true false false
 
 ###############################################################################
