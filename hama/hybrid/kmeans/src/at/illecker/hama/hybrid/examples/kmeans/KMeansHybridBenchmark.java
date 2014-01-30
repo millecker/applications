@@ -16,17 +16,13 @@
  */
 package at.illecker.hama.hybrid.examples.kmeans;
 
-import java.io.IOException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hama.bsp.BSPJob;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
@@ -35,8 +31,11 @@ import com.google.caliper.runner.CaliperMain;
 
 public class KMeansHybridBenchmark extends Benchmark {
 
-  @Param({ "512", "1024", "2048", "3072", "4096" })
-  private int n;
+  @Param({ "10" })
+  private long n;
+
+  @Param({ "3" })
+  private int k;
 
   @Param
   CalcType type;
@@ -45,15 +44,22 @@ public class KMeansHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  private static final String OUTPUT_DIR = "output/hama/rootbeer/examples/matrixmultiplication/bench";
+  private int vectorDimension = 3;
+  private int maxIteration = 10;
 
-  private Path m_OUTPUT_DIR_PATH;
+  private static final Path CONF_TMP_DIR = new Path(
+      "output/hama/hybrid/examples/kmeans/bench-" + System.currentTimeMillis());
+  private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
+  private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
+  private static final Path CONF_CENTER_DIR = new Path(CONF_TMP_DIR, "centers");
 
   private Configuration m_conf = null;
   private boolean m_runLocally = false;
 
-  private int m_blockSize;
-  private int m_gridSize;
+  // gridSize = amount of blocks and multiprocessors
+  public static final int GRID_SIZE = 14;
+  // blockSize = amount of threads
+  public static final int BLOCK_SIZE = 384; // 1024;
 
   @Override
   protected void setUp() throws Exception {
@@ -95,13 +101,28 @@ public class KMeansHybridBenchmark extends Benchmark {
       // System.out.println("Loaded Hama configuration from " + HAMA);
     }
 
-    // Setup outputs
-    m_OUTPUT_DIR_PATH = new Path(OUTPUT_DIR + "/bench_"
-        + System.currentTimeMillis());
-    System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
+    // Setup KMeans config variables
+    m_conf.setBoolean(KMeansHybridBSP.CONF_DEBUG, false);
+    m_conf.setBoolean("hama.pipes.logging", false);
 
-    // TODO
+    // Set GPU blockSize and gridSize
+    m_conf.set(KMeansHybridBSP.CONF_BLOCKSIZE, "" + BLOCK_SIZE);
+    m_conf.set(KMeansHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
+    // Set maxIterations for KMeans
+    m_conf.setInt(KMeansHybridBSP.CONF_MAX_ITERATIONS, maxIteration);
+    // Set n for KMeans
+    m_conf.setLong(KMeansHybridBSP.CONF_N, n);
 
+    Path centerIn = new Path(CONF_CENTER_DIR, "center_in.seq");
+    Path centerOut = new Path(CONF_CENTER_DIR, "center_out.seq");
+    m_conf.set(KMeansHybridBSP.CONF_CENTER_IN_PATH, centerIn.toString());
+    m_conf.set(KMeansHybridBSP.CONF_CENTER_OUT_PATH, centerOut.toString());
+
+    KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
+        CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
+
+    System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
+    System.out.println("n: " + n + " k: " + k);
   }
 
   @Override
@@ -109,25 +130,12 @@ public class KMeansHybridBenchmark extends Benchmark {
 
     verify();
 
-    printOutput(m_conf);
+    FileSystem fs = FileSystem.get(m_conf);
+    fs.delete(CONF_TMP_DIR, true);
   }
 
   private void verify() throws Exception {
 
-  }
-
-  static void printOutput(Configuration conf) throws IOException {
-    FileSystem fs = FileSystem.get(conf);
-    FileStatus[] files = fs.listStatus(new Path(OUTPUT_DIR));
-    for (int i = 0; i < files.length; i++) {
-      if (files[i].getLen() > 0) {
-        System.out.println("File " + files[i].getPath());
-        FSDataInputStream in = fs.open(files[i].getPath());
-        IOUtils.copyBytes(in, System.out, conf, false);
-        in.close();
-      }
-    }
-    // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
   // Microbenchmark
@@ -170,7 +178,24 @@ public class KMeansHybridBenchmark extends Benchmark {
     public int run(String[] arg0) throws Exception {
 
       if (useGPU) {
+        // Set CPU tasks
+        m_conf.setInt("bsp.peers.num", 1);
+        // Set GPU tasks
+        m_conf.setInt("bsp.peers.gpu.num", 1);
+      } else {
+        // Set CPU tasks
+        m_conf.setInt("bsp.peers.num", 1);
+        // Set GPU tasks
+        m_conf.setInt("bsp.peers.gpu.num", 0);
+      }
 
+      BSPJob job = KMeansHybridBSP.createKMeansHybridBSPConf(m_conf,
+          CONF_INPUT_DIR, CONF_OUTPUT_DIR);
+
+      long startTime = System.currentTimeMillis();
+      if (job.waitForCompletion(true)) {
+        System.out.println("Job Finished in "
+            + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
       }
 
       return 0;

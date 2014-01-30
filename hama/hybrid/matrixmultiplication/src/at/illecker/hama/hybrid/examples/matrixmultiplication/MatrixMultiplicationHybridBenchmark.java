@@ -48,7 +48,7 @@ public class MatrixMultiplicationHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  private static final String OUTPUT_DIR = "output/hama/rootbeer/examples/matrixmultiplication/bench";
+  private static final String OUTPUT_DIR = "output/hama/hybrid/examples/matrixmultiplication/bench";
 
   private Path m_OUTPUT_DIR_PATH;
   private Path m_MATRIX_A_PATH;
