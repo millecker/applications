@@ -31,10 +31,10 @@ import com.google.caliper.runner.CaliperMain;
 
 public class KMeansHybridBenchmark extends Benchmark {
 
-  @Param({ "1000000" })
-  private long n;
+  //@Param({ "1000000" })
+  private long n = 1000000;
 
-  @Param({ "10", "30", "50", "70", "90" })
+  @Param({ "10", "30", "50", "70", "90", "110" })
   private int k;
 
   @Param

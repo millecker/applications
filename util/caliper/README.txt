@@ -26,7 +26,7 @@
   9 "(n*1024*14)" "(sec)" true false true
 
 ./CaliperResults.R \
-  results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-01-30T10\:31\:22Z.json \
-  9 "" "(sec)" true false false
+  results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-01-30T11\:23\:10Z.json \
+  9 "(n=1000000)" "(sec)" true true false
 
 ###############################################################################
