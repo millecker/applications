@@ -287,31 +287,32 @@ cat(message)
 
 
 # Generate CPU + GPU plot
-if (!is.na(args[6]) && args[6]=='true') {
+if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   power <- as.numeric(args[2])
+  customVariable <- as.character(args[7])
   #cat(paste("Generate geom_line plot and normalize magnitude with 10^",power,"\n",sep=""))
   
-  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
-  #benchmarkTableAvgScenarioGroup <- transform(benchmarkTableAvgScenarioGroup,n = as.numeric(as.character(benchmarkTableAvgScenarioGroup$n)))
-  # benchmarkTableAvgScenarioGroup
+  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,$customVariable,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
+  #benchmarkTableAvgScenarioGroup <- transform(benchmarkTableAvgScenarioGroup,customVariable = as.numeric(as.character(benchmarkTableAvgScenarioGroup$customVariable)))
+  #benchmarkTableAvgScenarioGroup
   # str(benchmarkTableAvgScenarioGroup)
   #benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, iterations <- n * constant)
-  ggplot(benchmarkTableAvgScenarioGroup, aes(x=n,y=magnitude,colour=type,group=type)) + 
+  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",colour="type",group="type")) + 
     geom_point(size=5) + 
     geom_line() +
-    xlab(paste("N",args[3])) +
+    xlab(paste(customVariable,args[3])) +
     ylab(paste("Time",args[4])) +
     ggtitle(title) +
     theme(legend.position = "bottom")
   
-  outputfile <- paste(caliperJsonFile,"_cpu_gpu_geom_line.pdf", sep="")
+  outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
   message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
   cat(message)
 }
 
 # Generate Speedup and Efficiency plot
-if (!is.na(args[7]) && args[7]=='true') {
+if (!is.na(args[8]) && args[8]=='true') {
   power <- as.numeric(args[2])
   
   benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
