@@ -1,0 +1,17 @@
+<project>
+	<property name="root" value="../../.." />
+	<property name="output.file" value="HamaHybridUtil" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="" />
+	<property name="rootbeer.classes" value="" />
+	<property name="gpu.class" value="" />
+	<property name="cpu.class" value="" />
+	<property name="bench.class" value="" />
+	<property name="program" value="java" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
