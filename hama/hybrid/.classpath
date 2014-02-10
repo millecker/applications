@@ -10,19 +10,19 @@
 	<classpathentry kind="src" path="onlinecf/src"/>
 	<classpathentry kind="src" path="util/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/applications/lib/caliper-1.0-beta-1-all.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-configuration-1.7.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/guava-12.0.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/hadoop-core-1.3.0-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/trove-3.0.2.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/zookeeper-3.4.5.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/rootbeer-develop-old-branch.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/caliper-1.0-beta-1-all.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/hama-commons-0.7.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/hama-core-0.7.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/hama-graph-0.7.0-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/hama-commons-0.7.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/hama-ml-0.7.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/rootbeer-develop-old-branch.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/trove-3.0.2.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/zookeeper-3.4.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
