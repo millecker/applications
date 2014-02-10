@@ -55,14 +55,12 @@ import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.function.Functions;
-import org.trifort.rootbeer.runtime.Context;
-import org.trifort.rootbeer.runtime.Kernel;
-import org.trifort.rootbeer.runtime.Rootbeer;
-import org.trifort.rootbeer.runtime.StatsRow;
-import org.trifort.rootbeer.runtime.ThreadConfig;
-import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.DistributedRowMatrix;
+import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
+import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
+import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 /**
  * @author MatrixMultiplication based on Mahout https://github.com/apache/mahout
@@ -364,12 +362,11 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       // blockSize = rows of Matrix A (multiplier)
       // gridSize = cols of Matrix B (for each row a scalar multiplication
       // has to be made)
-      Context context = rootbeer.createDefaultContext();
-      rootbeer.run(kernels, new ThreadConfig(blockSize, gridSize, blockSize
-          * gridSize), context);
+      rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
+      rootbeer.runAll(kernels);
       watch.stop();
 
-      List<StatsRow> stats = context.getStats();
+      List<StatsRow> stats = rootbeer.getStats();
       for (StatsRow row : stats) {
         System.out.println("  StatsRow:\n");
         System.out.println("    serial time: " + row.getSerializationTime()

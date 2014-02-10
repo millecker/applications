@@ -16,8 +16,8 @@
  */
 package at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu;
 
-import org.trifort.rootbeer.runtime.Kernel;
-import org.trifort.rootbeer.runtime.RootbeerGpu;
+import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
 
 public class MatrixMultiplicationMapperKernel implements Kernel {
 
