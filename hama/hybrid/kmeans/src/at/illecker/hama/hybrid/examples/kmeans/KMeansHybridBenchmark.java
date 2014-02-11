@@ -24,6 +24,8 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hama.bsp.BSPJob;
 
+import at.illecker.hama.hybrid.examples.util.benchmark.BenchmarkLogger;
+
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
@@ -31,7 +33,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class KMeansHybridBenchmark extends Benchmark {
 
-  //@Param({ "1000000" })
+  // @Param({ "1000000" })
   private long n = 1000000;
 
   @Param({ "10", "30", "50", "70", "90", "110" })
@@ -44,6 +46,7 @@ public class KMeansHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
+  private BenchmarkLogger benchmarkLogger = new BenchmarkLogger();
   private int vectorDimension = 3;
   private int maxIteration = 10;
 
@@ -138,33 +141,30 @@ public class KMeansHybridBenchmark extends Benchmark {
 
   }
 
-  // Microbenchmark
-  // Uncomment Macro to use Micro
-  public void timeCalculate(int reps) {
-    int sum = 0;
-    for (int rep = 0; rep < reps; rep++) {
-      sum = doBenchmark(sum);
-    }
-    System.out.println(sum);
-  }
-
   @Macrobenchmark
   public void timeCalculate() {
-    doBenchmark(0);
+    doBenchmark();
   }
 
-  public int doBenchmark(int sum) {
+  public void doBenchmark() {
     switch (type) {
       case CPU:
-        sum = kmeansHamaCPU(sum);
+        try {
+          ToolRunner.run(new KMeans(false), null);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
         break;
       case GPU:
-        sum = kmeansHamaGPU(sum);
+        try {
+          ToolRunner.run(new KMeans(true), null);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
         break;
       default:
         break;
     }
-    return sum;
   }
 
   private class KMeans extends Configured implements Tool {
@@ -200,24 +200,6 @@ public class KMeansHybridBenchmark extends Benchmark {
 
       return 0;
     }
-  }
-
-  private int kmeansHamaCPU(int sum) {
-    try {
-      sum += ToolRunner.run(new KMeans(false), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
-  }
-
-  private int kmeansHamaGPU(int sum) {
-    try {
-      sum += ToolRunner.run(new KMeans(true), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
   }
 
   public static void main(String[] args) {
