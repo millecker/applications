@@ -24,8 +24,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hama.bsp.BSPJob;
 
-import at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBSP;
-
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
@@ -112,7 +110,7 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.set(OnlineCFTrainHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
 
     // KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
-    //    CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
+    // CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
 
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
     System.out.println("n: " + n + " k: " + k);
