@@ -194,21 +194,25 @@ public class OnlineCFTrainHybridBSP
     // and input data are different type
     HashSet<Text> requiredUserFeatures = null;
     HashSet<Text> requiredItemFeatures = null;
-    collectInput(peer, requiredUserFeatures, requiredItemFeatures);
+    // TODO
+    // collectInput(peer, requiredUserFeatures, requiredItemFeatures);
 
     // since we have used some delimiters for
     // keys, HashPartitioner cannot partition
     // as we want, take user preferences and
     // broadcast user features and item features
-    askForFeatures(peer, requiredUserFeatures, requiredItemFeatures);
+    // TODO
+    // askForFeatures(peer, requiredUserFeatures, requiredItemFeatures);
     peer.sync();
 
     requiredUserFeatures = null;
     requiredItemFeatures = null;
-    sendRequiredFeatures(peer);
+    //TODO
+    // sendRequiredFeatures(peer);
     peer.sync();
 
-    collectFeatures(peer);
+    // TODO
+    // collectFeatures(peer);
     LOG.info(peer.getPeerName() + ") collected: " + this.usersMatrix.size()
         + " users, " + this.itemsMatrix.size() + " items, "
         + this.preferences.size() + " preferences");
@@ -216,14 +220,17 @@ public class OnlineCFTrainHybridBSP
 
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
-      computeValues();
+      // TODO
+      // computeValues();
 
       if ((i + 1) % m_skip_count == 0) {
-        normalizeWithBroadcastingValues(peer);
+        // TODO
+        // normalizeWithBroadcastingValues(peer);
       }
     }
 
-    saveModel(peer);
+    // TODO
+    //saveModel(peer);
 
     this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
 
@@ -303,66 +310,28 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
 
-    // Fetch inputs
-    final List<DoubleVector> inputs = new ArrayList<DoubleVector>();
-    final PipesVectorWritable key = new PipesVectorWritable();
-    final NullWritable nullValue = NullWritable.get();
-    while (peer.readNext(key, nullValue)) {
-      inputs.add(key.getVector());
-    }
-    // Convert inputs to double[][]
-    double[][] inputsArr = new double[inputs.size()][inputs.get(0).getLength()];
-    for (int i = 0; i < inputs.size(); i++) {
-      double[] vector = inputs.get(i).toArray();
-      for (int j = 0; j < vector.length; j++) {
-        inputsArr[i][j] = vector[j];
-      }
-    }
 
     // Logging
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("KMeansHybrid.bspGpu executed on GPU!\n");
       m_logger.writeChars("KMeansHybrid.bspGpu blockSize: " + m_blockSize
           + " gridSize: " + m_gridSize + "\n");
-      m_logger.writeChars("KMeansHybrid.bspGpu inputSize: " + inputs.size()
-          + "\n");
+     // m_logger.writeChars("KMeansHybrid.bspGpu inputSize: " + inputs.size()   + "\n");
     }
 
-    OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(inputsArr,
-        m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0),
-        peer.getAllPeerNames());
+    // TODO
+    // OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(inputsArr,
+    //    m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0),
+    //    peer.getAllPeerNames());
 
     rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
     // Run GPU Kernels
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    //rootbeer.runAll(kernel);
     watch.stop();
 
-    // Output inputs with corresponding new center id
-    for (int i = 0; i < inputs.size(); i++) {
-      peer.write(new IntWritable(kernel.m_input_centers[i]),
-          new PipesVectorWritable(inputs.get(i)));
-    }
-
-    // Output new Centers only on first task
-    // to prevent collisions
-    if (peer.getPeerName().equals(peer.getPeerName(0))) {
-      String pathString = m_conf.get(CONF_CENTER_OUT_PATH);
-      if (pathString != null) {
-        final SequenceFile.Writer dataWriter = SequenceFile
-            .createWriter(FileSystem.get(m_conf), m_conf, new Path(pathString),
-                PipesVectorWritable.class, NullWritable.class,
-                CompressionType.NONE);
-
-        for (int i = 0; i < kernel.m_centers.length; i++) {
-          dataWriter.append(new PipesVectorWritable(new DenseDoubleVector(
-              kernel.m_centers[i])), nullValue);
-        }
-        dataWriter.close();
-      }
-    }
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
@@ -552,11 +521,11 @@ public class OnlineCFTrainHybridBSP
     // prepare Input
     if (useTestExampleInput) {
       // prepareTestInput(conf, fs, input, centerIn);
-      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
-          + numGpuBspTask, n, k, vectorDimension, null);
+      // prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
+      //    + numGpuBspTask, n, k, vectorDimension, null);
     } else {
-      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
-          + numGpuBspTask, n, k, vectorDimension, new Random(3337L));
+      // prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
+      //    + numGpuBspTask, n, k, vectorDimension, new Random(3337L));
     }
 
     BSPJob job = createOnlineCFTrainHybridBSPConf(conf, CONF_INPUT_DIR,
@@ -570,8 +539,9 @@ public class OnlineCFTrainHybridBSP
         printOutput(conf, fs, ".log", new IntWritable(),
             new PipesVectorWritable());
       }
-      printFile(conf, fs, centerOut, new PipesVectorWritable(),
-          NullWritable.get());
+      // TODO
+      // printFile(conf, fs, centerOut, new PipesVectorWritable(),
+      //    NullWritable.get());
     }
 
   }

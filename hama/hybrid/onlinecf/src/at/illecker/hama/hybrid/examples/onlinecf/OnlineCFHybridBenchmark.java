@@ -111,8 +111,8 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.set(OnlineCFTrainHybridBSP.CONF_BLOCKSIZE, "" + BLOCK_SIZE);
     m_conf.set(OnlineCFTrainHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
 
-    KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
-        CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
+    // KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
+    //    CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
 
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
     System.out.println("n: " + n + " k: " + k);
