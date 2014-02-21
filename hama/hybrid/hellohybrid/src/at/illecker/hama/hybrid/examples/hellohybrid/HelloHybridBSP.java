@@ -43,10 +43,11 @@ import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
-
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class HelloHybridBSP
     extends
@@ -161,19 +162,18 @@ public class HelloHybridBSP
 
     HelloHybridKernel kernel = new HelloHybridKernel(peer.getConfiguration()
         .get(CONF_EXAMPLE_PATH), CONF_N, "boo:and:foo", ":");
-    // 1 Kernel within 1 Block
-    rootbeer.setThreadConfig(1, 1, 1);
 
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    // 1 Kernel within 1 Block
+    rootbeer.run(kernel, new ThreadConfig(1, 1, 1), context);
     watch.stop();
 
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
-      outStream.writeChars("    init time: " + row.getInitTime() + "\n");
       outStream.writeChars("    serial time: " + row.getSerializationTime()
           + "\n");
       outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
@@ -248,8 +248,9 @@ public class HelloHybridBSP
     return job;
   }
 
-  private static void prepareInput(Configuration conf, FileSystem fs,
-      Path input, Path example, int n) throws IOException {
+  private static void prepareInput(Configuration conf, Path input,
+      Path example, int n) throws IOException {
+    FileSystem fs = input.getFileSystem(conf);
 
     SequenceFile.Writer inputWriter = SequenceFile.createWriter(fs, conf,
         input, IntWritable.class, NullWritable.class, CompressionType.NONE);
@@ -267,8 +268,9 @@ public class HelloHybridBSP
     exampleWriter.close();
   }
 
-  static void printOutput(BSPJob job, FileSystem fs) throws IOException {
-    FileStatus[] files = fs.listStatus(FileOutputFormat.getOutputPath(job));
+  static void printOutput(BSPJob job, Path path) throws IOException {
+    FileSystem fs = path.getFileSystem(job.getConfiguration());
+    FileStatus[] files = fs.listStatus(path);
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
         System.out.println("File " + files[i].getPath());
@@ -284,11 +286,9 @@ public class HelloHybridBSP
                 + "'\n");
           }
         } catch (IOException e) {
-
           FSDataInputStream in = fs.open(files[i].getPath());
           IOUtils.copyBytes(in, System.out, job.getConfiguration(), false);
           in.close();
-
         } finally {
           if (reader != null) {
             reader.close();
@@ -320,7 +320,7 @@ public class HelloHybridBSP
     }
     // Enable one GPU task
     conf.setInt("bsp.peers.gpu.num", 1);
-    conf.setBoolean("hama.pipes.logging", false);
+    conf.setBoolean("hama.pipes.logging", true);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("NumBspGpuTask: " + conf.getInt("bsp.peers.gpu.num", 0));
@@ -329,19 +329,24 @@ public class HelloHybridBSP
     LOG.info("outputPath: " + CONF_OUTPUT_DIR);
 
     Path input = new Path(CONF_INPUT_DIR, "input.seq");
-    Path example = new Path(CONF_INPUT_DIR, "/example/example.seq");
+    Path example = new Path(CONF_INPUT_DIR.getParent(), "example.seq");
     conf.set(CONF_EXAMPLE_PATH, example.toString());
 
-    FileSystem fs = FileSystem.get(conf);
-    prepareInput(conf, fs, input, example, CONF_N);
+    LOG.info("inputFile: " + input.toString());
+    LOG.info("exampleFile: " + example.toString());
+
+    prepareInput(conf, input, example, CONF_N);
 
     BSPJob job = createHelloHybridBSPConf(conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
-      printOutput(job, fs);
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
+
+      printOutput(job, input);
+      printOutput(job, example);
+      printOutput(job, FileOutputFormat.getOutputPath(job));
     }
   }
 

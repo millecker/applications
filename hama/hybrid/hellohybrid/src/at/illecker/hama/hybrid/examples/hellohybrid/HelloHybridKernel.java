@@ -16,9 +16,9 @@
  */
 package at.illecker.hama.hybrid.examples.hellohybrid;
 
-import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
+import org.trifort.rootbeer.runtime.HamaPeer;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.KeyValuePair;
 
 public class HelloHybridKernel implements Kernel {
 
