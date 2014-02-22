@@ -41,10 +41,11 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
-
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorHybridBSP extends
     HybridBSP<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> {
@@ -184,12 +185,13 @@ public class PiEstimatorHybridBSP extends
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
         System.currentTimeMillis());
-    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize, m_blockSize
+        * m_gridSize), context);
     watch.stop();
 
     // Get GPU results
@@ -209,10 +211,9 @@ public class PiEstimatorHybridBSP extends
 
       outStream.writeChars("BSP=PiEstimatorHybrid,Iterations=" + m_iterations
           + ",GPUTime=" + watch.elapsedTimeMillis() + "ms\n");
-      List<StatsRow> stats = rootbeer.getStats();
+      List<StatsRow> stats = context.getStats();
       for (StatsRow row : stats) {
         outStream.writeChars("  StatsRow:\n");
-        outStream.writeChars("    init time: " + row.getInitTime() + "\n");
         outStream.writeChars("    serial time: " + row.getSerializationTime()
             + "\n");
         outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
@@ -343,9 +344,10 @@ public class PiEstimatorHybridBSP extends
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
-      printOutput(job);
       System.out.println("Job Finished in "
           + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
+
+      printOutput(job);
     }
   }
 
