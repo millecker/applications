@@ -1,6 +1,6 @@
 <project>
 	<property name="root" value="../../.." />
-	<property name="rootbeer.version" value="rootbeer-develop-old-branch.jar" />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
 	<property name="rootbeer.args" value="-64bit -noexceptions -maxrregcount 64" />
 	<!-- -shared-mem-size 8204 -->
 	<property name="output.file" value="KMeans" />

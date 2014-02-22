@@ -16,9 +16,9 @@
  */
 package at.illecker.hama.hybrid.examples.kmeans;
 
-import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
+import org.trifort.rootbeer.runtime.HamaPeer;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.RootbeerGpu;
 
 public class KMeansHybridKernel implements Kernel {
 
@@ -191,7 +191,7 @@ public class KMeansHybridKernel implements Kernel {
 
           // System.out.println("SharedMemory init finished.");
         }
-        
+
         // Sync all threads within a block
         // input[][] was updated
         RootbeerGpu.syncthreads();

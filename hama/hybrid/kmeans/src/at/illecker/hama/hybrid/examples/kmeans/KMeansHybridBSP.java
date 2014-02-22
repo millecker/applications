@@ -49,12 +49,13 @@ import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 import com.google.common.base.Preconditions;
-
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class KMeansHybridBSP
     extends
@@ -513,12 +514,12 @@ public class KMeansHybridBSP
         m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0),
         peer.getAllPeerNames());
 
-    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
-
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize, m_blockSize
+        * m_gridSize), context);
     watch.stop();
 
     // Output inputs with corresponding new center id
@@ -558,10 +559,9 @@ public class KMeansHybridBSP
       m_logger.writeChars("KMeansHybrid,bspTimeGpu="
           + (this.m_bspTimeGpu / 1000.0) + " seconds\n");
 
-      List<StatsRow> stats = rootbeer.getStats();
+      List<StatsRow> stats = context.getStats();
       for (StatsRow row : stats) {
         m_logger.writeChars("  StatsRow:\n");
-        m_logger.writeChars("    init time: " + row.getInitTime() + "\n");
         m_logger.writeChars("    serial time: " + row.getSerializationTime()
             + "\n");
         m_logger.writeChars("    exec time: " + row.getExecutionTime() + "\n");

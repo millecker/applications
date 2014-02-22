@@ -24,8 +24,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hama.bsp.BSPJob;
 
-import at.illecker.hama.hybrid.examples.util.benchmark.BenchmarkLogger;
-
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
@@ -46,7 +44,6 @@ public class KMeansHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  private BenchmarkLogger benchmarkLogger = new BenchmarkLogger();
   private int vectorDimension = 3;
   private int maxIteration = 10;
 
