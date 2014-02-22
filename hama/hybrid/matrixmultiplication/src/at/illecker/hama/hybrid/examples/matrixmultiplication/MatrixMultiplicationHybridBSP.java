@@ -47,12 +47,14 @@ import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 import org.apache.hama.commons.util.KeyValuePair;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 import at.illecker.hama.hybrid.examples.matrixmultiplication.util.DistributedRowMatrix;
 import at.illecker.hama.hybrid.examples.matrixmultiplication.util.MatrixRowMessage;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class MatrixMultiplicationHybridBSP
     extends
@@ -257,21 +259,19 @@ public class MatrixMultiplicationHybridBSP
 
     MatrixMultiplicationHybridKernel kernel = new MatrixMultiplicationHybridKernel(
         peer.getConfiguration().get(CONF_MATRIX_MULT_B_PATH));
-    // 1 Kernel within 1 Block
-    rootbeer.setThreadConfig(1, 1, 1);
-    // rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize *
-    // m_gridSize);
 
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    // 1 Kernel within 1 Block
+    // new ThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
+    rootbeer.run(kernel, new ThreadConfig(1, 1, 1), context);
     watch.stop();
 
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       m_logger.writeChars("  StatsRow:\n");
-      m_logger.writeChars("    init time: " + row.getInitTime() + "\n");
       m_logger.writeChars("    serial time: " + row.getSerializationTime()
           + "\n");
       m_logger.writeChars("    exec time: " + row.getExecutionTime() + "\n");
