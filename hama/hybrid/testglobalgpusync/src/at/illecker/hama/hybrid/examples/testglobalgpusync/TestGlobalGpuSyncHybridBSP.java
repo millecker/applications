@@ -19,6 +19,8 @@ package at.illecker.hama.hybrid.examples.testglobalgpusync;
 import java.io.IOException;
 import java.util.List;
 
+import junit.framework.Assert;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -37,10 +39,11 @@ import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.NullOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
-
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class TestGlobalGpuSyncHybridBSP
     extends
@@ -61,7 +64,7 @@ public class TestGlobalGpuSyncHybridBSP
   // 40 registers -> max blockSize 768
   // 45 registers -> max blockSize 640
   // 48 registers -> max blockSize 640
-  public static final int BLOCK_SIZE = 1024;
+  public static final int BLOCK_SIZE = 14;
   public static final int GRID_SIZE = 14;
 
   private String m_masterTask;
@@ -125,12 +128,13 @@ public class TestGlobalGpuSyncHybridBSP
     int gridSize = Integer.parseInt(conf.get(CONF_GRID_SIZE));
 
     TestGlobalGpuSyncKernel kernel = new TestGlobalGpuSyncKernel(m_masterTask);
-    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
 
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(blockSize, gridSize, blockSize
+        * gridSize), context);
     watch.stop();
 
     // Debug output
@@ -139,10 +143,9 @@ public class TestGlobalGpuSyncHybridBSP
         peer.getTaskId() + ".log"));
 
     outStream.writeChars("TestGlobalGpuSycHybridBSP.bspGpu executed on GPU!\n");
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
-      outStream.writeChars("    init time: " + row.getInitTime() + "\n");
       outStream.writeChars("    serial time: " + row.getSerializationTime()
           + "\n");
       outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
@@ -156,6 +159,17 @@ public class TestGlobalGpuSyncHybridBSP
         + watch.elapsedTimeMillis() + " ms\n");
     outStream.writeChars("TestRootbeerHybridBSP,BlockSize=" + blockSize + "\n");
     outStream.writeChars("TestRootbeerHybridBSP,GridSize=" + gridSize + "\n");
+    outStream.writeChars("TestRootbeerHybridBSP,TotalThreads="
+        + (blockSize * gridSize) + "\n");
+    outStream.writeChars("TestRootbeerHybridBSP,MessageCount="
+        + kernel.messageCount + "\n");
+    outStream.writeChars("TestRootbeerHybridBSP,MessageSum="
+        + kernel.messageSum + "\n");
+
+    // Assert.assertEquals((blockSize * gridSize), kernel.messageCount);
+    // int n = (blockSize * gridSize) - 1;
+    // Assert.assertEquals((n * (n + 1)) / 2, kernel.messageSum);
+    outStream.writeChars("TestRootbeerHybridBSP.bspGpu: messages verified!'\n");
     outStream.close();
   }
 

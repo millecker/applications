@@ -16,28 +16,26 @@
  */
 package at.illecker.hama.hybrid.examples.testglobalgpusync;
 
-import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
+import org.trifort.rootbeer.runtime.HamaPeer;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.RootbeerGpu;
 
 public class TestGlobalGpuSyncKernel implements Kernel {
 
-  private String[] tmp = null;
+  private String[] m_tmp = null;
   private String m_peerName = null;
   private String m_masterTask = null; // input
+  public int messageCount;
+  public int messageSum;
 
   public TestGlobalGpuSyncKernel(String masterTask) {
     this.m_masterTask = masterTask;
   }
 
   public void gpuMethod() {
-    // Fix for error: identifier
-    // "java_lang_Integer_initab850b60f96d11de8a390800200c9a660_5_" is undefined
-    new Integer(0);
-
     // Fix for error: identifier "java_lang_String__array_new" is undefined
     // and error: identifier "java_lang_String__array_set" is undefined
-    tmp = new String[] { "test" };
+    m_tmp = new String[] { "test" };
 
     int threadId = RootbeerGpu.getThreadId();
     // System.out.println(threadId);
@@ -48,22 +46,26 @@ public class TestGlobalGpuSyncKernel implements Kernel {
     // Sync all blocks Inter-Block Synchronization
     RootbeerGpu.syncblocks(1);
 
-    if (RootbeerGpu.getThreadId() == 0) {
+    if (threadId == 0) {
 
       // Sync with other Peers, this call blocks
       HamaPeer.sync();
 
       m_peerName = HamaPeer.getPeerName();
+
       if (m_peerName.equals(m_masterTask)) {
-        System.out.println("Global Thread0 fetch messages:");
+        messageSum = 0;
+        messageCount = HamaPeer.getNumCurrentMessages();
+        System.out.print("Global Thread0 fetch messages:");
+        System.out.println(messageCount);
 
-        int msgCount = HamaPeer.getNumCurrentMessages();
-        System.out.println(msgCount);
-
-        for (int i = 0; i < msgCount; i++) {
+        for (int i = 0; i < messageCount; i++) {
           int message = HamaPeer.getCurrentIntMessage();
-          System.out.println(message);
+          // System.out.println(message);
+          messageSum += message;
         }
+        System.out.print("MessageSum:");
+        System.out.println(messageSum);
       }
     }
 

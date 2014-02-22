@@ -1,7 +1,7 @@
 <project>
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<property name="rootbeer.args" value="-maxrregcount 32 -64bit" />
+	<property name="rootbeer.args" value="-maxrregcount 32 -64bit -noexceptions" />
 	<property name="output.file" value="TestGlobalGpuSync" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />
