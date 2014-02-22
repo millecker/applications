@@ -16,7 +16,7 @@
  */
 package at.illecker.hama.hybrid.examples.onlinecf;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.Kernel;
 
 public class OnlineCFTrainHybridKernel implements Kernel {
 
