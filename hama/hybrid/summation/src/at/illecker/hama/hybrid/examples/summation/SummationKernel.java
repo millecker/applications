@@ -16,28 +16,27 @@
  */
 package at.illecker.hama.hybrid.examples.summation;
 
-import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
+import org.trifort.rootbeer.runtime.HamaPeer;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.KeyValuePair;
 
 public class SummationKernel implements Kernel {
 
+  private String[] m_tmp;
   private String m_masterTask;
-  public int numPeers = 0;
-  public String peerName;
+  public int m_numPeers = 0;
+  public String m_peerName;
 
   public SummationKernel(String masterTask) {
     this.m_masterTask = masterTask;
   }
 
   public void gpuMethod() {
-    numPeers = HamaPeer.getNumPeers();
+    // TODO load java_lang_String__array_new and java_lang_String__array_set
+    m_tmp = new String[1];
+    m_numPeers = HamaPeer.getNumPeers();
 
     double intermediateSum = 0.0;
-    // int key = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
-    // int value = 1; // [-128, 0] java_lang_Integer_valueOf11_5_ will fail
-    // autoboxing to Integer
-
     String key = "";
     String value = "";
     KeyValuePair keyValuePair = new KeyValuePair(key, value);
@@ -65,9 +64,9 @@ public class SummationKernel implements Kernel {
     HamaPeer.send(m_masterTask, intermediateSum);
     HamaPeer.sync();
 
-    // Consume messages
-    peerName = HamaPeer.getPeerName();
-    if (peerName.equals(m_masterTask)) {
+    // Fetch messages
+    m_peerName = HamaPeer.getPeerName();
+    if (m_peerName.equals(m_masterTask)) {
 
       double sum = 0.0;
       int msg_count = HamaPeer.getNumCurrentMessages();

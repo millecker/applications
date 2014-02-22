@@ -22,8 +22,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Random;
 
+import junit.framework.Assert;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -36,25 +39,26 @@ import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
 import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.FileInputFormat;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.KeyValueTextInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
-
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class SummationBSP extends
     HybridBSP<Text, Text, Text, DoubleWritable, DoubleWritable> {
 
   private static final Log LOG = LogFactory.getLog(SummationBSP.class);
-  private static final Path INPUT_PATH = new Path(
-      "input/hama/hybrid/examples/summation");
-  private static final Path TMP_OUTPUT = new Path(
-      "output/hama/hybrid/examples/summation-" + System.currentTimeMillis());
+  private static final Path CONF_TMP_DIR = new Path(
+      "output/hama/hybrid/examples/summation/hybrid-"
+          + System.currentTimeMillis());
+  private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
+  private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
   public static final int DOUBLE_PRECISION = 6;
 
   private String m_masterTask;
@@ -134,19 +138,18 @@ public class SummationBSP extends
     outStream.writeChars("SummationBSP.bspGpu executed on GPU!\n");
 
     SummationKernel kernel = new SummationKernel(m_masterTask);
-    // 1 Kernel within 1 Block
-    rootbeer.setThreadConfig(1, 1, 1);
 
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    // 1 Kernel within 1 Block
+    rootbeer.run(kernel, new ThreadConfig(1, 1, 1), context);
     watch.stop();
 
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
-      outStream.writeChars("    init time: " + row.getInitTime() + "\n");
       outStream.writeChars("    serial time: " + row.getSerializationTime()
           + "\n");
       outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
@@ -158,8 +161,10 @@ public class SummationBSP extends
 
     outStream.writeChars("SummationBSP,GPUTime=" + watch.elapsedTimeMillis()
         + "ms\n");
-    outStream.writeChars("SummationBSP,peerName: '" + kernel.peerName + "'\n");
-    outStream.writeChars("SummationBSP,numPeers: '" + kernel.numPeers + "'\n");
+    outStream
+        .writeChars("SummationBSP,peerName: '" + kernel.m_peerName + "'\n");
+    outStream
+        .writeChars("SummationBSP,numPeers: '" + kernel.m_numPeers + "'\n");
     outStream.close();
   }
 
@@ -180,6 +185,9 @@ public class SummationBSP extends
             LOG.info("Output File: " + status.getPath());
             LOG.info("key: '" + key + "' value: '" + value + "' expected: '"
                 + sum.doubleValue() + "'");
+            Assert.assertEquals("Expected value: '" + sum.doubleValue()
+                + "' != '" + value + "'", sum.doubleValue(), value.get(),
+                Math.pow(10, (DOUBLE_PRECISION * -1)));
           }
           reader.close();
 
@@ -220,23 +228,14 @@ public class SummationBSP extends
     return sum;
   }
 
-  static BSPJob getSummationJob(HamaConfiguration conf) throws IOException {
-    BSPJob bsp = new BSPJob(conf);
-    bsp.setInputFormat(KeyValueTextInputFormat.class);
-    bsp.setInputKeyClass(Text.class);
-    bsp.setInputValueClass(Text.class);
-    bsp.setOutputFormat(SequenceFileOutputFormat.class);
-    bsp.setOutputKeyClass(Text.class);
-    bsp.setOutputValueClass(DoubleWritable.class);
-    bsp.setMessageClass(DoubleWritable.class);
-    return bsp;
+  public static BSPJob getSummationJob(Path inPath, Path outPath)
+      throws IOException {
+    return getSummationJob(new HamaConfiguration(), inPath, outPath);
   }
 
-  public static void main(String[] args) throws InterruptedException,
-      IOException, ClassNotFoundException {
-    // BSP job configuration
-    HamaConfiguration conf = new HamaConfiguration();
-    BSPJob job = getSummationJob(conf);
+  public static BSPJob getSummationJob(Configuration conf, Path inPath,
+      Path outPath) throws IOException {
+    BSPJob job = new BSPJob(new HamaConfiguration(conf), SummationBSP.class);
     // Set the job name
     job.setJobName("HybridSummation Example");
     // set the BSP class which shall be executed
@@ -244,17 +243,32 @@ public class SummationBSP extends
     // help Hama to locale the jar to be distributed
     job.setJarByClass(SummationBSP.class);
 
-    FileInputFormat.setInputPaths(job, INPUT_PATH);
-    FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
+    job.setInputFormat(KeyValueTextInputFormat.class);
+    job.setInputKeyClass(Text.class);
+    job.setInputValueClass(Text.class);
+    job.setInputPath(inPath);
 
+    job.setOutputFormat(SequenceFileOutputFormat.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(DoubleWritable.class);
+    job.setOutputPath(outPath);
+
+    job.setMessageClass(DoubleWritable.class);
+    job.set("bsp.child.java.opts", "-Xmx4G");
+
+    return job;
+  }
+
+  public static void main(String[] args) throws InterruptedException,
+      IOException, ClassNotFoundException {
+
+    HamaConfiguration conf = new HamaConfiguration();
     FileSystem fs = FileSystem.get(conf);
 
     // Generate Summation input
-    fs.delete(INPUT_PATH, true);
-    BigDecimal sum = writeSummationInputFile(fs, INPUT_PATH);
+    BigDecimal sum = writeSummationInputFile(fs, CONF_INPUT_DIR);
 
-    // BSPJobClient jobClient = new BSPJobClient(conf);
-    // ClusterStatus cluster = jobClient.getClusterStatus(true);
+    BSPJob job = getSummationJob(conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
     if (args.length > 0) {
       if (args.length == 1) {
@@ -272,11 +286,14 @@ public class SummationBSP extends
 
     LOG.info("NumBspTask: " + job.getNumBspTask());
     LOG.info("NumBspGpuTask: " + job.getNumBspGpuTask());
+    LOG.info("inputPath: " + CONF_INPUT_DIR);
+    LOG.info("outputPath: " + CONF_OUTPUT_DIR);
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
       System.out.println("Job Finished in "
           + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
+
       printOutput(job, sum);
     }
   }
