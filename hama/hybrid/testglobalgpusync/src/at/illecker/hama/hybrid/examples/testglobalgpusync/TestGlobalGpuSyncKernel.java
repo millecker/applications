@@ -33,6 +33,10 @@ public class TestGlobalGpuSyncKernel implements Kernel {
   }
 
   public void gpuMethod() {
+    
+    // Init memory to 0
+    RootbeerGpu.syncblocks(0);
+    
     // Fix for error: identifier "java_lang_String__array_new" is undefined
     // and error: identifier "java_lang_String__array_set" is undefined
     m_tmp = new String[] { "test" };
@@ -42,7 +46,7 @@ public class TestGlobalGpuSyncKernel implements Kernel {
 
     // Each Kernel sends a message including its global threadId
     HamaPeer.send(m_masterTask, threadId);
-
+    
     // Sync all blocks Inter-Block Synchronization
     RootbeerGpu.syncblocks(1);
 
@@ -56,7 +60,7 @@ public class TestGlobalGpuSyncKernel implements Kernel {
       if (m_peerName.equals(m_masterTask)) {
         messageSum = 0;
         messageCount = HamaPeer.getNumCurrentMessages();
-        System.out.print("Global Thread0 fetch messages:");
+        System.out.print("Global Thread0 fetch messages: ");
         System.out.println(messageCount);
 
         for (int i = 0; i < messageCount; i++) {
@@ -64,7 +68,7 @@ public class TestGlobalGpuSyncKernel implements Kernel {
           // System.out.println(message);
           messageSum += message;
         }
-        System.out.print("MessageSum:");
+        System.out.print("MessageSum: ");
         System.out.println(messageSum);
       }
     }

@@ -155,21 +155,21 @@ public class TestGlobalGpuSyncHybridBSP
       outStream.writeChars("    num threads: " + row.getNumThreads() + "\n");
     }
 
-    outStream.writeChars("TestRootbeerHybridBSP,GPUTime="
+    outStream.writeChars("TestGlobalGpuSycHybridBSP,GPUTime="
         + watch.elapsedTimeMillis() + " ms\n");
-    outStream.writeChars("TestRootbeerHybridBSP,BlockSize=" + blockSize + "\n");
-    outStream.writeChars("TestRootbeerHybridBSP,GridSize=" + gridSize + "\n");
-    outStream.writeChars("TestRootbeerHybridBSP,TotalThreads="
+    outStream.writeChars("TestGlobalGpuSycHybridBSP,BlockSize=" + blockSize + "\n");
+    outStream.writeChars("TestGlobalGpuSycHybridBSP,GridSize=" + gridSize + "\n");
+    outStream.writeChars("TestGlobalGpuSycHybridBSP,TotalThreads="
         + (blockSize * gridSize) + "\n");
-    outStream.writeChars("TestRootbeerHybridBSP,MessageCount="
+    outStream.writeChars("TestGlobalGpuSycHybridBSP,MessageCount="
         + kernel.messageCount + "\n");
-    outStream.writeChars("TestRootbeerHybridBSP,MessageSum="
+    outStream.writeChars("TestGlobalGpuSycHybridBSP,MessageSum="
         + kernel.messageSum + "\n");
 
-    // Assert.assertEquals((blockSize * gridSize), kernel.messageCount);
-    // int n = (blockSize * gridSize) - 1;
-    // Assert.assertEquals((n * (n + 1)) / 2, kernel.messageSum);
-    outStream.writeChars("TestRootbeerHybridBSP.bspGpu: messages verified!'\n");
+    Assert.assertEquals((blockSize * gridSize), kernel.messageCount);
+    int n = (blockSize * gridSize) - 1;
+    Assert.assertEquals((n * (n + 1)) / 2, kernel.messageSum);
+    outStream.writeChars("TestGlobalGpuSycHybridBSP.bspGpu: messages verified!'\n");
     outStream.close();
   }
 
