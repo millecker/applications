@@ -16,41 +16,34 @@
  */
 package at.illecker.hama.hybrid.examples.testrootbeer;
 
-import edu.syr.pcpratts.rootbeer.runtime.HamaPeer;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.KeyValuePair;
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
+import org.trifort.rootbeer.runtime.HamaPeer;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.KeyValuePair;
+import org.trifort.rootbeer.runtime.RootbeerGpu;
 
 public class TestRootbeerKernel implements Kernel {
 
-  private String examplePath;
-  private String[] tmp;
-
   public int[] input;
   public String peerName;
+  public String[] allPeerNames;
 
-  public TestRootbeerKernel(String examplePath, int n) {
-    this.examplePath = examplePath;
+  public TestRootbeerKernel(int n) {
     this.input = new int[n];
-    // this.summation = new int[n];
   }
 
   public void gpuMethod() {
     System.out.println(RootbeerGpu.getThreadId());
 
+    // read input within one kernel of each block only -> GPUTime=926 ms
     if (RootbeerGpu.getThreadIdxx() == 0) {
-      // is required for
-      // error: identifier "java_lang_String__array_new" is undefined
-      tmp = new String[] { "test" };
-
       System.out.print("BlockSize: ");
       System.out.println(RootbeerGpu.getBlockDimx());
       System.out.print("GridSize: ");
       System.out.println(RootbeerGpu.getGridDimx());
       peerName = HamaPeer.getPeerName();
-      // System.out.println("input values:");
+      allPeerNames = HamaPeer.getAllPeerNames();
 
-      // test input within one kernel only -> GPUTime=926 ms
+      // System.out.println("input values:");
       int key = 1;
       int value = 1;
       KeyValuePair keyValuePair = new KeyValuePair(key, value);
@@ -58,14 +51,14 @@ public class TestRootbeerKernel implements Kernel {
         key = (Integer) keyValuePair.getKey();
         value = (Integer) keyValuePair.getValue();
         input[key] = value; //
-        System.out.println(value);
+        // System.out.println(value);
       }
 
     }
 
     RootbeerGpu.syncthreads();
 
-    // test input within each kernel -> GPUTime=18165 ms sync overhead!!!
+    // test input within every kernel -> GPUTime=18165 ms sync overhead!!!
     // int key = 1;
     // int value = 1;
     // KeyValuePair keyValuePair = new KeyValuePair(key, value);
@@ -81,6 +74,6 @@ public class TestRootbeerKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new TestRootbeerKernel(new String(""), 0);
+    new TestRootbeerKernel(0);
   }
 }
