@@ -248,23 +248,42 @@ public class HelloHybridBSP
     return job;
   }
 
-  private static void prepareInput(Configuration conf, Path input,
-      Path example, int n) throws IOException {
-    FileSystem fs = input.getFileSystem(conf);
+  private static void prepareInput(Configuration conf, Path inputPath,
+      Path exampleFile, int n) throws IOException {
+    FileSystem fs = inputPath.getFileSystem(conf);
 
-    SequenceFile.Writer inputWriter = SequenceFile.createWriter(fs, conf,
-        input, IntWritable.class, NullWritable.class, CompressionType.NONE);
+    // Create input file writers depending on bspTaskNum
+    int bspTaskNum = conf.getInt("bsp.peers.num", 1);
+    SequenceFile.Writer[] inputWriters = new SequenceFile.Writer[bspTaskNum];
+    for (int i = 0; i < bspTaskNum; i++) {
+      Path inputFile = new Path(inputPath, "input" + i + ".seq");
+      LOG.info("inputFile: " + inputFile.toString());
+      inputWriters[i] = SequenceFile.createWriter(fs, conf, inputFile,
+          IntWritable.class, NullWritable.class, CompressionType.NONE);
+    }
 
+    // Create example file writer
     SequenceFile.Writer exampleWriter = SequenceFile.createWriter(fs, conf,
-        example, IntWritable.class, NullWritable.class, CompressionType.NONE);
+        exampleFile, IntWritable.class, NullWritable.class,
+        CompressionType.NONE);
 
+    // Write random values to input files and example
+    IntWritable inputKey = new IntWritable();
     NullWritable nullValue = NullWritable.get();
     Random r = new Random();
     for (long i = 0; i < n; i++) {
-      inputWriter.append(new IntWritable(r.nextInt(n)), nullValue);
-      exampleWriter.append(new IntWritable(r.nextInt(n)), nullValue);
+      inputKey.set(r.nextInt(n));
+      for (int j = 0; j < inputWriters.length; j++) {
+        inputWriters[j].append(inputKey, nullValue);
+      }
+      inputKey.set(r.nextInt(n));
+      exampleWriter.append(inputKey, nullValue);
     }
-    inputWriter.close();
+
+    // Close file writers
+    for (int j = 0; j < inputWriters.length; j++) {
+      inputWriters[j].close();
+    }
     exampleWriter.close();
   }
 
@@ -328,14 +347,11 @@ public class HelloHybridBSP
     LOG.info("inputPath: " + CONF_INPUT_DIR);
     LOG.info("outputPath: " + CONF_OUTPUT_DIR);
 
-    Path input = new Path(CONF_INPUT_DIR, "input.seq");
     Path example = new Path(CONF_INPUT_DIR.getParent(), "example.seq");
     conf.set(CONF_EXAMPLE_PATH, example.toString());
-
-    LOG.info("inputFile: " + input.toString());
     LOG.info("exampleFile: " + example.toString());
 
-    prepareInput(conf, input, example, CONF_N);
+    prepareInput(conf, CONF_INPUT_DIR, example, CONF_N);
 
     BSPJob job = createHelloHybridBSPConf(conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
@@ -344,8 +360,8 @@ public class HelloHybridBSP
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
 
-      printOutput(job, input);
-      printOutput(job, example);
+      // printOutput(job, CONF_INPUT_DIR);
+      // printOutput(job, example);
       printOutput(job, FileOutputFormat.getOutputPath(job));
     }
   }
