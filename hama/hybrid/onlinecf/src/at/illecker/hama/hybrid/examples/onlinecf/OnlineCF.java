@@ -26,7 +26,6 @@ import java.util.PriorityQueue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.math3.util.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -38,16 +37,14 @@ import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.io.VectorWritable;
 import org.apache.hama.commons.math.DoubleVector;
 import org.apache.hama.commons.math.SquareVectorFunction;
-import org.apache.hama.ml.recommendation.ItemSimilarity;
+import org.apache.hama.commons.util.KeyValuePair;
 import org.apache.hama.ml.recommendation.Preference;
 import org.apache.hama.ml.recommendation.Recommender;
 import org.apache.hama.ml.recommendation.RecommenderIO;
-import org.apache.hama.ml.recommendation.UserSimilarity;
 import org.apache.hama.ml.recommendation.cf.function.MeanAbsError;
 import org.apache.hama.ml.recommendation.cf.function.OnlineUpdate.InputStructure;
 
-public class OnlineCF implements Recommender, RecommenderIO, UserSimilarity,
-    ItemSimilarity {
+public class OnlineCF implements Recommender, RecommenderIO {
 
   protected static Log LOG = LogFactory.getLog(OnlineCF.class);
 
@@ -256,38 +253,39 @@ public class OnlineCF implements Recommender, RecommenderIO, UserSimilarity,
     return null;
   }
 
-  @Override
   public double calculateUserSimilarity(long user1, long user2) {
     // TODO Auto-generated method stub
     return 0;
   }
 
-  @Override
-  public List<Pair<Long, Double>> getMostSimilarUsers(long user, int count) {
+  public List<KeyValuePair<Long, Double>> getMostSimilarUsers(long user,
+      int count) {
 
-    Comparator<Pair<Long, Double>> similarityComparator = new Comparator<Pair<Long, Double>>() {
+    Comparator<KeyValuePair<Long, Double>> similarityComparator = new Comparator<KeyValuePair<Long, Double>>() {
 
       @Override
-      public int compare(Pair<Long, Double> arg0, Pair<Long, Double> arg1) {
+      public int compare(KeyValuePair<Long, Double> arg0,
+          KeyValuePair<Long, Double> arg1) {
         double difference = arg0.getValue().doubleValue()
             - arg1.getValue().doubleValue();
         return (int) (100000 * difference);
       }
     };
-    PriorityQueue<Pair<Long, Double>> queue = new PriorityQueue<Pair<Long, Double>>(
+
+    PriorityQueue<KeyValuePair<Long, Double>> queue = new PriorityQueue<KeyValuePair<Long, Double>>(
         count, similarityComparator);
-    LinkedList<Pair<Long, Double>> results = new LinkedList<Pair<Long, Double>>();
+
+    LinkedList<KeyValuePair<Long, Double>> results = new LinkedList<KeyValuePair<Long, Double>>();
     for (Long candidateUser : m_modelUserFactorizedValues.keySet()) {
       double similarity = calculateUserSimilarity(user, candidateUser);
-      Pair<Long, Double> targetUser = new Pair<Long, Double>(candidateUser,
-          similarity);
+      KeyValuePair<Long, Double> targetUser = new KeyValuePair<Long, Double>(
+          candidateUser, similarity);
       queue.add(targetUser);
     }
     results.addAll(queue);
     return results;
   }
 
-  @Override
   public double calculateItemSimilarity(long item1, long item2) {
     VectorWritable itm1 = this.m_modelUserFactorizedValues.get(Long
         .valueOf(item1));
@@ -306,25 +304,26 @@ public class OnlineCF implements Recommender, RecommenderIO, UserSimilarity,
             .applyToElements(new SquareVectorFunction()).sum(), 0.5);
   }
 
-  @Override
-  public List<Pair<Long, Double>> getMostSimilarItems(long item, int count) {
+  public List<KeyValuePair<Long, Double>> getMostSimilarItems(long item,
+      int count) {
 
-    Comparator<Pair<Long, Double>> similarityComparator = new Comparator<Pair<Long, Double>>() {
+    Comparator<KeyValuePair<Long, Double>> similarityComparator = new Comparator<KeyValuePair<Long, Double>>() {
 
       @Override
-      public int compare(Pair<Long, Double> arg0, Pair<Long, Double> arg1) {
+      public int compare(KeyValuePair<Long, Double> arg0,
+          KeyValuePair<Long, Double> arg1) {
         double difference = arg0.getValue().doubleValue()
             - arg1.getValue().doubleValue();
         return (int) (100000 * difference);
       }
     };
-    PriorityQueue<Pair<Long, Double>> queue = new PriorityQueue<Pair<Long, Double>>(
+    PriorityQueue<KeyValuePair<Long, Double>> queue = new PriorityQueue<KeyValuePair<Long, Double>>(
         count, similarityComparator);
-    LinkedList<Pair<Long, Double>> results = new LinkedList<Pair<Long, Double>>();
+    LinkedList<KeyValuePair<Long, Double>> results = new LinkedList<KeyValuePair<Long, Double>>();
     for (Long candidateItem : m_modelItemFactorizedValues.keySet()) {
       double similarity = calculateItemSimilarity(item, candidateItem);
-      Pair<Long, Double> targetItem = new Pair<Long, Double>(candidateItem,
-          similarity);
+      KeyValuePair<Long, Double> targetItem = new KeyValuePair<Long, Double>(
+          candidateItem, similarity);
       queue.add(targetItem);
     }
     results.addAll(queue);
