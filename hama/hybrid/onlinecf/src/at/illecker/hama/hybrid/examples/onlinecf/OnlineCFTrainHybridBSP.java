@@ -44,9 +44,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hama.Constants;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.HashPartitioner;
 import org.apache.hama.bsp.SequenceFileInputFormat;
@@ -176,103 +174,106 @@ public class OnlineCFTrainHybridBSP
       BSPPeer<IntWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    int loggingPeer = 0;
     long startTime = System.currentTimeMillis();
     HashSet<Text> requiredUserFeatures = null;
     HashSet<Text> requiredItemFeatures = null;
 
-    LOG.info(peer.getPeerName() + ") collecting input data");
+    m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
     collectInput(peer);
 
     // TODO
     // REMOVED broadcast user features and item features
 
-    LOG.info(peer.getPeerName() + ") collected: " + this.m_usersMatrix.size()
-        + " users, " + this.m_itemsMatrix.size() + " items, "
-        + this.m_preferences.size() + " preferences");
+    m_logger.writeChars(peer.getPeerName() + ") collected: "
+        + this.m_usersMatrix.size() + " users, " + this.m_itemsMatrix.size()
+        + " items, " + this.m_preferences.size() + " preferences\n");
 
     // DEBUG
-    if (peer.getPeerIndex() == loggingPeer) {
-      LOG.info(peer.getPeerName() + ") usersMatrix: length: "
-          + this.m_usersMatrix.size());
-      for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
-          .entrySet()) {
-        LOG.info(peer.getPeerName() + ") key: '" + e.getKey() + "' value: '"
-            + e.getValue().toString() + "'");
-      }
-      LOG.info(peer.getPeerName() + ") itemsMatrix: length: "
-          + this.m_itemsMatrix.size());
-      for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix
-          .entrySet()) {
-        LOG.info(peer.getPeerName() + ") key: '" + e.getKey() + "' value: '"
-            + e.getValue().toString() + "'");
-      }
-      LOG.info(peer.getPeerName() + ") preferences: length: "
-          + this.m_preferences.size());
-      for (Preference p : this.m_preferences) {
-        LOG.info(peer.getPeerName() + ") userId: '" + p.getUserId()
-            + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
-            + "'");
-      }
-      LOG.info("indexes: length: " + this.m_indexes.size() + " indexes: "
-          + Arrays.toString(this.m_indexes.toArray()));
 
+    m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
+        + this.m_usersMatrix.size() + "\n");
+    for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
+        .entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+          + "' value: '" + e.getValue().toString() + "'\n");
     }
+    m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
+        + this.m_itemsMatrix.size() + "\n");
+    for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix.entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+          + "' value: '" + e.getValue().toString() + "'\n");
+    }
+    m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
+        + this.m_preferences.size() + "\n");
+    for (Preference p : this.m_preferences) {
+      m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
+          + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
+          + "'\n");
+    }
+    m_logger.writeChars("indexes: length: " + this.m_indexes.size()
+        + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
       computeValues();
 
       // DEBUG
-      if (peer.getPeerIndex() == loggingPeer) {
-        LOG.info(peer.getPeerName() + ") usersMatrix: length: "
-            + this.m_usersMatrix.size());
-        for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
-            .entrySet()) {
-          LOG.info(peer.getPeerName() + ") key: '" + e.getKey() + "' value: '"
-              + e.getValue().toString() + "'");
-        }
-        LOG.info(peer.getPeerName() + ") itemsMatrix: length: "
-            + this.m_itemsMatrix.size());
-        for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix
-            .entrySet()) {
-          LOG.info(peer.getPeerName() + ") key: '" + e.getKey() + "' value: '"
-              + e.getValue().toString() + "'");
-        }
-        LOG.info("indexes: length: " + this.m_indexes.size() + " indexes: "
-            + Arrays.toString(this.m_indexes.toArray()));
+      m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
+          + this.m_usersMatrix.size() + "\n");
+      for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
+          .entrySet()) {
+        m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+            + "' value: '" + e.getValue().toString() + "'\n");
       }
+      m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
+          + this.m_itemsMatrix.size() + "\n");
+      for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix
+          .entrySet()) {
+        m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+            + "' value: '" + e.getValue().toString() + "'\n");
+      }
+      m_logger.writeChars("indexes: length: " + this.m_indexes.size()
+          + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
       if ((i + 1) % m_skip_count == 0) {
         // DEBUG
-        if (peer.getPeerIndex() == loggingPeer) {
-          LOG.info(peer.getPeerName()
-              + ") normalizeWithBroadcastingValues: i: " + i);
-        }
+        m_logger.writeChars(peer.getPeerName()
+            + ") normalizeWithBroadcastingValues: i: " + i + "\n");
 
         normalizeWithBroadcastingValues(peer);
       }
     }
 
     // DEBUG
-    if (peer.getPeerIndex() == loggingPeer) {
-      LOG.info(peer.getPeerName() + ") usersMatrix: length: "
-          + this.m_usersMatrix.size());
-      for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
-          .entrySet()) {
-        LOG.info(peer.getPeerName() + ") key: '" + e.getKey() + "' value: '"
-            + e.getValue().toString() + "'");
-      }
-      LOG.info(peer.getPeerName() + ") itemsMatrix: length: "
-          + this.m_itemsMatrix.size());
-      for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix
-          .entrySet()) {
-        LOG.info(peer.getPeerName() + ") key: '" + e.getKey() + "' value: '"
-            + e.getValue().toString() + "'");
-      }
+    m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
+        + this.m_usersMatrix.size() + "\n");
+    for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
+        .entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+          + "' value: '" + e.getValue().toString() + "'\n");
+    }
+    m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
+        + this.m_itemsMatrix.size() + "\n");
+    for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix.entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+          + "' value: '" + e.getValue().toString() + "'\n");
     }
 
-    saveModel(peer);
+    // Save Model
+    // save user information
+    m_logger.writeChars(peer.getPeerName() + ") saving " + m_usersMatrix.size()
+        + " users\n");
+    for (Map.Entry<Integer, PipesVectorWritable> user : m_usersMatrix
+        .entrySet()) {
+      peer.write(new Text("u" + user.getKey()), user.getValue());
+    }
+
+    // save item information
+    m_logger.writeChars(peer.getPeerName() + ") saving " + m_itemsMatrix.size()
+        + " items\n");
+    for (Map.Entry<Long, PipesVectorWritable> item : m_itemsMatrix.entrySet()) {
+      peer.write(new Text("i" + item.getKey()), item.getValue());
+    }
 
     this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
 
@@ -444,24 +445,6 @@ public class OnlineCFTrainHybridBSP
     }
   }
 
-  private void saveModel(
-      BSPPeer<IntWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
-      throws IOException, SyncException, InterruptedException {
-
-    // save user information
-    LOG.info(peer.getPeerName() + ") saving " + m_usersMatrix.size() + " users");
-    for (Map.Entry<Integer, PipesVectorWritable> user : m_usersMatrix
-        .entrySet()) {
-      peer.write(new Text("u" + user.getKey()), user.getValue());
-    }
-
-    // save item information
-    LOG.info(peer.getPeerName() + ") saving " + m_itemsMatrix.size() + " items");
-    for (Map.Entry<Long, PipesVectorWritable> item : m_itemsMatrix.entrySet()) {
-      peer.write(new Text("i" + item.getKey()), item.getValue());
-    }
-  }
-
   /********************************* GPU *********************************/
   @Override
   public void setupGpu(
@@ -623,7 +606,7 @@ public class OnlineCFTrainHybridBSP
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
 
-    int maxIteration = 3; //150;
+    int maxIteration = 3; // 150;
     int matrixRank = 3;
     int skipCount = 1;
 
