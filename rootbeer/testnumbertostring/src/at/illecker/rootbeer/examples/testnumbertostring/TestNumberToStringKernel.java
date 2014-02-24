@@ -18,11 +18,13 @@ package at.illecker.rootbeer.examples.testnumbertostring;
 
 import java.util.List;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.RootbeerGpu;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class TestNumberToStringKernel implements Kernel {
   // gridSize = amount of blocks and multiprocessors
@@ -88,19 +90,18 @@ public class TestNumberToStringKernel implements Kernel {
     Rootbeer rootbeer = new Rootbeer();
     TestNumberToStringKernel kernel = new TestNumberToStringKernel();
 
-    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
-
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(blockSize, gridSize, blockSize
+        * gridSize), context);
     watch.stop();
 
     // Logging
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       System.out.println("  StatsRow:");
-      System.out.println("    init time: " + row.getInitTime());
       System.out.println("    serial time: " + row.getSerializationTime());
       System.out.println("    exec time: " + row.getExecutionTime());
       System.out.println("    deserial time: " + row.getDeserializationTime());
