@@ -618,25 +618,25 @@ public class OnlineCFTrainHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numBspTask = 1;
-    int numGpuBspTask = 1;
+    int numBspTask = 2; // CPU + GPU tasks
+    int numGpuBspTask = 0; // GPU tasks
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
 
-    int maxIteration = 150;
+    int maxIteration = 3; //150;
     int matrixRank = 3;
     int skipCount = 1;
 
-    boolean useTestExampleInput = false;
-    boolean isDebugging = false;
+    boolean useTestExampleInput = true;
+    boolean isDebugging = true;
 
     Configuration conf = new HamaConfiguration();
     FileSystem fs = FileSystem.get(conf);
 
     // Set numBspTask to maxTasks
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
-    numBspTask = cluster.getMaxTasks();
+    // BSPJobClient jobClient = new BSPJobClient(conf);
+    // ClusterStatus cluster = jobClient.getClusterStatus(true);
+    // numBspTask = cluster.getMaxTasks();
 
     if (args.length > 0) {
       if (args.length == 9) {
@@ -676,7 +676,7 @@ public class OnlineCFTrainHybridBSP
 
     // Set config variables
     conf.setBoolean(CONF_DEBUG, isDebugging);
-    conf.setBoolean("hama.pipes.logging", false);
+    conf.setBoolean("hama.pipes.logging", isDebugging);
     // Set CPU tasks
     conf.setInt("bsp.peers.num", numBspTask);
     // Set GPU tasks
