@@ -22,7 +22,6 @@ import org.trifort.rootbeer.runtime.KeyValuePair;
 
 public class SummationKernel implements Kernel {
 
-  private String[] m_tmp;
   private String m_masterTask;
   public int m_numPeers = 0;
   public String m_peerName;
@@ -32,8 +31,6 @@ public class SummationKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    // TODO load java_lang_String__array_new and java_lang_String__array_set
-    m_tmp = new String[1];
     m_numPeers = HamaPeer.getNumPeers();
 
     double intermediateSum = 0.0;

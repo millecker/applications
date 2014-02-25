@@ -22,7 +22,6 @@ import org.trifort.rootbeer.runtime.RootbeerGpu;
 
 public class TestGlobalGpuSyncKernel implements Kernel {
 
-  private String[] m_tmp = null;
   private String m_peerName = null;
   private String m_masterTask = null; // input
   public int messageCount;
@@ -33,20 +32,15 @@ public class TestGlobalGpuSyncKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    
     // Init memory to 0
     RootbeerGpu.syncblocks(0);
-    
-    // Fix for error: identifier "java_lang_String__array_new" is undefined
-    // and error: identifier "java_lang_String__array_set" is undefined
-    m_tmp = new String[] { "test" };
 
     int threadId = RootbeerGpu.getThreadId();
     // System.out.println(threadId);
 
     // Each Kernel sends a message including its global threadId
     HamaPeer.send(m_masterTask, threadId);
-    
+
     // Sync all blocks Inter-Block Synchronization
     RootbeerGpu.syncblocks(1);
 
