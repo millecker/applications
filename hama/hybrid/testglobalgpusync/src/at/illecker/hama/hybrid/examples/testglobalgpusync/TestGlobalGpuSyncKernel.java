@@ -32,9 +32,6 @@ public class TestGlobalGpuSyncKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    // Init memory to 0
-    RootbeerGpu.syncblocks(0);
-
     int threadId = RootbeerGpu.getThreadId();
     // System.out.println(threadId);
 
