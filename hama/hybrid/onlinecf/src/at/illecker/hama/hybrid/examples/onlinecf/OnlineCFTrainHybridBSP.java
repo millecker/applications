@@ -196,7 +196,7 @@ public class OnlineCFTrainHybridBSP
     }
     m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
         + this.m_preferences.size() + "\n");
-    for (Preference p : this.m_preferences) {
+    for (Preference<Integer, Long> p : this.m_preferences) {
       m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
           + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
           + "'\n");
@@ -204,6 +204,7 @@ public class OnlineCFTrainHybridBSP
     m_logger.writeChars("indexes: length: " + this.m_indexes.size()
         + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
+    // BEGIN ON GPU
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
       computeValues();
@@ -236,6 +237,7 @@ public class OnlineCFTrainHybridBSP
         normalizeWithBroadcastingValues(peer);
       }
     }
+    // END ON GPU
 
     // DEBUG
     m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
@@ -333,9 +335,8 @@ public class OnlineCFTrainHybridBSP
     }
 
     // compute values
-    Preference<Integer, Long> pref = null;
     for (Integer prefIdx : m_indexes) {
-      pref = m_preferences.get(prefIdx);
+      Preference<Integer, Long> pref = m_preferences.get(prefIdx);
 
       // function input
       PipesVectorWritable in_userFactorizedValues = m_usersMatrix.get(pref
@@ -762,7 +763,7 @@ public class OnlineCFTrainHybridBSP
     LOG.info("skipCount: " + skipCount);
 
     // prepare Input
-    Preference[] testPrefs = null;
+    Preference<Integer, Integer>[] testPrefs = null;
     if (useTestExampleInput) {
       Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
       testPrefs = prepareInputData(conf, fs, CONF_INPUT_DIR, preferencesIn,
@@ -808,9 +809,9 @@ public class OnlineCFTrainHybridBSP
    * prepareInputData
    * 
    */
-  public static Preference[] prepareInputData(Configuration conf,
-      FileSystem fs, Path in, Path preferencesIn, Random rand)
-      throws IOException {
+  public static Preference<Integer, Integer>[] prepareInputData(
+      Configuration conf, FileSystem fs, Path in, Path preferencesIn,
+      Random rand) throws IOException {
 
     Preference[] train_prefs = { new Preference<Integer, Integer>(1, 1, 4),
         new Preference<Integer, Integer>(1, 2, 2.5),
@@ -849,11 +850,9 @@ public class OnlineCFTrainHybridBSP
       double values[] = new double[2];
       values[0] = taste.getItemId();
       values[1] = taste.getValue().get();
-
       prefWriter.append(new IntWritable(taste.getUserId()),
           new PipesVectorWritable(new DenseDoubleVector(values)));
     }
-
     prefWriter.close();
 
     return test_prefs;
