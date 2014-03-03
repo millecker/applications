@@ -169,6 +169,7 @@ public class OnlineCFTrainHybridBSP
     long startTime = System.currentTimeMillis();
 
     m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
+
     collectInput(peer);
 
     // TODO
@@ -181,6 +182,16 @@ public class OnlineCFTrainHybridBSP
         + " items, " + this.m_preferences.size() + " preferences\n");
 
     // DEBUG
+    m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
+        + this.m_preferences.size() + "\n");
+    for (Preference<Integer, Long> p : this.m_preferences) {
+      m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
+          + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
+          + "'\n");
+    }
+    m_logger.writeChars("indexes: length: " + this.m_indexes.size()
+        + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
+
     m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
         + this.m_usersMatrix.size() + "\n");
     for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
@@ -194,19 +205,11 @@ public class OnlineCFTrainHybridBSP
       m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
           + "' value: '" + e.getValue().toString() + "'\n");
     }
-    m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
-        + this.m_preferences.size() + "\n");
-    for (Preference<Integer, Long> p : this.m_preferences) {
-      m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
-          + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
-          + "'\n");
-    }
-    m_logger.writeChars("indexes: length: " + this.m_indexes.size()
-        + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
     // BEGIN ON GPU
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
+
       computeValues();
 
       // DEBUG
@@ -321,7 +324,7 @@ public class OnlineCFTrainHybridBSP
     }
   }
 
-  private void computeValues() {
+  private void computeValues() throws IOException {
     // shuffling indexes
     int idx = 0;
     int idxValue = 0;
@@ -347,6 +350,15 @@ public class OnlineCFTrainHybridBSP
           .get(pref.getUserId()) : null;
       VectorWritable in_itemFeatures = (m_inpItemsFeatures != null) ? m_inpItemsFeatures
           .get(pref.getItemId()) : null;
+
+      // DEBUG
+      m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
+          + pref.getUserId() + "," + pref.getItemId() + ","
+          + pref.getValue().get() + ")\n");
+      m_logger.writeChars("alpa_al: "
+          + in_userFactorizedValues.getVector().toString() + "\n");
+      m_logger.writeChars("beta_bl: "
+          + in_itemFactorizedValues.getVector().toString() + "\n");
 
       // function input
       VectorWritable out_userFactorized;
@@ -390,13 +402,10 @@ public class OnlineCFTrainHybridBSP
       double scoreDifference = 0.0;
       scoreDifference = expectedScore - calculatedScore;
 
-      // β_bl ← β_bl + 2τ * (α_al + μ_l: * x_a:)(r − R)
-      // items ← item + itemFactorization (will be used later)
-      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * TETTA
-          * scoreDifference);
-      DoubleVector items = in_itemFactorizedValues.getVector().add(
-          itemFactorization);
-      out_itemFactorized = new VectorWritable(items);
+      // DEBUG
+      m_logger.writeChars("expectedScore: " + expectedScore
+          + " calculatedScore: " + calculatedScore + " scoreDifference: "
+          + scoreDifference + "\n");
 
       // α_al ← α_al + 2τ * (β_bl + ν_l: * y_b:)(r − R)
       // users ← user + userFactorization (will be used later)
@@ -405,6 +414,20 @@ public class OnlineCFTrainHybridBSP
       DoubleVector users = in_userFactorizedValues.getVector().add(
           userFactorization);
       out_userFactorized = new VectorWritable(users);
+
+      // β_bl ← β_bl + 2τ * (α_al + μ_l: * x_a:)(r − R)
+      // items ← item + itemFactorization (will be used later)
+      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * TETTA
+          * scoreDifference);
+      DoubleVector items = in_itemFactorizedValues.getVector().add(
+          itemFactorization);
+      out_itemFactorized = new VectorWritable(items);
+
+      // DEBUG
+      m_logger.writeChars("UPDATE alpa_al: "
+          + out_userFactorized.getVector().toString() + "\n");
+      m_logger.writeChars("UPDATE beta_bl: "
+          + out_itemFactorized.getVector().toString() + "\n");
 
       // Compute features
       // for d = 1 to D do:
