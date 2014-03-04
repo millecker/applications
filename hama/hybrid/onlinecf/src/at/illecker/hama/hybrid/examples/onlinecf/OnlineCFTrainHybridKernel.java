@@ -43,7 +43,40 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   }
 
   public void gpuMethod() {
-    // m_userItemMap.get(0, 0);
+    System.out.println("userItemMap (1,1," + m_userItemMap.get(1, 1) + ")");
+    System.out.println("userItemMap (1,2," + m_userItemMap.get(1, 2) + ")");
+    System.out.println("userItemMap (1,3," + m_userItemMap.get(1, 3) + ")");
+    System.out.println("userItemMap (1,4," + m_userItemMap.get(1, 4) + ")");
+
+    System.out.println("usersMatrix (1," + arrayToString(m_usersMatrix.get(1))
+        + ")");
+    System.out.println("usersMatrix (2," + arrayToString(m_usersMatrix.get(2))
+        + ")");
+    System.out.println("usersMatrix (3," + arrayToString(m_usersMatrix.get(3))
+        + ")");
+
+    System.out.println("itemsMatrix (1," + arrayToString(m_itemsMatrix.get(1))
+        + ")");
+    System.out.println("itemsMatrix (2," + arrayToString(m_itemsMatrix.get(2))
+        + ")");
+    System.out.println("itemsMatrix (3," + arrayToString(m_itemsMatrix.get(3))
+        + ")");
+    System.out.println("itemsMatrix (4," + arrayToString(m_itemsMatrix.get(4))
+        + ")");
+    System.out.println("itemsMatrix (5," + arrayToString(m_itemsMatrix.get(5))
+        + ")");
+  }
+
+  private String arrayToString(double[] arr) {
+    if (arr != null) {
+      String result = "[";
+      for (int i = 0; i < arr.length; i++) {
+        result += (i + 1 == arr.length) ? arr[i] : (arr[i] + ",");
+      }
+      result += "]";
+      return result;
+    }
+    return "null";
   }
 
   public static void main(String[] args) {

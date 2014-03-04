@@ -35,8 +35,8 @@ public final class UserItemMap {
     if (entry != null) {
       KeyValuePair key = (KeyValuePair) entry.getKey();
       if (key != null) {
-        return ((Integer) key.getKey()).equals(userId)
-            && ((Long) key.getValue()).equals(itemId);
+        return (((Integer) key.getKey()) == userId)
+            && (((Long) key.getValue()) == itemId);
       }
     }
     return false;
@@ -44,11 +44,9 @@ public final class UserItemMap {
 
   public int indexForKey(int userId, long itemId) {
     // use Cantor pairing function
-    return (int) cantorPairFunction(userId, itemId) % m_values.length;
-  }
-
-  public long cantorPairFunction(int k1, long k2) {
-    return (long) 0.5 * (k1 + k2) * (k1 + k2 + 1) + k2;
+    long cantorPairingFunc = (long) ((0.5 * (userId + itemId) * (userId
+        + itemId + 1)) + itemId);
+    return (int) cantorPairingFunc % m_values.length;
   }
 
   public Double get(int userId, long itemId) {
@@ -62,7 +60,6 @@ public final class UserItemMap {
   public void put(int userId, long itemId, double value) {
     int bucketIndex = indexForKey(userId, itemId);
     KeyValuePair entry = m_values[bucketIndex];
-
     if (entry != null) {
       boolean done = false;
       while (!done) {

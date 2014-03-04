@@ -33,10 +33,8 @@ public final class VectorMap {
 
   private boolean equalsKey(KeyValuePair entry, long id) {
     if (entry != null) {
-      Long key = (Long) entry.getKey();
-      if (key != null) {
-        return key.equals(id);
-      }
+      long key = (Long) entry.getKey();
+      return (key == id);
     }
     return false;
   }
@@ -56,7 +54,6 @@ public final class VectorMap {
   public void put(long id, double[] value) {
     int bucketIndex = indexForKey(id);
     KeyValuePair entry = m_values[bucketIndex];
-
     if (entry != null) {
       boolean done = false;
       while (!done) {
