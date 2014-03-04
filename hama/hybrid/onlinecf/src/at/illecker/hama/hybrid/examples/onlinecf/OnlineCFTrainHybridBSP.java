@@ -53,12 +53,12 @@ import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.io.VectorWritable;
 import org.apache.hama.commons.math.DenseDoubleVector;
-import org.apache.hama.commons.math.DoubleMatrix;
 import org.apache.hama.commons.math.DoubleVector;
 import org.apache.hama.ml.recommendation.Preference;
 import org.trifort.rootbeer.runtime.Context;
 import org.trifort.rootbeer.runtime.Rootbeer;
 import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
 import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class OnlineCFTrainHybridBSP
@@ -110,15 +110,6 @@ public class OnlineCFTrainHybridBSP
   private HashMap<Integer, PipesVectorWritable> m_usersMatrix = new HashMap<Integer, PipesVectorWritable>();
   // itemId, factorized value
   private HashMap<Long, PipesVectorWritable> m_itemsMatrix = new HashMap<Long, PipesVectorWritable>();
-
-  // matrixRank, factorized value
-  private DoubleMatrix m_userFeatureMatrix = null;
-  private DoubleMatrix m_itemFeatureMatrix = null;
-
-  // obtained from input data
-  // will not change during execution
-  private HashMap<String, PipesVectorWritable> m_inpUsersFeatures = null;
-  private HashMap<String, PipesVectorWritable> m_inpItemsFeatures = null;
 
   Random m_rnd = new Random();
 
@@ -267,13 +258,13 @@ public class OnlineCFTrainHybridBSP
     this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
 
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("OnlineTrainHybridBSP,setupTimeCpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,setupTimeCpu="
           + this.m_setupTimeCpu + " ms\n");
-      m_logger.writeChars("OnlineTrainHybridBSP,setupTimeCpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,setupTimeCpu="
           + (this.m_setupTimeCpu / 1000.0) + " seconds\n");
-      m_logger.writeChars("OnlineTrainHybridBSP,bspTimeCpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,bspTimeCpu="
           + this.m_bspTimeCpu + " ms\n");
-      m_logger.writeChars("OnlineTrainHybridBSP,bspTimeCpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,bspTimeCpu="
           + (this.m_bspTimeCpu / 1000.0) + " seconds\n");
       m_logger.close();
     }
@@ -482,8 +473,10 @@ public class OnlineCFTrainHybridBSP
 
     this.m_maxIterations = m_conf.getInt(OnlineCF.CONF_ITERATION_COUNT,
         OnlineCF.DFLT_ITERATION_COUNT);
+
     this.m_matrix_rank = m_conf.getInt(OnlineCF.CONF_MATRIX_RANK,
         OnlineCF.DFLT_MATRIX_RANK);
+
     this.m_skip_count = m_conf.getInt(OnlineCF.CONF_SKIP_COUNT,
         OnlineCF.DFLT_SKIP_COUNT);
 
@@ -515,40 +508,68 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
 
-    // Logging
-    if (m_isDebuggingEnabled) {
-      m_logger.writeChars("OnlineTrainHybridBSP.bspGpu executed on GPU!\n");
-      m_logger.writeChars("OnlineTrainHybridBSP.bspGpu blockSize: "
-          + m_blockSize + " gridSize: " + m_gridSize + "\n");
-      // m_logger.writeChars("KMeansHybrid.bspGpu inputSize: " + inputs.size() +
-      // "\n");
+    m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
+
+    collectInput(peer);
+
+    // filled
+    // this.m_preferences
+    // this.m_usersMatrix
+    // this.m_itemsMatrix
+
+    m_logger.writeChars(peer.getPeerName() + ") collected: "
+        + this.m_usersMatrix.size() + " users, " + this.m_itemsMatrix.size()
+        + " items, " + this.m_preferences.size() + " preferences\n");
+
+    // DEBUG
+    m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
+        + this.m_preferences.size() + "\n");
+    for (Preference<Integer, Long> p : this.m_preferences) {
+      m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
+          + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
+          + "'\n");
+    }
+    m_logger.writeChars("indexes: length: " + this.m_indexes.size()
+        + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
+
+    m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
+        + this.m_usersMatrix.size() + "\n");
+    for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
+        .entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+          + "' value: '" + e.getValue().toString() + "'\n");
+    }
+    m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
+        + this.m_itemsMatrix.size() + "\n");
+    for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix.entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
+          + "' value: '" + e.getValue().toString() + "'\n");
     }
 
-    // TODO
-    // OnlineCFTrainHybridKernel kernel = new
-    // OnlineCFTrainHybridKernel(inputsArr,
-    // m_centers_gpu, m_conf.getInt(CONF_MAX_ITERATIONS, 0),
-    // peer.getAllPeerNames());
-
     // Run GPU Kernels
+    OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
+        m_maxIterations, peer.getAllPeerNames());
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    // rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize,
-    // m_blockSize * m_gridSize), context);
+    rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize, m_blockSize
+        * m_gridSize), context);
     watch.stop();
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
     // Logging
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("OnlineTrainHybridBSP,setupTimeGpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP.bspGpu executed on GPU!\n");
+      m_logger.writeChars("OnlineCFTrainHybridBSP.bspGpu blockSize: "
+          + m_blockSize + " gridSize: " + m_gridSize + "\n");
+      m_logger.writeChars("OnlineCFTrainHybridBSP,setupTimeGpu="
           + this.m_setupTimeGpu + " ms\n");
-      m_logger.writeChars("OnlineTrainHybridBSP,setupTimeGpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,setupTimeGpu="
           + (this.m_setupTimeGpu / 1000.0) + " seconds\n");
-      m_logger.writeChars("OnlineTrainHybridBSP,bspTimeGpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,bspTimeGpu="
           + this.m_bspTimeGpu + " ms\n");
-      m_logger.writeChars("OnlineTrainHybridBSP,bspTimeGpu="
+      m_logger.writeChars("OnlineCFTrainHybridBSP,bspTimeGpu="
           + (this.m_bspTimeGpu / 1000.0) + " seconds\n");
 
       List<StatsRow> stats = context.getStats();

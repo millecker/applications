@@ -20,7 +20,12 @@ import org.trifort.rootbeer.runtime.Kernel;
 
 public class OnlineCFTrainHybridKernel implements Kernel {
 
-  public OnlineCFTrainHybridKernel() {
+  private int m_maxIterations;
+  private String[] m_allPeerNames;
+
+  public OnlineCFTrainHybridKernel(int maxIterations, String[] allPeerNames) {
+    this.m_maxIterations = maxIterations;
+    this.m_allPeerNames = allPeerNames;
   }
 
   public void gpuMethod() {
@@ -31,6 +36,6 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new OnlineCFTrainHybridKernel();
+    new OnlineCFTrainHybridKernel(0, null);
   }
 }
