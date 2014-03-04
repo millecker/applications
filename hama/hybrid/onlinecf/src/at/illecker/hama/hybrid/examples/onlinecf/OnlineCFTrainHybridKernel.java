@@ -20,22 +20,38 @@ import org.trifort.rootbeer.runtime.Kernel;
 
 public class OnlineCFTrainHybridKernel implements Kernel {
 
+  private UserItemMap m_userItemMap;
+  private VectorMap m_usersMatrix;
+  private VectorMap m_itemsMatrix;
+  private int m_n;
+  private int m_m;
+  private int m_matrixRank;
   private int m_maxIterations;
   private String[] m_allPeerNames;
 
-  public OnlineCFTrainHybridKernel(int maxIterations, String[] allPeerNames) {
+  public OnlineCFTrainHybridKernel(UserItemMap userItemMap,
+      VectorMap usersMatrix, VectorMap itemsMatrix, int n, int m,
+      int matrixRank, int maxIterations, String[] allPeerNames) {
+    this.m_userItemMap = userItemMap;
+    this.m_usersMatrix = usersMatrix;
+    this.m_itemsMatrix = itemsMatrix;
+    this.m_n = n;
+    this.m_m = m;
+    this.m_matrixRank = matrixRank;
     this.m_maxIterations = maxIterations;
     this.m_allPeerNames = allPeerNames;
   }
 
   public void gpuMethod() {
-
+    // m_userItemMap.get(0, 0);
   }
 
   public static void main(String[] args) {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new OnlineCFTrainHybridKernel(0, null);
+    new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, null);
+    new UserItemMap().put(0, 0, 0);
+    new VectorMap().put(0, null);
   }
 }

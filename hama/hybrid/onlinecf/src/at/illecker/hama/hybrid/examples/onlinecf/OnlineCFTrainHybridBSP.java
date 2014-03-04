@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import org.apache.commons.logging.Log;
@@ -97,8 +98,8 @@ public class OnlineCFTrainHybridBSP
 
   // OnlineCF members
   private int m_maxIterations = 0;
-  private int m_matrix_rank = 0;
-  private int m_skip_count = 0;
+  private int m_matrixRank = 0;
+  private int m_skipCount = 0;
 
   // Input Preferences
   private ArrayList<Preference<Integer, Long>> m_preferences = new ArrayList<Preference<Integer, Long>>();
@@ -127,10 +128,10 @@ public class OnlineCFTrainHybridBSP
     this.m_maxIterations = m_conf.getInt(OnlineCF.CONF_ITERATION_COUNT,
         OnlineCF.DFLT_ITERATION_COUNT);
 
-    this.m_matrix_rank = m_conf.getInt(OnlineCF.CONF_MATRIX_RANK,
+    this.m_matrixRank = m_conf.getInt(OnlineCF.CONF_MATRIX_RANK,
         OnlineCF.DFLT_MATRIX_RANK);
 
-    this.m_skip_count = m_conf.getInt(OnlineCF.CONF_SKIP_COUNT,
+    this.m_skipCount = m_conf.getInt(OnlineCF.CONF_SKIP_COUNT,
         OnlineCF.DFLT_SKIP_COUNT);
 
     // Init logging
@@ -157,10 +158,9 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
 
+    // Fetch inputs
     m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
-
     collectInput(peer);
-
     m_logger.writeChars(peer.getPeerName() + ") collected: "
         + this.m_usersMatrix.size() + " users, " + this.m_itemsMatrix.size()
         + " items, " + this.m_preferences.size() + " preferences\n");
@@ -215,7 +215,7 @@ public class OnlineCFTrainHybridBSP
       m_logger.writeChars("indexes: length: " + this.m_indexes.size()
           + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
-      if ((i + 1) % m_skip_count == 0) {
+      if ((i + 1) % m_skipCount == 0) {
         // DEBUG
         m_logger.writeChars(peer.getPeerName()
             + ") normalizeWithBroadcastingValues: i: " + i + "\n");
@@ -286,16 +286,16 @@ public class OnlineCFTrainHybridBSP
       double score = value.getVector().get(1);
 
       if (m_usersMatrix.containsKey(actualId) == false) {
-        DenseDoubleVector vals = new DenseDoubleVector(m_matrix_rank);
-        for (int i = 0; i < m_matrix_rank; i++) {
+        DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
+        for (int i = 0; i < m_matrixRank; i++) {
           vals.set(i, m_rnd.nextDouble());
         }
         m_usersMatrix.put(actualId, new PipesVectorWritable(vals));
       }
 
       if (m_itemsMatrix.containsKey(itemId) == false) {
-        DenseDoubleVector vals = new DenseDoubleVector(m_matrix_rank);
-        for (int i = 0; i < m_matrix_rank; i++) {
+        DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
+        for (int i = 0; i < m_matrixRank; i++) {
           vals.set(i, m_rnd.nextDouble());
         }
         m_itemsMatrix.put(itemId, new PipesVectorWritable(vals));
@@ -423,7 +423,7 @@ public class OnlineCFTrainHybridBSP
       DoubleVector vector = msg.getVector();
 
       if (normalizedValues.containsKey(itemId) == false) {
-        normalizedValues.put(itemId, new DenseDoubleVector(m_matrix_rank, 0.0));
+        normalizedValues.put(itemId, new DenseDoubleVector(m_matrixRank, 0.0));
         normalizedValueCount.put(itemId, 0);
         senderList.put(itemId, new LinkedList<Integer>());
       }
@@ -474,10 +474,10 @@ public class OnlineCFTrainHybridBSP
     this.m_maxIterations = m_conf.getInt(OnlineCF.CONF_ITERATION_COUNT,
         OnlineCF.DFLT_ITERATION_COUNT);
 
-    this.m_matrix_rank = m_conf.getInt(OnlineCF.CONF_MATRIX_RANK,
+    this.m_matrixRank = m_conf.getInt(OnlineCF.CONF_MATRIX_RANK,
         OnlineCF.DFLT_MATRIX_RANK);
 
-    this.m_skip_count = m_conf.getInt(OnlineCF.CONF_SKIP_COUNT,
+    this.m_skipCount = m_conf.getInt(OnlineCF.CONF_SKIP_COUNT,
         OnlineCF.DFLT_SKIP_COUNT);
 
     this.m_blockSize = Integer.parseInt(this.m_conf.get(CONF_BLOCKSIZE));
@@ -508,47 +508,58 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
 
+    // Fetch inputs
     m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
-
     collectInput(peer);
-
-    // filled
-    // this.m_preferences
-    // this.m_usersMatrix
-    // this.m_itemsMatrix
-
     m_logger.writeChars(peer.getPeerName() + ") collected: "
-        + this.m_usersMatrix.size() + " users, " + this.m_itemsMatrix.size()
-        + " items, " + this.m_preferences.size() + " preferences\n");
+        + m_usersMatrix.size() + " users, " + m_itemsMatrix.size()
+        + " items, " + m_preferences.size() + " preferences\n");
 
-    // DEBUG
-    m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
-        + this.m_preferences.size() + "\n");
+    // Convert preferences to UserItemMap
+    UserItemMap userItemMap = new UserItemMap(m_preferences.size());
+    m_logger.writeChars(peer.getPeerName() + ") userItemMap: length: "
+        + m_preferences.size() + "\n");
     for (Preference<Integer, Long> p : this.m_preferences) {
-      m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
+      userItemMap.put(p.getUserId(), p.getItemId(), p.getValue().get());
+      m_logger.writeChars(peer.getPeerName() + ") userItemMap userId: '" + p.getUserId()
           + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
           + "'\n");
     }
-    m_logger.writeChars("indexes: length: " + this.m_indexes.size()
-        + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
-    m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
-        + this.m_usersMatrix.size() + "\n");
-    for (Map.Entry<Integer, PipesVectorWritable> e : this.m_usersMatrix
-        .entrySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
-          + "' value: '" + e.getValue().toString() + "'\n");
+    // Convert usersMatrix to VectorMap
+    VectorMap usersMatrixMap = new VectorMap(m_usersMatrix.size());
+    m_logger.writeChars(peer.getPeerName() + ") usersMatrixMap: length: "
+        + m_usersMatrix.size() + "\n");
+    Iterator<Entry<Integer, PipesVectorWritable>> userIt = m_usersMatrix
+        .entrySet().iterator();
+    while (userIt.hasNext()) {
+      Entry<Integer, PipesVectorWritable> entry = userIt.next();
+      DoubleVector vector = entry.getValue().getVector();
+      usersMatrixMap.put(entry.getKey(), vector.toArray());
+      m_logger.writeChars(peer.getPeerName() + ") usersMatrixMap userId: '" + entry.getKey()
+          + " value: '" + Arrays.toString(vector.toArray()) + "'\n");
     }
-    m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
-        + this.m_itemsMatrix.size() + "\n");
-    for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix.entrySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
-          + "' value: '" + e.getValue().toString() + "'\n");
+    
+    // Convert itemsMatrix to VectorMap
+    VectorMap itemsMatrixMap = new VectorMap(m_itemsMatrix.size());
+    m_logger.writeChars(peer.getPeerName() + ") itemsMatrixMap: length: "
+        + m_itemsMatrix.size() + "\n");
+    Iterator<Entry<Long, PipesVectorWritable>> itemIt = m_itemsMatrix
+        .entrySet().iterator();
+    while (itemIt.hasNext()) {
+      Entry<Long, PipesVectorWritable> entry = itemIt.next();
+      DoubleVector vector = entry.getValue().getVector();
+      itemsMatrixMap.put(entry.getKey(), vector.toArray());
+      m_logger.writeChars(peer.getPeerName() + ") itemsMatrixMap userId: '" + entry.getKey()
+          + " value: '" + Arrays.toString(vector.toArray()) + "'\n");
     }
 
     // Run GPU Kernels
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
-        m_maxIterations, peer.getAllPeerNames());
+        userItemMap, usersMatrixMap, itemsMatrixMap, m_usersMatrix.size(),
+        m_itemsMatrix.size(), m_matrixRank, m_maxIterations,
+        peer.getAllPeerNames());
+
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
@@ -644,8 +655,8 @@ public class OnlineCFTrainHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numBspTask = 2; // CPU + GPU tasks
-    int numGpuBspTask = 0; // GPU tasks
+    int numBspTask = 1; // 2; // CPU + GPU tasks
+    int numGpuBspTask = 1; // 0; // GPU tasks
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
 
@@ -782,17 +793,18 @@ public class OnlineCFTrainHybridBSP
       Configuration conf, FileSystem fs, Path in, Path preferencesIn,
       Random rand) throws IOException {
 
-    Preference[] train_prefs = { new Preference<Integer, Integer>(1, 1, 4),
+    Preference[] train_prefs = {
+        new Preference<Integer, Integer>(1, 1, 4),
         new Preference<Integer, Integer>(1, 2, 2.5),
         new Preference<Integer, Integer>(1, 3, 3.5),
         new Preference<Integer, Integer>(1, 4, 1),
         new Preference<Integer, Integer>(1, 5, 3.5),
 
-        new Preference<Integer, Integer>(2, 1, 4),
-        new Preference<Integer, Integer>(2, 2, 2.5),
-        new Preference<Integer, Integer>(2, 3, 3.5),
-        new Preference<Integer, Integer>(2, 4, 1),
-        new Preference<Integer, Integer>(2, 5, 3.5),
+        // new Preference<Integer, Integer>(2, 1, 4),
+        // new Preference<Integer, Integer>(2, 2, 2.5),
+        // new Preference<Integer, Integer>(2, 3, 3.5),
+        // new Preference<Integer, Integer>(2, 4, 1),
+        // new Preference<Integer, Integer>(2, 5, 3.5),
 
         new Preference<Integer, Integer>(3, 1, 4),
         new Preference<Integer, Integer>(3, 2, 2.5),
