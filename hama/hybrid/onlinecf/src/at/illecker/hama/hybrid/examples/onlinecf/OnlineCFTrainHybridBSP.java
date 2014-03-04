@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +52,6 @@ import org.apache.hama.bsp.gpu.HybridBSP;
 import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.commons.io.PipesVectorWritable;
 import org.apache.hama.commons.io.VectorWritable;
-import org.apache.hama.commons.math.DenseDoubleMatrix;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleMatrix;
 import org.apache.hama.commons.math.DoubleVector;
@@ -172,11 +170,6 @@ public class OnlineCFTrainHybridBSP
 
     collectInput(peer);
 
-    // TODO
-    // REMOVED broadcast user features and item features
-    HashSet<Text> requiredUserFeatures = null;
-    HashSet<Text> requiredItemFeatures = null;
-
     m_logger.writeChars(peer.getPeerName() + ") collected: "
         + this.m_usersMatrix.size() + " users, " + this.m_itemsMatrix.size()
         + " items, " + this.m_preferences.size() + " preferences\n");
@@ -206,7 +199,6 @@ public class OnlineCFTrainHybridBSP
           + "' value: '" + e.getValue().toString() + "'\n");
     }
 
-    // BEGIN ON GPU
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
 
@@ -240,7 +232,6 @@ public class OnlineCFTrainHybridBSP
         normalizeWithBroadcastingValues(peer);
       }
     }
-    // END ON GPU
 
     // DEBUG
     m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
@@ -346,10 +337,10 @@ public class OnlineCFTrainHybridBSP
           .getUserId());
       PipesVectorWritable in_itemFactorizedValues = m_itemsMatrix.get(pref
           .getItemId());
-      VectorWritable in_userFeatures = (m_inpUsersFeatures != null) ? m_inpUsersFeatures
-          .get(pref.getUserId()) : null;
-      VectorWritable in_itemFeatures = (m_inpItemsFeatures != null) ? m_inpItemsFeatures
-          .get(pref.getItemId()) : null;
+
+      // function output
+      VectorWritable out_userFactorized;
+      VectorWritable out_itemFactorized;
 
       // DEBUG
       m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
@@ -360,41 +351,11 @@ public class OnlineCFTrainHybridBSP
       m_logger.writeChars("beta_bl: "
           + in_itemFactorizedValues.getVector().toString() + "\n");
 
-      // function input
-      VectorWritable out_userFactorized;
-      VectorWritable out_itemFactorized;
-      DoubleMatrix out_userFeatureFactorized = null;
-      DoubleMatrix out_itemFeatureFactorized = null;
-
       // MeanAbsError function
       final double TETTA = 0.01;
-      DoubleVector zeroVector = null;
-
-      int rank = in_userFactorizedValues.getVector().getLength();
-      if (zeroVector == null) {
-        zeroVector = new DenseDoubleVector(rank, 0);
-      }
       // below vectors are all size of MATRIX_RANK
-      DoubleVector vl_yb_item = zeroVector;
-      DoubleVector ml_xa_user = zeroVector;
-      DoubleVector bbl_vl_yb = null;
-      DoubleVector aal_ml_xa = null;
-
-      boolean isAvailableUserFeature = (in_userFeatures != null);
-      boolean isAvailableItemFeature = (in_itemFeatures != null);
-
-      if (isAvailableItemFeature) {
-        DoubleVector yb = in_itemFeatures.getVector();
-        vl_yb_item = m_itemFeatureMatrix.multiplyVector(yb);
-      }
-
-      if (isAvailableUserFeature) {
-        DoubleVector xa = in_userFeatures.getVector();
-        ml_xa_user = m_userFeatureMatrix.multiplyVector(xa);
-      }
-
-      bbl_vl_yb = in_itemFactorizedValues.getVector().add(vl_yb_item);
-      aal_ml_xa = in_userFactorizedValues.getVector().add(ml_xa_user);
+      DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
+      DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
 
       // calculated score
       double calculatedScore = aal_ml_xa.multiply(bbl_vl_yb).sum();
@@ -429,47 +390,11 @@ public class OnlineCFTrainHybridBSP
       m_logger.writeChars("UPDATE beta_bl: "
           + out_itemFactorized.getVector().toString() + "\n");
 
-      // Compute features
-      // for d = 1 to D do:
-      // ν_ld ← ν_ld + 2τ * y_bd (α_al + μ_l: * x_a:)(r − R)
-      // for c = 1 to C do:
-      // μ_lc ← μ_lc + 2τ * x_ac (β_bl + ν_l: * y_b:)(r − R)
-      //
-      // ν_ld, μ_lc (V) is type of matrix,
-      // but 2τ * y_bd (α_al + μ_l: * x_a:)(r − R) (M later) will be type of
-      // vector
-      // in order to add vector values to matrix
-      // we create matrix with MMMMM and then transpose it.
-      DoubleMatrix tmpMatrix = null;
-      if (isAvailableItemFeature) {
-        DoubleVector[] Mtransposed = new DenseDoubleVector[rank];
-        for (int i = 0; i < rank; i++) {
-          Mtransposed[i] = m_itemFeatureMatrix.getRowVector(i).multiply(
-              aal_ml_xa.get(i));
-        }
-        tmpMatrix = new DenseDoubleMatrix(Mtransposed);
-        tmpMatrix = tmpMatrix.multiply(2 * TETTA * scoreDifference);
-        out_itemFeatureFactorized = m_itemFeatureMatrix.add(tmpMatrix);
-      }
-
-      if (isAvailableUserFeature) {
-        DoubleVector[] Mtransposed = new DenseDoubleVector[rank];
-        for (int i = 0; i < rank; i++) {
-          Mtransposed[i] = m_userFeatureMatrix.getRowVector(i).multiply(
-              bbl_vl_yb.get(i));
-        }
-        tmpMatrix = new DenseDoubleMatrix(Mtransposed);
-        tmpMatrix = tmpMatrix.multiply(2 * TETTA * scoreDifference);
-        out_userFeatureFactorized = m_userFeatureMatrix.add(tmpMatrix);
-      }
-
       // update function output
       m_usersMatrix.put(pref.getUserId(), new PipesVectorWritable(
           out_userFactorized));
       m_itemsMatrix.put(pref.getItemId(), new PipesVectorWritable(
           out_itemFactorized));
-      m_userFeatureMatrix = out_userFeatureFactorized;
-      m_itemFeatureMatrix = out_itemFeatureFactorized;
     }
   }
 
