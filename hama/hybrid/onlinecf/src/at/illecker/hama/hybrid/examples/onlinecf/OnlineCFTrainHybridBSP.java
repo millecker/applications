@@ -84,6 +84,8 @@ public class OnlineCFTrainHybridBSP
   // blockSize = amount of threads
   public static final int BLOCK_SIZE = 1; // 1024;
 
+  public static final double ALPHA = 0.01;
+
   public long m_setupTimeCpu = 0;
   public long m_setupTimeGpu = 0;
   public long m_bspTimeCpu = 0;
@@ -343,7 +345,6 @@ public class OnlineCFTrainHybridBSP
           + in_itemFactorizedValues.getVector().toString() + "\n");
 
       // MeanAbsError function
-      final double TETTA = 0.01;
       // below vectors are all size of MATRIX_RANK
       DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
       DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
@@ -361,7 +362,7 @@ public class OnlineCFTrainHybridBSP
 
       // α_al ← α_al + 2τ * (β_bl + ν_l: * y_b:)(r − R)
       // users ← user + userFactorization (will be used later)
-      DoubleVector userFactorization = bbl_vl_yb.multiply(2 * TETTA
+      DoubleVector userFactorization = bbl_vl_yb.multiply(2 * ALPHA
           * scoreDifference);
       DoubleVector users = in_userFactorizedValues.getVector().add(
           userFactorization);
@@ -369,7 +370,7 @@ public class OnlineCFTrainHybridBSP
 
       // β_bl ← β_bl + 2τ * (α_al + μ_l: * x_a:)(r − R)
       // items ← item + itemFactorization (will be used later)
-      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * TETTA
+      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * ALPHA
           * scoreDifference);
       DoubleVector items = in_itemFactorizedValues.getVector().add(
           itemFactorization);
@@ -559,7 +560,7 @@ public class OnlineCFTrainHybridBSP
     // Run GPU Kernels
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
         userItemMap, usersMatrixMap, itemsMatrixMap, m_usersMatrix.size(),
-        m_itemsMatrix.size(), m_matrixRank, m_maxIterations,
+        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations,
         peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
@@ -568,6 +569,23 @@ public class OnlineCFTrainHybridBSP
     rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize, m_blockSize
         * m_gridSize), context);
     watch.stop();
+
+    // Save Model
+    // save user information
+    m_logger.writeChars(peer.getPeerName() + ") saving " + m_usersMatrix.size()
+        + " users\n");
+    for (Integer userId : m_usersMatrix.keySet()) {
+      peer.write(new Text("u" + userId), new PipesVectorWritable(
+          new DenseDoubleVector(usersMatrixMap.get(userId))));
+    }
+
+    // save item information
+    m_logger.writeChars(peer.getPeerName() + ") saving " + m_itemsMatrix.size()
+        + " items\n");
+    for (Long itemId : m_itemsMatrix.keySet()) {
+      peer.write(new Text("i" + itemId), new PipesVectorWritable(
+          new DenseDoubleVector(itemsMatrixMap.get(itemId))));
+    }
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
