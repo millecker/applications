@@ -42,11 +42,16 @@ public final class UserItemMap {
     return false;
   }
 
-  public int indexForKey(int userId, long itemId) {
-    // use Cantor pairing function
-    long cantorPairingFunc = (long) ((0.5 * (userId + itemId) * (userId
-        + itemId + 1)) + itemId);
-    return (int) cantorPairingFunc % m_values.length;
+  public int indexForKey(int a, long b) {
+    // Cantor pairing function
+    // (a + b) * (a + b + 1) / 2 + a; where a, b >= 0
+    // long val = (long) ((0.5 * (a + b) * (a + b + 1)) + b);
+
+    // Szudzik's function
+    // a >= b ? a * a + a + b : a + b * b; where a, b >= 0
+    long val = a >= b ? a * a + a + b : a + b * b;
+
+    return (int) val % m_values.length;
   }
 
   public Double get(int userId, long itemId) {
