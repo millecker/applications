@@ -51,8 +51,8 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     int block_idxx = RootbeerGpu.getBlockIdxx();
     int thread_idxx = RootbeerGpu.getThreadIdxx();
 
-    int userInputSize = divup(m_N, gridSize);
-    int itemInputSize = divup(m_M, gridSize);
+    int usersPerBlock = divup(m_N, gridSize);
+    int itemsPerBlock = divup(m_M, gridSize);
 
     // SharedMemory per block
     int shmStartPos = 0;
@@ -64,162 +64,169 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     int shmMultVectorStartPos = shmItemVectorStartPos + m_matrixRank * 8;
     // 1 x Double (8 bytes)
     int shmEstScoreStartPos = shmMultVectorStartPos + m_matrixRank * 8;
+    // 1 x Boolean (1 byte)
+    int shmUserVecterIsNullStartPos = shmEstScoreStartPos + 4;
 
+    // DEBUG
     if (RootbeerGpu.getThreadId() == 0) {
       System.out.println("blockSize: " + blockSize);
       System.out.println("gridSize: " + gridSize);
-      System.out.println("userInputSize: " + userInputSize);
-      System.out.println("itemInputSize: " + itemInputSize);
+      System.out.println("usersPerBlock: " + usersPerBlock);
+      System.out.println("itemsPerBlock: " + itemsPerBlock);
     }
 
     // Start OnlineCF algorithm
     for (int i = 0; i < m_maxIterations; i++) {
 
-      // TODO add loop over all usersPerBlock
-      int userId = block_idxx + 1; // starting with 1
-
-      // Thread 0 of each block prepare SharedMemory
-      if (thread_idxx == 0) {
-        // Setup userVector
-        double[] userVector = m_usersMatrix.get(userId);
-        for (int j = 0; j < m_matrixRank; j++) {
-          int userVectorIndex = shmUserVectorStartPos + j * 8;
-          RootbeerGpu.setSharedDouble(userVectorIndex, userVector[j]);
-        }
-        System.out.print("userVector: ");
-        System.out.println(arrayToString(userVector));
-
-        // Init multVector
-        // TODO MAYBE UNUSED
-        for (int j = 0; j < m_matrixRank; j++) {
-          int multVectorIndex = shmMultVectorStartPos + j * 8;
-          RootbeerGpu.setSharedDouble(multVectorIndex, 0);
-        }
-
-      }
-      // Sync all threads within a block
-      RootbeerGpu.syncthreads();
-
       // **********************************************************************
       // Compute U (Users)
       // **********************************************************************
-      for (int itemId = 1; itemId <= m_M; itemId++) {
+      // Loop over all usersPerBlock
+      for (int u = 0; u < usersPerBlock; u++) {
 
+        int userId = (block_idxx * usersPerBlock) + u + 1; // starting with 1
+
+        // Thread 0 of each block prepare SharedMemory
         if (thread_idxx == 0) {
-          // Setup itemVector on SharedMemory
-          double[] itemVector = m_itemsMatrix.get(itemId);
-          for (int j = 0; j < m_matrixRank; j++) {
-            int itemVectorIndex = shmItemVectorStartPos + j * 8;
-            RootbeerGpu.setSharedDouble(itemVectorIndex, itemVector[j]);
-          }
-          System.out.print("itemVector: ");
-          System.out.println(arrayToString(itemVector));
 
-          // Setup expectedScore
-          // TODO FIX block_idxx + 1 (multiple users per block)
-          double expectedScore = m_userItemMap.get(block_idxx + 1, itemId);
-          RootbeerGpu.setSharedDouble(shmEstScoreStartPos, expectedScore);
+          double[] userVector = m_usersMatrix.get(userId);
+          if (userVector != null) {
+            // set userVectorIsNull false
+            RootbeerGpu.setSharedBoolean(shmUserVecterIsNullStartPos, false);
 
-          System.out.print("expectedScore: ");
-          System.out.println(expectedScore);
-        }
-        // Sync all threads within a block
-        RootbeerGpu.syncthreads();
-
-        // Each thread within a block computes one multiplication
-        if (thread_idxx < m_matrixRank) {
-
-          int userVectorIndex = shmUserVectorStartPos + thread_idxx * 8;
-          double userVal = RootbeerGpu.getSharedDouble(userVectorIndex);
-
-          int itemVectorIndex = shmItemVectorStartPos + thread_idxx * 8;
-          double itemVal = RootbeerGpu.getSharedDouble(itemVectorIndex);
-
-          int multVectorIndex = shmMultVectorStartPos + thread_idxx * 8;
-          RootbeerGpu.setSharedDouble(multVectorIndex, userVal * itemVal);
-        }
-
-        // Sync all threads within a block
-        RootbeerGpu.syncthreads();
-
-        // Calculate score by summing up multiplications
-        // do reduction in shared memory
-        // 1-bit right shift = divide by two to the power 1
-        int shmMultVectorEndPos = shmMultVectorStartPos * m_matrixRank * 8;
-        for (int s = divup(m_matrixRank, 2); s > 0; s >>= 1) {
-
-          if (thread_idxx < s) {
-            // sh_mem[ltid] += sh_mem[ltid + s];
-            int multVectorIndex1 = shmMultVectorStartPos + thread_idxx * 8;
-            int multVectorIndex2 = shmMultVectorStartPos + (thread_idxx + s)
-                * 8;
-            double val1 = RootbeerGpu.getSharedDouble(multVectorIndex1);
-            double val2 = 0;
-            if (multVectorIndex2 < shmMultVectorEndPos) {
-              val2 = RootbeerGpu.getSharedDouble(multVectorIndex2);
+            // Setup userVector
+            for (int j = 0; j < m_matrixRank; j++) {
+              int userVectorIndex = shmUserVectorStartPos + j * 8;
+              RootbeerGpu.setSharedDouble(userVectorIndex, userVector[j]);
             }
-            RootbeerGpu.setSharedDouble(multVectorIndex1, val1 + val2);
+            System.out.print("userVector: ");
+            System.out.println(arrayToString(userVector));
+
+            // Init multVector
+            // TODO MAYBE UNUSED
+            for (int j = 0; j < m_matrixRank; j++) {
+              int multVectorIndex = shmMultVectorStartPos + j * 8;
+              RootbeerGpu.setSharedDouble(multVectorIndex, 0);
+            }
+
+          } else {
+            // set userVectorIsNull true
+            RootbeerGpu.setSharedBoolean(shmUserVecterIsNullStartPos, true);
           }
-          // Sync all threads within a block
-          RootbeerGpu.syncthreads();
+
         }
-
-        if (thread_idxx == 0) {
-          System.out.print("multVector: ");
-          for (int j = 0; j < m_matrixRank; j++) {
-            int multVectorIndex = shmMultVectorStartPos + j * 8;
-            System.out
-                .print(RootbeerGpu.getSharedDouble(multVectorIndex) + " ");
-          }
-          System.out.println();
-
-          double calculatedScore = RootbeerGpu
-              .getSharedDouble(shmMultVectorStartPos);
-          System.out.println("calculatedScore: " + calculatedScore);
-        }
-
         // Sync all threads within a block
         RootbeerGpu.syncthreads();
 
-        // Calculate new userVector
-        // Each thread does one update operation of vector u
-        if (thread_idxx < m_matrixRank) {
+        // if userVector != null
+        if (!RootbeerGpu.getSharedBoolean(shmUserVecterIsNullStartPos)) {
 
-          int userVectorIndex = shmUserVectorStartPos + thread_idxx * 8;
-          double userVal = RootbeerGpu.getSharedDouble(userVectorIndex);
+          // Each user loops over all items
+          for (int itemId = 1; itemId <= m_M; itemId++) {
 
-          int itemVectorIndex = shmItemVectorStartPos + thread_idxx * 8;
-          double itemVal = RootbeerGpu.getSharedDouble(itemVectorIndex);
+            if (thread_idxx == 0) {
+              // Setup itemVector on SharedMemory
+              double[] itemVector = m_itemsMatrix.get(itemId);
+              for (int j = 0; j < m_matrixRank; j++) {
+                int itemVectorIndex = shmItemVectorStartPos + j * 8;
+                RootbeerGpu.setSharedDouble(itemVectorIndex, itemVector[j]);
+              }
+              System.out.print("itemVector: ");
+              System.out.println(arrayToString(itemVector));
 
-          double expectedScore = RootbeerGpu
-              .getSharedDouble(shmEstScoreStartPos);
+              // Setup expectedScore
+              // TODO FIX block_idxx + 1 (multiple users per block)
+              double expectedScore = m_userItemMap.get(block_idxx + 1, itemId);
+              RootbeerGpu.setSharedDouble(shmEstScoreStartPos, expectedScore);
 
-          double calculatedScore = RootbeerGpu
-              .getSharedDouble(shmMultVectorStartPos);
+              System.out.print("expectedScore: ");
+              System.out.println(expectedScore);
+            }
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
 
-          userVal += 2 * m_ALPHA * itemVal * (expectedScore - calculatedScore);
+            // Each thread within a block computes one multiplication
+            if (thread_idxx < m_matrixRank) {
 
-          RootbeerGpu.setSharedDouble(userVectorIndex, userVal);
-        }
+              int userVectorIndex = shmUserVectorStartPos + thread_idxx * 8;
+              double userVal = RootbeerGpu.getSharedDouble(userVectorIndex);
 
-        // Sync all threads within a block
-        RootbeerGpu.syncthreads();
+              int itemVectorIndex = shmItemVectorStartPos + thread_idxx * 8;
+              double itemVal = RootbeerGpu.getSharedDouble(itemVectorIndex);
 
-      }
+              int multVectorIndex = shmMultVectorStartPos + thread_idxx * 8;
+              RootbeerGpu.setSharedDouble(multVectorIndex, userVal * itemVal);
+            }
 
-      // Thread 0 of each block updates userVector
-      if (thread_idxx == 0) {
-        System.out.print("Update userVector: ");
-        double[] newUserVector = new double[m_matrixRank];
-        for (int j = 0; j < m_matrixRank; j++) {
-          int userVectorIndex = shmUserVectorStartPos + j * 8;
-          newUserVector[j] = RootbeerGpu.getSharedDouble(userVectorIndex);
-          System.out.print(newUserVector[j] + " ");
-        }
-        System.out.println();
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
 
-        m_usersMatrix.put(userId, newUserVector);
-      }
+            // Calculate score by summing up multiplications
+            // do reduction in shared memory
+            // 1-bit right shift = divide by two to the power 1
+            int shmMultVectorEndPos = shmMultVectorStartPos + m_matrixRank * 8;
+            for (int s = divup(m_matrixRank, 2); s > 0; s >>= 1) {
+
+              if (thread_idxx < s) {
+                // sh_mem[ltid] += sh_mem[ltid + s];
+                int multVectorIndex1 = shmMultVectorStartPos + thread_idxx * 8;
+                int multVectorIndex2 = shmMultVectorStartPos
+                    + (thread_idxx + s) * 8;
+                double val1 = RootbeerGpu.getSharedDouble(multVectorIndex1);
+                double val2 = 0;
+                if (multVectorIndex2 < shmMultVectorEndPos) {
+                  val2 = RootbeerGpu.getSharedDouble(multVectorIndex2);
+                }
+                RootbeerGpu.setSharedDouble(multVectorIndex1, val1 + val2);
+              }
+              // Sync all threads within a block
+              RootbeerGpu.syncthreads();
+            }
+
+            // Calculate new userVector
+            // Each thread does one update operation of vector u
+            if (thread_idxx < m_matrixRank) {
+
+              int userVectorIndex = shmUserVectorStartPos + thread_idxx * 8;
+              double userVal = RootbeerGpu.getSharedDouble(userVectorIndex);
+
+              int itemVectorIndex = shmItemVectorStartPos + thread_idxx * 8;
+              double itemVal = RootbeerGpu.getSharedDouble(itemVectorIndex);
+
+              double expectedScore = RootbeerGpu
+                  .getSharedDouble(shmEstScoreStartPos);
+
+              double calculatedScore = RootbeerGpu
+                  .getSharedDouble(shmMultVectorStartPos);
+
+              userVal += 2 * m_ALPHA * itemVal
+                  * (expectedScore - calculatedScore);
+
+              RootbeerGpu.setSharedDouble(userVectorIndex, userVal);
+            }
+
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
+
+          } // loop over all items
+
+          // Thread 0 of each block updates userVector
+          if (thread_idxx == 0) {
+            System.out.print("Update userVector: ");
+            double[] newUserVector = new double[m_matrixRank];
+            for (int j = 0; j < m_matrixRank; j++) {
+              int userVectorIndex = shmUserVectorStartPos + j * 8;
+              newUserVector[j] = RootbeerGpu.getSharedDouble(userVectorIndex);
+              System.out.print(newUserVector[j] + " ");
+            }
+            System.out.println();
+
+            m_usersMatrix.put(userId, newUserVector);
+          }
+
+        } // if userVector != null
+
+      } // loop over all usersPerBlock
 
       // Sync all blocks Inter-Block Synchronization
       RootbeerGpu.syncblocks(1);
