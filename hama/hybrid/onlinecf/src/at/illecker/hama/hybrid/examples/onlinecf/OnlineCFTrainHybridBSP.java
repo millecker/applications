@@ -82,7 +82,7 @@ public class OnlineCFTrainHybridBSP
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 1; // 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 1; // 1024;
+  public static final int BLOCK_SIZE = 3; // 1024;
 
   public static final double ALPHA = 0.01;
 
@@ -114,7 +114,7 @@ public class OnlineCFTrainHybridBSP
   // itemId, factorized value
   private HashMap<Long, PipesVectorWritable> m_itemsMatrix = new HashMap<Long, PipesVectorWritable>();
 
-  Random m_rnd = new Random();
+  private Random m_rnd = new Random(32L);
 
   /********************************* CPU *********************************/
   @Override
@@ -575,6 +575,8 @@ public class OnlineCFTrainHybridBSP
     m_logger.writeChars(peer.getPeerName() + ") saving " + m_usersMatrix.size()
         + " users\n");
     for (Integer userId : m_usersMatrix.keySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") user: " + userId
+          + " vector: " + Arrays.toString(usersMatrixMap.get(userId)) + "\n");
       peer.write(new Text("u" + userId), new PipesVectorWritable(
           new DenseDoubleVector(usersMatrixMap.get(userId))));
     }
@@ -583,6 +585,8 @@ public class OnlineCFTrainHybridBSP
     m_logger.writeChars(peer.getPeerName() + ") saving " + m_itemsMatrix.size()
         + " items\n");
     for (Long itemId : m_itemsMatrix.keySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") item: " + itemId
+          + " vector: " + Arrays.toString(itemsMatrixMap.get(itemId)) + "\n");
       peer.write(new Text("i" + itemId), new PipesVectorWritable(
           new DenseDoubleVector(itemsMatrixMap.get(itemId))));
     }
@@ -813,18 +817,17 @@ public class OnlineCFTrainHybridBSP
       Configuration conf, FileSystem fs, Path in, Path preferencesIn,
       Random rand) throws IOException {
 
-    Preference[] train_prefs = {
-        new Preference<Integer, Integer>(1, 1, 4),
+    Preference[] train_prefs = { new Preference<Integer, Integer>(1, 1, 4),
         new Preference<Integer, Integer>(1, 2, 2.5),
         new Preference<Integer, Integer>(1, 3, 3.5),
         new Preference<Integer, Integer>(1, 4, 1),
         new Preference<Integer, Integer>(1, 5, 3.5),
 
-        // new Preference<Integer, Integer>(2, 1, 4),
-        // new Preference<Integer, Integer>(2, 2, 2.5),
-        // new Preference<Integer, Integer>(2, 3, 3.5),
-        // new Preference<Integer, Integer>(2, 4, 1),
-        // new Preference<Integer, Integer>(2, 5, 3.5),
+        new Preference<Integer, Integer>(2, 1, 4),
+        new Preference<Integer, Integer>(2, 2, 2.5),
+        new Preference<Integer, Integer>(2, 3, 3.5),
+        new Preference<Integer, Integer>(2, 4, 1),
+        new Preference<Integer, Integer>(2, 5, 3.5),
 
         new Preference<Integer, Integer>(3, 1, 4),
         new Preference<Integer, Integer>(3, 2, 2.5),
