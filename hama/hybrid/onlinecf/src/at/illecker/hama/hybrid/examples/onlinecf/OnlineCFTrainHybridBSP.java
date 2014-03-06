@@ -247,6 +247,8 @@ public class OnlineCFTrainHybridBSP
         + " users\n");
     for (Map.Entry<Integer, PipesVectorWritable> user : m_usersMatrix
         .entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") user: " + user.getKey()
+          + " vector: " + user.getValue().getVector() + "\n");
       peer.write(new Text("u" + user.getKey()), user.getValue());
     }
 
@@ -254,6 +256,8 @@ public class OnlineCFTrainHybridBSP
     m_logger.writeChars(peer.getPeerName() + ") saving " + m_itemsMatrix.size()
         + " items\n");
     for (Map.Entry<Long, PipesVectorWritable> item : m_itemsMatrix.entrySet()) {
+      m_logger.writeChars(peer.getPeerName() + ") item: " + item.getKey()
+          + " vector: " + item.getValue().getVector() + "\n");
       peer.write(new Text("i" + item.getKey()), item.getValue());
     }
 
@@ -393,9 +397,6 @@ public class OnlineCFTrainHybridBSP
   private void normalizeWithBroadcastingValues(
       BSPPeer<IntWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
       throws IOException, SyncException, InterruptedException {
-
-    // normalize item factorized values
-    // normalize user/item feature matrix
 
     // Step 1)
     // send item factorized matrices to selected peers
@@ -560,7 +561,7 @@ public class OnlineCFTrainHybridBSP
     // Run GPU Kernels
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
         userItemMap, usersMatrixMap, itemsMatrixMap, m_usersMatrix.size(),
-        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations,
+        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations, m_skipCount,
         peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
@@ -680,7 +681,7 @@ public class OnlineCFTrainHybridBSP
 
     // Defaults
     int numBspTask = 1; // 2; // CPU + GPU tasks
-    int numGpuBspTask = 1; // 0; // GPU tasks
+    int numGpuBspTask = 0; // 0; // GPU tasks
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
 

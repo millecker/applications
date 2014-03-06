@@ -29,11 +29,12 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   private double m_ALPHA;
   private int m_matrixRank;
   private int m_maxIterations;
+  private int m_skipCount;
   private String[] m_allPeerNames;
 
   public OnlineCFTrainHybridKernel(UserItemMap userItemMap,
       VectorMap usersMatrix, VectorMap itemsMatrix, int n, int m, double alpha,
-      int matrixRank, int maxIterations, String[] allPeerNames) {
+      int matrixRank, int maxIterations, int skipCount, String[] allPeerNames) {
     this.m_userItemMap = userItemMap;
     this.m_usersMatrix = usersMatrix;
     this.m_itemsMatrix = itemsMatrix;
@@ -42,6 +43,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     this.m_ALPHA = alpha;
     this.m_matrixRank = matrixRank;
     this.m_maxIterations = maxIterations;
+    this.m_skipCount = skipCount;
     this.m_allPeerNames = allPeerNames;
   }
 
@@ -421,6 +423,77 @@ public class OnlineCFTrainHybridKernel implements Kernel {
       // **********************************************************************
       // TODO normalizeWithBroadcastingValues
       // **********************************************************************
+      if ( (RootbeerGpu.getThreadId() == 0) && ((i + 1) % m_skipCount == 0) ) {
+/*
+        // Step 1)
+        // send item factorized matrices to selected peers
+        int peerCount = HamaPeer.getNumPeers();
+        // item factorized values should be normalized
+        int peerId = HamaPeer.getPeerIndex();
+
+        for (Map.Entry<Long, PipesVectorWritable> item : m_itemsMatrix
+            .entrySet()) {
+          peer.send(peer.getPeerName(item.getKey().hashCode() % peerCount),
+              new ItemMessage(peerId, item.getKey().longValue(), item
+                  .getValue().getVector()));
+        }
+        HamaPeer.sync();
+
+        // Step 2)
+        // receive item factorized matrices if this peer is selected and
+        // normalize
+        // them
+        HashMap<Long, LinkedList<Integer>> senderList = new HashMap<Long, LinkedList<Integer>>();
+        HashMap<Long, DoubleVector> normalizedValues = new HashMap<Long, DoubleVector>();
+        HashMap<Long, Integer> normalizedValueCount = new HashMap<Long, Integer>();
+
+        ItemMessage msg;
+        while ((msg = peer.getCurrentMessage()) != null) {
+          int senderId = msg.getSenderId();
+          long itemId = msg.getItemId();
+          DoubleVector vector = msg.getVector();
+
+          if (normalizedValues.containsKey(itemId) == false) {
+            normalizedValues.put(itemId, new DenseDoubleVector(m_matrixRank,
+                0.0));
+            normalizedValueCount.put(itemId, 0);
+            senderList.put(itemId, new LinkedList<Integer>());
+          }
+
+          normalizedValues
+              .put(itemId, normalizedValues.get(itemId).add(vector));
+          normalizedValueCount
+              .put(itemId, normalizedValueCount.get(itemId) + 1);
+          senderList.get(itemId).add(senderId);
+        }
+
+        // normalize
+        for (Map.Entry<Long, DoubleVector> e : normalizedValues.entrySet()) {
+          double count = normalizedValueCount.get(e.getKey());
+          e.setValue(e.getValue().multiply(1.0 / count));
+        }
+
+        // Step 3)
+        // send back normalized values to senders
+        for (Map.Entry<Long, DoubleVector> e : normalizedValues.entrySet()) {
+          msg = new ItemMessage(peerId, e.getKey(), e.getValue());
+
+          // send to interested peers
+          Iterator<Integer> iter = senderList.get(e.getKey()).iterator();
+          while (iter.hasNext()) {
+            peer.send(peer.getPeerName(iter.next()), msg);
+          }
+        }
+        peer.sync();
+
+        // Step 4)
+        // receive already normalized and synced data
+        while ((msg = peer.getCurrentMessage()) != null) {
+          m_itemsMatrix.put(msg.getItemId(),
+              new PipesVectorWritable(msg.getVector()));
+        }
+*/
+      }
     }
   }
 
@@ -448,7 +521,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, 0, null);
+    new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, 0, 0, null);
     new UserItemMap().put(0, 0, 0);
     new VectorMap().put(0, null);
   }
