@@ -19,30 +19,30 @@ package at.illecker.hama.hybrid.examples.onlinecf;
 
 import org.trifort.rootbeer.runtime.KeyValuePair;
 
-public final class UserItemMap {
+public final class GpuUserItemMap {
   public static final int DEFAULT_CAPACITY = 16;
   private KeyValuePair[] m_values = null;
 
-  public UserItemMap() {
+  public GpuUserItemMap() {
     this(DEFAULT_CAPACITY);
   }
 
-  public UserItemMap(int size) {
+  public GpuUserItemMap(int size) {
     this.m_values = new KeyValuePair[size];
   }
 
-  private boolean equalsKey(KeyValuePair entry, int userId, long itemId) {
+  private boolean equalsKey(KeyValuePair entry, long userId, long itemId) {
     if (entry != null) {
       KeyValuePair key = (KeyValuePair) entry.getKey();
       if (key != null) {
-        return (((Integer) key.getKey()) == userId)
+        return (((Long) key.getKey()) == userId)
             && (((Long) key.getValue()) == itemId);
       }
     }
     return false;
   }
 
-  public int indexForKey(int a, long b) {
+  public int indexForKey(long a, long b) {
     // Cantor pairing function
     // (a + b) * (a + b + 1) / 2 + a; where a, b >= 0
     // long val = (long) ((0.5 * (a + b) * (a + b + 1)) + b);
@@ -54,7 +54,7 @@ public final class UserItemMap {
     return (int) val % m_values.length;
   }
 
-  public Double get(int userId, long itemId) {
+  public Double get(long userId, long itemId) {
     KeyValuePair entry = m_values[indexForKey(userId, itemId)];
     while (entry != null && !equalsKey(entry, userId, itemId)) {
       entry = entry.getNext();
@@ -62,7 +62,7 @@ public final class UserItemMap {
     return (entry != null) ? (Double) entry.getValue() : null;
   }
 
-  public void put(int userId, long itemId, double value) {
+  public void put(long userId, long itemId, double value) {
     int bucketIndex = indexForKey(userId, itemId);
     KeyValuePair entry = m_values[bucketIndex];
     if (entry != null) {

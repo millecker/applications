@@ -19,55 +19,55 @@ package at.illecker.hama.hybrid.examples.onlinecf;
 
 import org.trifort.rootbeer.runtime.KeyValuePair;
 
-public final class VectorMap {
+public final class GpuVectorMap {
   public static final int DEFAULT_CAPACITY = 16;
   private KeyValuePair[] m_values = null;
 
-  public VectorMap() {
+  public GpuVectorMap() {
     this(DEFAULT_CAPACITY);
   }
 
-  public VectorMap(int size) {
+  public GpuVectorMap(int size) {
     this.m_values = new KeyValuePair[size];
   }
 
-  private boolean equalsKey(KeyValuePair entry, long id) {
+  private boolean equalsKey(KeyValuePair entry, long otherKey) {
     if (entry != null) {
       long key = (Long) entry.getKey();
-      return (key == id);
+      return (key == otherKey);
     }
     return false;
   }
 
   public int indexForKey(long id) {
-    return (int) id % m_values.length;
+    return (int) (id % m_values.length);
   }
 
-  public double[] get(long id) {
-    KeyValuePair entry = m_values[indexForKey(id)];
-    while (entry != null && !equalsKey(entry, id)) {
+  public double[] get(long key) {
+    KeyValuePair entry = m_values[indexForKey(key)];
+    while (entry != null && !equalsKey(entry, key)) {
       entry = entry.getNext();
     }
     return (entry != null) ? (double[]) entry.getValue() : null;
   }
 
-  public void put(long id, double[] value) {
-    int bucketIndex = indexForKey(id);
+  public void put(long key, double[] value) {
+    int bucketIndex = indexForKey(key);
     KeyValuePair entry = m_values[bucketIndex];
     if (entry != null) {
       boolean done = false;
       while (!done) {
-        if (equalsKey(entry, id)) {
+        if (equalsKey(entry, key)) {
           entry.setValue(value);
           done = true;
         } else if (entry.getNext() == null) {
-          entry.setNext(new KeyValuePair(id, value));
+          entry.setNext(new KeyValuePair(key, value));
           done = true;
         }
         entry = entry.getNext();
       }
     } else {
-      m_values[bucketIndex] = new KeyValuePair(id, value);
+      m_values[bucketIndex] = new KeyValuePair(key, value);
     }
   }
 
