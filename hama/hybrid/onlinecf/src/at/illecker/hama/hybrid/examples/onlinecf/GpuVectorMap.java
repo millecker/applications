@@ -39,8 +39,8 @@ public final class GpuVectorMap {
     return false;
   }
 
-  public int indexForKey(long id) {
-    return (int) (id % m_values.length);
+  public int indexForKey(long key) {
+    return (int) (key % m_values.length);
   }
 
   public double[] get(long key) {

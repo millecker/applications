@@ -108,7 +108,7 @@ public class OnlineCFTrainHybridBSP
   private ArrayList<Preference<Long, Long>> m_preferences = new ArrayList<Preference<Long, Long>>();
   private ArrayList<Integer> m_indexes = new ArrayList<Integer>();
 
-  // randomly generated depending on matrix rank,
+  // Randomly generated depending on matrix rank,
   // will be computed runtime and represents trained model
   // userId, factorized value
   private HashMap<Long, PipesVectorWritable> m_usersMatrix = new HashMap<Long, PipesVectorWritable>();
@@ -162,34 +162,33 @@ public class OnlineCFTrainHybridBSP
     long startTime = System.currentTimeMillis();
 
     // Fetch inputs
-    m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
+    m_logger.writeChars("collecting input data\n");
     collectInput(peer);
-    m_logger.writeChars(peer.getPeerName() + ") collected: "
-        + this.m_usersMatrix.size() + " users, " + this.m_itemsMatrix.size()
-        + " items, " + this.m_preferences.size() + " preferences\n");
+    m_logger.writeChars("collected: " + this.m_usersMatrix.size() + " users, "
+        + this.m_itemsMatrix.size() + " items, " + this.m_preferences.size()
+        + " preferences\n");
 
     // DEBUG
-    m_logger.writeChars(peer.getPeerName() + ") preferences: length: "
-        + this.m_preferences.size() + "\n");
+    m_logger.writeChars("preferences: length: " + this.m_preferences.size()
+        + "\n");
     for (Preference<Long, Long> p : this.m_preferences) {
-      m_logger.writeChars(peer.getPeerName() + ") userId: '" + p.getUserId()
-          + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
-          + "'\n");
+      m_logger.writeChars("userId: '" + p.getUserId() + "' itemId: '"
+          + p.getItemId() + "' value: '" + p.getValue().get() + "'\n");
     }
     m_logger.writeChars("indexes: length: " + this.m_indexes.size()
         + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
-    m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
-        + this.m_usersMatrix.size() + "\n");
+    m_logger.writeChars("usersMatrix: length: " + this.m_usersMatrix.size()
+        + "\n");
     for (Map.Entry<Long, PipesVectorWritable> e : this.m_usersMatrix.entrySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
-          + "' value: '" + e.getValue().toString() + "'\n");
+      m_logger.writeChars("key: '" + e.getKey() + "' value: '"
+          + e.getValue().toString() + "'\n");
     }
-    m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
-        + this.m_itemsMatrix.size() + "\n");
+    m_logger.writeChars("itemsMatrix: length: " + this.m_itemsMatrix.size()
+        + "\n");
     for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix.entrySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
-          + "' value: '" + e.getValue().toString() + "'\n");
+      m_logger.writeChars("key: '" + e.getKey() + "' value: '"
+          + e.getValue().toString() + "'\n");
     }
 
     // calculation steps
@@ -198,29 +197,27 @@ public class OnlineCFTrainHybridBSP
       computeValues();
 
       // DEBUG
-      m_logger.writeChars(peer.getPeerName() + ") values after computeValues("
-          + i + ")\n");
-      m_logger.writeChars(peer.getPeerName() + ") usersMatrix: length: "
-          + this.m_usersMatrix.size() + "\n");
+      m_logger.writeChars("values after computeValues(" + i + ")\n");
+      m_logger.writeChars("usersMatrix: length: " + this.m_usersMatrix.size()
+          + "\n");
       for (Map.Entry<Long, PipesVectorWritable> e : this.m_usersMatrix
           .entrySet()) {
-        m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
-            + "' value: '" + e.getValue().toString() + "'\n");
+        m_logger.writeChars("key: '" + e.getKey() + "' value: '"
+            + e.getValue().toString() + "'\n");
       }
-      m_logger.writeChars(peer.getPeerName() + ") itemsMatrix: length: "
-          + this.m_itemsMatrix.size() + "\n");
+      m_logger.writeChars("itemsMatrix: length: " + this.m_itemsMatrix.size()
+          + "\n");
       for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix
           .entrySet()) {
-        m_logger.writeChars(peer.getPeerName() + ") key: '" + e.getKey()
-            + "' value: '" + e.getValue().toString() + "'\n");
+        m_logger.writeChars("key: '" + e.getKey() + "' value: '"
+            + e.getValue().toString() + "'\n");
       }
       m_logger.writeChars("indexes: length: " + this.m_indexes.size()
           + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
 
       if ((i + 1) % m_skipCount == 0) {
         // DEBUG
-        m_logger.writeChars(peer.getPeerName()
-            + ") normalizeWithBroadcastingValues: i: " + i + "\n");
+        m_logger.writeChars("normalizeWithBroadcastingValues: i: " + i + "\n");
 
         normalizeWithBroadcastingValues(peer);
       }
@@ -228,20 +225,18 @@ public class OnlineCFTrainHybridBSP
 
     // Save Model
     // save user information
-    m_logger.writeChars(peer.getPeerName() + ") saving " + m_usersMatrix.size()
-        + " users\n");
+    m_logger.writeChars("saving " + m_usersMatrix.size() + " users\n");
     for (Map.Entry<Long, PipesVectorWritable> user : m_usersMatrix.entrySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") user: " + user.getKey()
-          + " vector: " + user.getValue().getVector() + "\n");
+      m_logger.writeChars("user: " + user.getKey() + " vector: "
+          + user.getValue().getVector() + "\n");
       peer.write(new Text("u" + user.getKey()), user.getValue());
     }
 
     // save item information
-    m_logger.writeChars(peer.getPeerName() + ") saving " + m_itemsMatrix.size()
-        + " items\n");
+    m_logger.writeChars("saving " + m_itemsMatrix.size() + " items\n");
     for (Map.Entry<Long, PipesVectorWritable> item : m_itemsMatrix.entrySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") item: " + item.getKey()
-          + " vector: " + item.getValue().getVector() + "\n");
+      m_logger.writeChars("item: " + item.getKey() + " vector: "
+          + item.getValue().getVector() + "\n");
       peer.write(new Text("i" + item.getKey()), item.getValue());
     }
 
@@ -384,6 +379,7 @@ public class OnlineCFTrainHybridBSP
 
     int peerCount = peer.getNumPeers();
     int peerId = peer.getPeerIndex();
+    String[] allPeerNames = peer.getAllPeerNames();
 
     if (peerCount > 1) {
       // DEBUG
@@ -405,8 +401,9 @@ public class OnlineCFTrainHybridBSP
               + " toPeerId: " + toPeerId + " value: "
               + item.getValue().getVector() + "\n");
 
-          peer.send(peer.getPeerName(toPeerId), new ItemMessage(peerId, item
+          peer.send(allPeerNames[toPeerId], new ItemMessage(peerId, item
               .getKey().longValue(), item.getValue().getVector()));
+
         } else {
           normalizedValues.put(item.getKey(), item.getValue().getVector());
           normalizedValueCount.put(item.getKey(), 1);
@@ -450,7 +447,7 @@ public class OnlineCFTrainHybridBSP
           int toPeerId = iter.next();
           m_logger.writeChars("sendNormalizedBack itemId: " + e.getKey()
               + " toPeerId: " + toPeerId + " value: " + e.getValue() + "\n");
-          peer.send(peer.getPeerName(toPeerId), msg);
+          peer.send(allPeerNames[toPeerId], msg);
 
           // update items matrix
           m_logger.writeChars("updateItems itemId: " + e.getKey() + " value: "
@@ -522,57 +519,56 @@ public class OnlineCFTrainHybridBSP
     long startTime = System.currentTimeMillis();
 
     // Fetch inputs
-    m_logger.writeChars(peer.getPeerName() + ") collecting input data\n");
+    m_logger.writeChars("collecting input data\n");
     collectInput(peer);
-    m_logger.writeChars(peer.getPeerName() + ") collected: "
-        + m_usersMatrix.size() + " users, " + m_itemsMatrix.size() + " items, "
-        + m_preferences.size() + " preferences\n");
+    m_logger.writeChars("collected: " + m_usersMatrix.size() + " users, "
+        + m_itemsMatrix.size() + " items, " + m_preferences.size()
+        + " preferences\n");
 
     // Convert preferences to UserItemMap
     GpuUserItemMap userItemMap = new GpuUserItemMap(m_preferences.size());
-    m_logger.writeChars(peer.getPeerName() + ") userItemMap: length: "
-        + m_preferences.size() + "\n");
+    m_logger.writeChars("userItemMap: length: " + m_preferences.size() + "\n");
     for (Preference<Long, Long> p : this.m_preferences) {
       userItemMap.put(p.getUserId(), p.getItemId(), p.getValue().get());
-      m_logger.writeChars(peer.getPeerName() + ") userItemMap userId: '"
-          + p.getUserId() + "' itemId: '" + p.getItemId() + "' value: '"
-          + p.getValue().get() + "'\n");
+      m_logger.writeChars("userItemMap userId: '" + p.getUserId()
+          + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
+          + "'\n");
     }
 
     // Convert usersMatrix to GpuVectorMap
     GpuVectorMap usersMatrixMap = new GpuVectorMap(m_usersMatrix.size());
-    m_logger.writeChars(peer.getPeerName() + ") usersMatrixMap: length: "
-        + m_usersMatrix.size() + "\n");
+    m_logger.writeChars("usersMatrixMap: length: " + m_usersMatrix.size()
+        + "\n");
     Iterator<Entry<Long, PipesVectorWritable>> userIt = m_usersMatrix
         .entrySet().iterator();
     while (userIt.hasNext()) {
       Entry<Long, PipesVectorWritable> entry = userIt.next();
       DoubleVector vector = entry.getValue().getVector();
       usersMatrixMap.put(entry.getKey(), vector.toArray());
-      m_logger.writeChars(peer.getPeerName() + ") usersMatrixMap userId: '"
-          + entry.getKey() + " value: '" + Arrays.toString(vector.toArray())
-          + "'\n");
+      m_logger.writeChars("usersMatrixMap userId: '" + entry.getKey()
+          + " value: '" + Arrays.toString(vector.toArray()) + "'\n");
     }
 
     // Convert itemsMatrix to GpuVectorMap
     GpuVectorMap itemsMatrixMap = new GpuVectorMap(m_itemsMatrix.size());
-    m_logger.writeChars(peer.getPeerName() + ") itemsMatrixMap: length: "
-        + m_itemsMatrix.size() + "\n");
+    m_logger.writeChars("itemsMatrixMap: length: " + m_itemsMatrix.size()
+        + "\n");
     Iterator<Entry<Long, PipesVectorWritable>> itemIt = m_itemsMatrix
         .entrySet().iterator();
     while (itemIt.hasNext()) {
       Entry<Long, PipesVectorWritable> entry = itemIt.next();
       DoubleVector vector = entry.getValue().getVector();
       itemsMatrixMap.put(entry.getKey(), vector.toArray());
-      m_logger.writeChars(peer.getPeerName() + ") itemsMatrixMap userId: '"
-          + entry.getKey() + " value: '" + Arrays.toString(vector.toArray())
-          + "'\n");
+      m_logger.writeChars("itemsMatrixMap userId: '" + entry.getKey()
+          + " value: '" + Arrays.toString(vector.toArray()) + "'\n");
     }
 
     // Run GPU Kernels
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
         userItemMap, usersMatrixMap, itemsMatrixMap, m_usersMatrix.size(),
-        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations, m_skipCount);
+        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations,
+        m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
+        peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
@@ -583,21 +579,19 @@ public class OnlineCFTrainHybridBSP
 
     // Save Model
     // save user information
-    m_logger.writeChars(peer.getPeerName() + ") saving " + m_usersMatrix.size()
-        + " users\n");
+    m_logger.writeChars("saving " + m_usersMatrix.size() + " users\n");
     for (Long userId : m_usersMatrix.keySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") user: " + userId
-          + " vector: " + Arrays.toString(usersMatrixMap.get(userId)) + "\n");
+      m_logger.writeChars("user: " + userId + " vector: "
+          + Arrays.toString(usersMatrixMap.get(userId)) + "\n");
       peer.write(new Text("u" + userId), new PipesVectorWritable(
           new DenseDoubleVector(usersMatrixMap.get(userId))));
     }
 
     // save item information
-    m_logger.writeChars(peer.getPeerName() + ") saving " + m_itemsMatrix.size()
-        + " items\n");
+    m_logger.writeChars("saving " + m_itemsMatrix.size() + " items\n");
     for (Long itemId : m_itemsMatrix.keySet()) {
-      m_logger.writeChars(peer.getPeerName() + ") item: " + itemId
-          + " vector: " + Arrays.toString(itemsMatrixMap.get(itemId)) + "\n");
+      m_logger.writeChars("item: " + itemId + " vector: "
+          + Arrays.toString(itemsMatrixMap.get(itemId)) + "\n");
       peer.write(new Text("i" + itemId), new PipesVectorWritable(
           new DenseDoubleVector(itemsMatrixMap.get(itemId))));
     }
@@ -690,8 +684,8 @@ public class OnlineCFTrainHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numBspTask = 1; // 2; // CPU + GPU tasks
-    int numGpuBspTask = 1; // 0; // GPU tasks
+    int numBspTask = 2; // CPU + GPU tasks
+    int numGpuBspTask = 0; // GPU tasks
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
 

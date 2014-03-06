@@ -31,10 +31,14 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   private int m_matrixRank;
   private int m_maxIterations;
   private int m_skipCount;
+  private int m_peerCount = 0;
+  private int m_peerId = 0;
+  private String[] m_allPeerNames;
 
   public OnlineCFTrainHybridKernel(GpuUserItemMap userItemMap,
-      GpuVectorMap usersMatrix, GpuVectorMap itemsMatrix, long n, long m, double alpha,
-      int matrixRank, int maxIterations, int skipCount) {
+      GpuVectorMap usersMatrix, GpuVectorMap itemsMatrix, long n, long m,
+      double alpha, int matrixRank, int maxIterations, int skipCount,
+      int peerCount, int peerId, String[] allPeerNames) {
     this.m_userItemMap = userItemMap;
     this.m_usersMatrix = usersMatrix;
     this.m_itemsMatrix = itemsMatrix;
@@ -44,6 +48,9 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     this.m_matrixRank = matrixRank;
     this.m_maxIterations = maxIterations;
     this.m_skipCount = skipCount;
+    this.m_peerCount = peerCount;
+    this.m_peerId = peerId;
+    this.m_allPeerNames = allPeerNames;
   }
 
   public void gpuMethod() {
@@ -54,9 +61,6 @@ public class OnlineCFTrainHybridKernel implements Kernel {
 
     long usersPerBlock = divup(m_N, gridSize);
     long itemsPerBlock = divup(m_M, gridSize);
-
-    int peerCount = 0;
-    int peerId = 0;
 
     // SharedMemory per block
     int shmStartPos = 0;
@@ -75,15 +79,12 @@ public class OnlineCFTrainHybridKernel implements Kernel {
 
     // DEBUG
     if (RootbeerGpu.getThreadId() == 0) {
-      peerCount = HamaPeer.getNumPeers();
-      peerId = HamaPeer.getPeerIndex();
-      
       System.out.println("blockSize: " + blockSize);
       System.out.println("gridSize: " + gridSize);
       System.out.println("usersPerBlock: " + usersPerBlock);
       System.out.println("itemsPerBlock: " + itemsPerBlock);
-      System.out.println("peerCount: " + peerCount);
-      System.out.println("peerId: " + peerId);
+      System.out.println("peerCount: " + m_peerCount);
+      System.out.println("peerId: " + m_peerId);
     }
 
     // Start OnlineCF algorithm
@@ -188,7 +189,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
               // 1-bit right shift = divide by two to the power 1
               int shmMultVectorEndPos = shmMultVectorStartPos + m_matrixRank
                   * 8;
-              for (int s = (int)divup(m_matrixRank, 2); s > 0; s >>= 1) {
+              for (int s = (int) divup(m_matrixRank, 2); s > 0; s >>= 1) {
 
                 if (thread_idxx < s) {
                   // sh_mem[ltid] += sh_mem[ltid + s];
@@ -357,7 +358,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
               // 1-bit right shift = divide by two to the power 1
               int shmMultVectorEndPos = shmMultVectorStartPos + m_matrixRank
                   * 8;
-              for (int s = (int)divup(m_matrixRank, 2); s > 0; s >>= 1) {
+              for (int s = (int) divup(m_matrixRank, 2); s > 0; s >>= 1) {
 
                 if (thread_idxx < s) {
                   // sh_mem[ltid] += sh_mem[ltid + s];
@@ -423,47 +424,46 @@ public class OnlineCFTrainHybridKernel implements Kernel {
         } // if itemVector != null
 
       } // loop over all itemsPerBlock
-      
-      
+
       // Sync all blocks Inter-Block Synchronization
       RootbeerGpu.syncblocks(2);
 
       // **********************************************************************
       // TODO normalizeWithBroadcastingValues
       // **********************************************************************
-      if (((i + 1) % m_skipCount == 0) && (peerCount > 0)) {
+      if (((i + 1) % m_skipCount == 0) && (m_peerCount > 0)) {
 
         // Only global Thread 0
         if ((RootbeerGpu.getThreadId() == 0)) {
 
-          /*
           // Step 1)
           // send item matrices to selected peers
           for (int itemId = 1; itemId <= m_M; itemId++) {
-            
-            int toPeerId = itemId % peerCount;
-            
+
+            int toPeerId = itemId % m_peerCount;
+
             // don't send item to itself
-            if (toPeerId != peerId) {
-              
-              System.out.println("sendItem itemId: " + itemId
-                  + " toPeerId: " + toPeerId + " value: "
+            if (toPeerId != m_peerId) {
+
+              System.out.println("sendItem itemId: " + itemId + " toPeerId: "
+                  + toPeerId + " value: "
                   + arrayToString(m_itemsMatrix.get(itemId)) + "\n");
 
-              HamaPeer.send(peer.getPeerName(toPeerId), new ItemMessage(peerId,
-                  item.getKey().longValue(), item.getValue().getVector()));
-              
+              // HamaPeer.send(m_allPeerNames[toPeerId], new ItemMessage(peerId,
+              // item.getKey().longValue(), item.getValue().getVector()));
+
             } else {
-              
-              normalizedValues.put(item.getKey(), item.getValue().getVector());
-              normalizedValueCount.put(item.getKey(), 1);
-              senderList.put(item.getKey(), new LinkedList<Integer>());
-              
+
+              // normalizedValues.put(item.getKey(),
+              // item.getValue().getVector());
+              // normalizedValueCount.put(item.getKey(), 1);
+              // senderList.put(item.getKey(), new LinkedList<Integer>());
+
             }
           }
 
           HamaPeer.sync();
-*/
+
         }
 
       }
@@ -495,7 +495,8 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, 0, 0);
+    new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, 0, 0, 0, 0,
+        null);
     new GpuUserItemMap().put(0, 0, 0);
     new GpuVectorMap().put(0, null);
   }
