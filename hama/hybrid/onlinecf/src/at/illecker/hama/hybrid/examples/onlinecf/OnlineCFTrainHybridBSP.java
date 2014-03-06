@@ -685,7 +685,7 @@ public class OnlineCFTrainHybridBSP
 
     // Defaults
     int numBspTask = 2; // CPU + GPU tasks
-    int numGpuBspTask = 0; // GPU tasks
+    int numGpuBspTask = 1; // GPU tasks
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
 

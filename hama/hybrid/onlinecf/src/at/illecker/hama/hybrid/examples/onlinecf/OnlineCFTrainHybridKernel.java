@@ -441,7 +441,6 @@ public class OnlineCFTrainHybridKernel implements Kernel {
           for (int itemId = 1; itemId <= m_M; itemId++) {
 
             int toPeerId = itemId % m_peerCount;
-
             // don't send item to itself
             if (toPeerId != m_peerId) {
 
@@ -449,8 +448,14 @@ public class OnlineCFTrainHybridKernel implements Kernel {
                   + toPeerId + " value: "
                   + arrayToString(m_itemsMatrix.get(itemId)) + "\n");
 
-              // HamaPeer.send(m_allPeerNames[toPeerId], new ItemMessage(peerId,
-              // item.getKey().longValue(), item.getValue().getVector()));
+              // ItemMessage
+              // senderId,itemId,itemVector
+              // 0,1,0.622676719363376,0.47894004113535393,0.9099409696184495
+              String message = m_peerId + ","
+                  + arrayToString(m_itemsMatrix.get(itemId));
+              System.out.println(message);
+
+              HamaPeer.send(m_allPeerNames[toPeerId], message);
 
             } else {
 
@@ -461,8 +466,32 @@ public class OnlineCFTrainHybridKernel implements Kernel {
 
             }
           }
-
           HamaPeer.sync();
+
+          // Step 2)
+          // receive item matrices if this peer is selected and normalize them
+          String msg;
+          while ((msg = HamaPeer.getCurrentStringMessage()) != null) {
+            String[] values = msg.split(",");
+            int senderId = Integer.parseInt(values[0]);
+            long itemId = Long.parseLong(values[1]);
+
+            int dim = values.length - 2;
+            double[] vector = new double[dim];
+            for (int d = 0; d < dim; d++) {
+              vector[d] = Double.parseDouble(values[i + 2]);
+            }
+
+            System.out.println("receiveItem itemId: " + itemId
+                + " fromPeerId: " + senderId + " value: "
+                + arrayToString(vector) + "\n");
+
+            // normalizedValues.put(itemId,
+            // normalizedValues.get(itemId).add(vector));
+            // normalizedValueCount.put(itemId, normalizedValueCount.get(itemId)
+            // + 1);
+            // senderList.get(itemId).add(senderId);
+          }
 
         }
 
@@ -481,11 +510,10 @@ public class OnlineCFTrainHybridKernel implements Kernel {
 
   private String arrayToString(double[] arr) {
     if (arr != null) {
-      String result = "[";
+      String result = "";
       for (int i = 0; i < arr.length; i++) {
         result += (i + 1 == arr.length) ? arr[i] : (arr[i] + ",");
       }
-      result += "]";
       return result;
     }
     return "null";
