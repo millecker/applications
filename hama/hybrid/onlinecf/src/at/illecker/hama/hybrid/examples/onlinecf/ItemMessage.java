@@ -29,30 +29,30 @@ import org.apache.hama.commons.math.DoubleVector;
 public final class ItemMessage extends VectorWritable {
   public final static String VALUE_DELIMITER = ",";
 
-  private int senderId;
+  private long senderId;
   private long itemId;
 
   public ItemMessage() {
     super();
   }
 
-  public ItemMessage(int senderId, long itemId, VectorWritable vector) {
+  public ItemMessage(long senderId, long itemId, VectorWritable vector) {
     super(vector);
     this.senderId = senderId;
     this.itemId = itemId;
   }
 
-  public ItemMessage(int senderId, long itemId, DoubleVector vector) {
+  public ItemMessage(long senderId, long itemId, DoubleVector vector) {
     super(vector);
     this.senderId = senderId;
     this.itemId = itemId;
   }
 
-  public int getSenderId() {
+  public long getSenderId() {
     return this.senderId;
   }
 
-  public void setSenderId(int senderId) {
+  public void setSenderId(long senderId) {
     this.senderId = senderId;
   }
 
@@ -66,7 +66,7 @@ public final class ItemMessage extends VectorWritable {
 
   @Override
   public final void write(DataOutput out) throws IOException {
-    writeVector(this, out);
+    writeItemMessage(this, out);
   }
 
   @Override
@@ -77,7 +77,7 @@ public final class ItemMessage extends VectorWritable {
     this.itemId = itemMessage.getItemId();
   }
 
-  public static void writeVector(ItemMessage itemMessage, DataOutput out)
+  public static void writeItemMessage(ItemMessage itemMessage, DataOutput out)
       throws IOException {
     String str = itemMessage.senderId + VALUE_DELIMITER + itemMessage.itemId
         + VALUE_DELIMITER;
