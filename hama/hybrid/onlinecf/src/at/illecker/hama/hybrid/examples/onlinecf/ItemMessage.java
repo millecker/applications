@@ -29,30 +29,30 @@ import org.apache.hama.commons.math.DoubleVector;
 public final class ItemMessage extends VectorWritable {
   public final static String VALUE_DELIMITER = ",";
 
-  private long senderId;
+  private int senderId;
   private long itemId;
 
   public ItemMessage() {
     super();
   }
 
-  public ItemMessage(long senderId, long itemId, VectorWritable vector) {
+  public ItemMessage(int senderId, long itemId, VectorWritable vector) {
     super(vector);
     this.senderId = senderId;
     this.itemId = itemId;
   }
 
-  public ItemMessage(long senderId, long itemId, DoubleVector vector) {
+  public ItemMessage(int senderId, long itemId, DoubleVector vector) {
     super(vector);
     this.senderId = senderId;
     this.itemId = itemId;
   }
 
-  public long getSenderId() {
+  public int getSenderId() {
     return this.senderId;
   }
 
-  public void setSenderId(long senderId) {
+  public void setSenderId(int senderId) {
     this.senderId = senderId;
   }
 
