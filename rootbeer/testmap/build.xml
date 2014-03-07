@@ -1,0 +1,23 @@
+<project>
+	<property name="root" value="../.." />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
+	<property name="rootbeer.args" value="-64bit -noexceptions" />
+    <!--
+	<property name="rootbeer.args" value="-noarraychecks -maxrregcount 32 -shared-mem-size 8204" />
+	-->
+	<property name="output.file" value="TestMap" />
+	<property name="libjars.gpu" value="" />
+	<property name="libjars.cpu" value="" />
+	<property name="libjars.bench" value="" />
+	<property name="rootbeer.package.dir" value="at/illecker/rootbeer/examples/testmap" />
+	<property name="rootbeer.classes" value="GpuVectorMap.class,TestMapKernel.class" />
+	<property name="kernel.class" value="at.illecker.rootbeer.examples.testmap.TestMapKernel" />
+	<property name="gpu.class" value="" />
+	<property name="cpu.class" value="" />
+	<property name="bench.class" value="" />
+	<property name="program" value="java" />
+	<property name="program.args" value="jar" />
+	<property name="application.args" value="blockSize gridSize" />
+
+	<import file="${root}${file.separator}commonbuild.xml" />
+</project>
