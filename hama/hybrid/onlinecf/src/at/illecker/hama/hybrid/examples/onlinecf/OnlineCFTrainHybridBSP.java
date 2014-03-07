@@ -413,7 +413,7 @@ public class OnlineCFTrainHybridBSP
       peer.sync();
 
       // Step 2)
-      // receive item matrices if this peer is selected and normalize them
+      // receive item matrices if this peer is selected
       ItemMessage msg;
       while ((msg = peer.getCurrentMessage()) != null) {
         int senderId = msg.getSenderId();
@@ -428,6 +428,7 @@ public class OnlineCFTrainHybridBSP
         senderList.get(itemId).add(senderId);
       }
 
+      // Step 3)
       // normalize
       for (Map.Entry<Long, DoubleVector> e : normalizedValues.entrySet()) {
         double count = normalizedValueCount.get(e.getKey());
@@ -436,7 +437,7 @@ public class OnlineCFTrainHybridBSP
             + e.getValue() + "\n");
       }
 
-      // Step 3)
+      // Step 4)
       // send back normalized values to senders
       for (Map.Entry<Long, DoubleVector> e : normalizedValues.entrySet()) {
         msg = new ItemMessage(peerId, e.getKey(), e.getValue());
@@ -448,17 +449,17 @@ public class OnlineCFTrainHybridBSP
           m_logger.writeChars("sendNormalizedBack itemId: " + e.getKey()
               + " toPeerId: " + toPeerId + " value: " + e.getValue() + "\n");
           peer.send(allPeerNames[toPeerId], msg);
-
-          // update items matrix
-          m_logger.writeChars("updateItems itemId: " + e.getKey() + " value: "
-              + e.getValue() + "\n");
-          m_itemsMatrix.put(e.getKey(), new PipesVectorWritable(e.getValue()));
         }
+        
+        // update items matrix
+        m_itemsMatrix.put(e.getKey(), new PipesVectorWritable(e.getValue()));
+        m_logger.writeChars("updateItems itemId: " + e.getKey() + " value: "
+            + e.getValue() + "\n");
       }
       peer.sync();
 
-      // Step 4)
-      // receive already normalized and synced data
+      // Step 5)
+      // receive already normalized and update data
       while ((msg = peer.getCurrentMessage()) != null) {
         m_logger.writeChars("updateItems itemId: " + msg.getItemId()
             + " fromPeerId: " + msg.getSenderId() + " value: "

@@ -85,4 +85,29 @@ public final class GpuVectorMap {
     }
   }
 
+  public void add(long key, double[] value) {
+    m_used = true;
+    int bucketIndex = indexForKey(key);
+    KeyValuePair entry = m_values[bucketIndex];
+    if (entry != null) {
+      boolean done = false;
+      while (!done) {
+        if (equalsKey(entry, key)) {
+          double[] vector = (double[]) entry.getValue();
+          for (int i = 0; i < vector.length; i++) {
+            vector[i] += value[i];
+          }
+          entry.setValue(vector);
+          done = true;
+        } else if (entry.getNext() == null) {
+          entry.setNext(new KeyValuePair(key, value));
+          done = true;
+        }
+        entry = entry.getNext();
+      }
+    } else {
+      m_values[bucketIndex] = new KeyValuePair(key, value);
+    }
+  }
+
 }
