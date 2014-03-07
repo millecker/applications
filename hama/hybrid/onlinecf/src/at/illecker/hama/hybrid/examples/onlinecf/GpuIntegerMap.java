@@ -19,21 +19,17 @@ package at.illecker.hama.hybrid.examples.onlinecf;
 
 import org.trifort.rootbeer.runtime.KeyValuePair;
 
-public final class GpuVectorMap {
+public final class GpuIntegerMap {
   public static final int DEFAULT_CAPACITY = 16;
   private KeyValuePair[] m_values = null;
   private boolean m_used = false;
 
-  public GpuVectorMap() {
+  public GpuIntegerMap() {
     this(DEFAULT_CAPACITY);
   }
 
-  public GpuVectorMap(int size) {
+  public GpuIntegerMap(int size) {
     this.m_values = new KeyValuePair[size];
-  }
-
-  public int size() {
-    return m_values.length;
   }
 
   public void clear() {
@@ -56,30 +52,43 @@ public final class GpuVectorMap {
     return (int) (key % m_values.length);
   }
 
-  public double[] get(long key) {
+  public Integer get(long key) {
     KeyValuePair entry = m_values[indexForKey(key)];
     while (entry != null && !equalsKey(entry, key)) {
       entry = entry.getNext();
     }
-    return (entry != null) ? (double[]) entry.getValue() : null;
+    return (entry != null) ? (Integer) entry.getValue() : null;
   }
 
-  public void put(long key, double[] value) {
+  public KeyValuePair getList(long key) {
+    return m_values[indexForKey(key)];
+  }
+
+  public void put(long key, int value) {
     m_used = true;
     int bucketIndex = indexForKey(key);
     KeyValuePair entry = m_values[bucketIndex];
     if (entry != null) {
       boolean done = false;
       while (!done) {
-        if (equalsKey(entry, key)) {
-          entry.setValue(value);
-          done = true;
-        } else if (entry.getNext() == null) {
+        if (entry.getNext() == null) {
           entry.setNext(new KeyValuePair(key, value));
           done = true;
         }
         entry = entry.getNext();
       }
+    } else {
+      m_values[bucketIndex] = new KeyValuePair(key, value);
+    }
+  }
+
+  public void add(long key, int value) {
+    m_used = true;
+    int bucketIndex = indexForKey(key);
+    KeyValuePair entry = m_values[bucketIndex];
+    if (entry != null) {
+      int val = (Integer) entry.getValue();
+      entry.setValue(val + value);
     } else {
       m_values[bucketIndex] = new KeyValuePair(key, value);
     }

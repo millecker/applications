@@ -34,6 +34,9 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   private int m_peerCount = 0;
   private int m_peerId = 0;
   private String[] m_allPeerNames;
+  private GpuVectorMap m_messages;
+  private GpuIntegerMap m_counters;
+  private GpuIntegerMap m_senders;
 
   public OnlineCFTrainHybridKernel(GpuUserItemMap userItemMap,
       GpuVectorMap usersMatrix, GpuVectorMap itemsMatrix, long n, long m,
@@ -51,6 +54,10 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     this.m_peerCount = peerCount;
     this.m_peerId = peerId;
     this.m_allPeerNames = allPeerNames;
+    int itemsMatrixSize = m_itemsMatrix.size();
+    this.m_messages = new GpuVectorMap(itemsMatrixSize);
+    this.m_counters = new GpuIntegerMap(itemsMatrixSize);
+    this.m_senders = new GpuIntegerMap(itemsMatrixSize);
   }
 
   public void gpuMethod() {
@@ -436,6 +443,11 @@ public class OnlineCFTrainHybridKernel implements Kernel {
         // Only global Thread 0
         if ((RootbeerGpu.getThreadId() == 0)) {
 
+          // clear maps
+          m_messages.clear();
+          m_counters.clear();
+          m_senders.clear();
+
           // Step 1)
           // send item matrices to selected peers
           for (int itemId = 1; itemId <= m_M; itemId++) {
@@ -443,27 +455,23 @@ public class OnlineCFTrainHybridKernel implements Kernel {
             int toPeerId = itemId % m_peerCount;
             // don't send item to itself
             if (toPeerId != m_peerId) {
-
-              System.out.println("sendItem itemId: " + itemId + " toPeerId: "
-                  + toPeerId + " value: "
-                  + arrayToString(m_itemsMatrix.get(itemId)) + "\n");
-
               // ItemMessage
               // senderId,itemId,itemVector
               // 0,1,0.622676719363376,0.47894004113535393,0.9099409696184495
               String message = m_peerId + ","
                   + arrayToString(m_itemsMatrix.get(itemId));
+
+              // DEBUG
+              System.out.println("sendItem itemId: " + itemId + " toPeerId: "
+                  + toPeerId + " value: "
+                  + arrayToString(m_itemsMatrix.get(itemId)) + "\n");
               System.out.println(message);
 
               HamaPeer.send(m_allPeerNames[toPeerId], message);
 
             } else {
-
-              // normalizedValues.put(item.getKey(),
-              // item.getValue().getVector());
-              // normalizedValueCount.put(item.getKey(), 1);
-              // senderList.put(item.getKey(), new LinkedList<Integer>());
-
+              m_messages.put(itemId, m_itemsMatrix.get(itemId));
+              m_counters.put(itemId, 1);
             }
           }
           HamaPeer.sync();
@@ -472,10 +480,10 @@ public class OnlineCFTrainHybridKernel implements Kernel {
           // receive item matrices if this peer is selected and normalize them
           String msg;
           while ((msg = HamaPeer.getCurrentStringMessage()) != null) {
+            // Parse string message
             String[] values = msg.split(",");
             int senderId = Integer.parseInt(values[0]);
             long itemId = Long.parseLong(values[1]);
-
             int dim = values.length - 2;
             double[] vector = new double[dim];
             for (int d = 0; d < dim; d++) {
@@ -486,14 +494,17 @@ public class OnlineCFTrainHybridKernel implements Kernel {
                 + " fromPeerId: " + senderId + " value: "
                 + arrayToString(vector) + "\n");
 
-            // normalizedValues.put(itemId,
-            // normalizedValues.get(itemId).add(vector));
-            // normalizedValueCount.put(itemId, normalizedValueCount.get(itemId)
-            // + 1);
-            // senderList.get(itemId).add(senderId);
+            m_messages.put(itemId, vector);
+            m_counters.add(itemId, 1);
+            m_senders.put(itemId, senderId);
           }
 
-        }
+        } // RootbeerGpu.getThreadId() == 0
+
+        // Sync all blocks Inter-Block Synchronization
+        RootbeerGpu.syncblocks(3);
+
+        // normalize (messages with counters)
 
       }
 
