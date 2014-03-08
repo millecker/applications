@@ -19,16 +19,16 @@ package at.illecker.hama.hybrid.examples.onlinecf;
 
 import org.trifort.rootbeer.runtime.KeyValuePair;
 
-public final class GpuIntegerMap {
+public final class GpuIntegerListMap {
   public static final int DEFAULT_CAPACITY = 16;
   private KeyValuePair[] m_values = null;
   private boolean m_used = false;
 
-  public GpuIntegerMap() {
+  public GpuIntegerListMap() {
     this(DEFAULT_CAPACITY);
   }
 
-  public GpuIntegerMap(int size) {
+  public GpuIntegerListMap(int size) {
     this.m_values = new KeyValuePair[size];
   }
 
@@ -60,6 +60,10 @@ public final class GpuIntegerMap {
     return (entry != null) ? (Integer) entry.getValue() : null;
   }
 
+  public KeyValuePair getList(long key) {
+    return m_values[indexForKey(key)];
+  }
+
   public void put(long key, int value) {
     m_used = true;
     int bucketIndex = indexForKey(key);
@@ -67,27 +71,12 @@ public final class GpuIntegerMap {
     if (entry != null) {
       boolean done = false;
       while (!done) {
-        if (equalsKey(entry, key)) {
-          entry.setValue(value);
-          done = true;
-        } else if (entry.getNext() == null) {
+        if (entry.getNext() == null) {
           entry.setNext(new KeyValuePair(key, value));
           done = true;
         }
         entry = entry.getNext();
       }
-    } else {
-      m_values[bucketIndex] = new KeyValuePair(key, value);
-    }
-  }
-
-  public void add(long key, int value) {
-    m_used = true;
-    int bucketIndex = indexForKey(key);
-    KeyValuePair entry = m_values[bucketIndex];
-    if (entry != null) {
-      int val = (Integer) entry.getValue();
-      entry.setValue(val + value);
     } else {
       m_values[bucketIndex] = new KeyValuePair(key, value);
     }
