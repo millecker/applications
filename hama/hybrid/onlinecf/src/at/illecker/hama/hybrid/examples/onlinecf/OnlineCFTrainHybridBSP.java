@@ -450,7 +450,7 @@ public class OnlineCFTrainHybridBSP
               + " toPeerId: " + toPeerId + " value: " + e.getValue() + "\n");
           peer.send(allPeerNames[toPeerId], msg);
         }
-        
+
         // update items matrix
         m_itemsMatrix.put(e.getKey(), new PipesVectorWritable(e.getValue()));
         m_logger.writeChars("updateItems itemId: " + e.getKey() + " value: "
@@ -544,31 +544,38 @@ public class OnlineCFTrainHybridBSP
         .entrySet().iterator();
     while (userIt.hasNext()) {
       Entry<Long, PipesVectorWritable> entry = userIt.next();
+      long userId = entry.getKey();
       DoubleVector vector = entry.getValue().getVector();
-      usersMatrixMap.put(entry.getKey(), vector.toArray());
-      m_logger.writeChars("usersMatrixMap userId: '" + entry.getKey()
-          + " value: '" + Arrays.toString(vector.toArray()) + "'\n");
+      usersMatrixMap.put(userId, vector.toArray());
+
+      m_logger.writeChars("usersMatrixMap userId: '" + userId + " value: '"
+          + Arrays.toString(vector.toArray()) + "'\n");
     }
 
     // Convert itemsMatrix to GpuVectorMap
     GpuVectorMap itemsMatrixMap = new GpuVectorMap(m_itemsMatrix.size());
+    GpuIntegerMap counterMap = new GpuIntegerMap(m_itemsMatrix.size());
+
     m_logger.writeChars("itemsMatrixMap: length: " + m_itemsMatrix.size()
         + "\n");
     Iterator<Entry<Long, PipesVectorWritable>> itemIt = m_itemsMatrix
         .entrySet().iterator();
     while (itemIt.hasNext()) {
       Entry<Long, PipesVectorWritable> entry = itemIt.next();
+      long itemId = entry.getKey();
       DoubleVector vector = entry.getValue().getVector();
-      itemsMatrixMap.put(entry.getKey(), vector.toArray());
-      m_logger.writeChars("itemsMatrixMap userId: '" + entry.getKey()
-          + " value: '" + Arrays.toString(vector.toArray()) + "'\n");
+      itemsMatrixMap.put(itemId, vector.toArray());
+      counterMap.put(itemId, 0);
+
+      m_logger.writeChars("itemsMatrixMap itemId: '" + itemId + " value: '"
+          + Arrays.toString(vector.toArray()) + "'\n");
     }
 
     // Run GPU Kernels
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
-        userItemMap, usersMatrixMap, itemsMatrixMap, m_usersMatrix.size(),
-        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations,
-        m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
+        userItemMap, usersMatrixMap, itemsMatrixMap, counterMap,
+        m_usersMatrix.size(), m_itemsMatrix.size(), ALPHA, m_matrixRank,
+        m_maxIterations, m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
         peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
@@ -685,7 +692,7 @@ public class OnlineCFTrainHybridBSP
   public static void main(String[] args) throws Exception {
 
     // Defaults
-    int numBspTask = 2; // CPU + GPU tasks
+    int numBspTask = 1; // CPU + GPU tasks
     int numGpuBspTask = 1; // GPU tasks
     int blockSize = BLOCK_SIZE;
     int gridSize = GRID_SIZE;
