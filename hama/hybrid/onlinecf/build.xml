@@ -1,8 +1,8 @@
 <project>
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<property name="rootbeer.args" value="-64bit -noexceptions -noarraychecks -maxrregcount 64" />
-	<!-- -shared-mem-size 8204 -->
+	<property name="rootbeer.args" value="-64bit" />
+	<!-- -shared-mem-size 8204 -noexceptions -noarraychecks -maxrregcount 32 -->
 	<property name="output.file" value="OnlineCF" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />

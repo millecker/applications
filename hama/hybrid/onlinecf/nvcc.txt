@@ -1,0 +1,26 @@
+###############################################################################
+##### Code Analysis                                                       #####
+###############################################################################
+
+nvcc generated.cu --ptxas-options=-v -arch sm_20
+
+ptxas info    : 427 bytes gmem, 192 bytes cmem[14]
+ptxas info    : Compiling entry function '_Z5entryPcS_PiPxS1_S0_S0_i' for 'sm_20'
+ptxas info    : Function properties for _Z5entryPcS_PiPxS1_S0_S0_i
+    24 bytes stack frame, 20 bytes spill stores, 24 bytes spill loads
+ptxas info    : Used 63 registers, 40984 bytes smem, 92 bytes cmem[0], 336 bytes cmem[16]
+ptxas info    : Function properties for _Z79at_illecker_hama_hybrid_examples_onlinecf_OnlineCFTrainHybridKernel_gpuMethod0_PciPi
+    1320 bytes stack frame, 2428 bytes spill stores, 2000 bytes spill loads
+
+
+nvcc generated.cu --ptxas-options=-v -arch sm_20 -maxregcount 32
+
+ptxas info    : 427 bytes gmem, 192 bytes cmem[14]
+ptxas info    : Compiling entry function '_Z5entryPcS_PiPxS1_S0_S0_i' for 'sm_20'
+ptxas info    : Function properties for _Z5entryPcS_PiPxS1_S0_S0_i
+    24 bytes stack frame, 20 bytes spill stores, 24 bytes spill loads
+ptxas info    : Used 32 registers, 40984 bytes smem, 92 bytes cmem[0], 336 bytes cmem[16]
+ptxas info    : Function properties for _Z79at_illecker_hama_hybrid_examples_onlinecf_OnlineCFTrainHybridKernel_gpuMethod0_PciPi
+    1360 bytes stack frame, 2692 bytes spill stores, 2652 bytes spill loads
+    
+###############################################################################
