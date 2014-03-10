@@ -446,7 +446,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
       // **********************************************************************
       // normalizeWithBroadcastingValues
       // **********************************************************************
-      if (((i + 1) % m_skipCount == 0) && (m_peerCount > 0)) {
+      if (((i + 1) % m_skipCount == 0) && (m_peerCount > 1)) {
 
         // Only global Thread 0
         if (RootbeerGpu.getThreadId() == 0) {
