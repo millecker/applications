@@ -15,12 +15,14 @@ ant jar-cpu
 
 # Submit GPU Task to Hama
 ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
- -DblockSize=1 -DgridSize=1 \
+ -DblockSize=3 -DgridSize=1 \
  -DmaxIterations=150 -DmatrixRank=3 -DskipCount=1 \
- -DtestExample=false -Ddebug=false]
+ -DtestExample=true -Ddebug=true]
+
+hama jar OnlineCF-GPU.jar 1 1 3 1 150 3 1 true true
 
 # Submit CPU Task to Hama
-ant run-cpu [-DnumBspTask=2 -DnumGpuBspTask=0  \
+ant run-cpu [-DnumBspTask=1 -DnumGpuBspTask=0  \
  -DblockSize=0 -DgridSize=0 \
  -DmaxIterations=150 -DmatrixRank=3 -DskipCount=1 \
  -DtestExample=true -Ddebug=true]
