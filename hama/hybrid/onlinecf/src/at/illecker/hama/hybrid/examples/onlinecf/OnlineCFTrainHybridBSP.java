@@ -198,7 +198,9 @@ public class OnlineCFTrainHybridBSP
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
 
-      computeValues();
+      computeUserValues();
+      computeItemValues();
+      // computeAllValues();
 
       // DEBUG
       // m_logger.writeChars("values after computeValues(" + i + ")\n");
@@ -308,7 +310,119 @@ public class OnlineCFTrainHybridBSP
     }
   }
 
-  private void computeValues() throws IOException {
+  private void computeUserValues() throws IOException {
+    // compute values
+    for (Integer prefIdx : m_indexes) {
+      Preference<Long, Long> pref = m_preferences.get(prefIdx);
+
+      // function input
+      PipesVectorWritable in_userFactorizedValues = m_usersMatrix.get(pref
+          .getUserId());
+      PipesVectorWritable in_itemFactorizedValues = m_itemsMatrix.get(pref
+          .getItemId());
+
+      // function output
+      VectorWritable out_userFactorized;
+
+      // DEBUG
+      // m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
+      // + pref.getUserId() + "," + pref.getItemId() + ","
+      // + pref.getValue().get() + ")\n");
+      // m_logger.writeChars("userVector: "
+      // + in_userFactorizedValues.getVector().toString() + "\n");
+      // m_logger.writeChars("itemVector: "
+      // + in_itemFactorizedValues.getVector().toString() + "\n");
+
+      // MeanAbsError function
+      // below vectors are all size of MATRIX_RANK
+      DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
+      DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
+
+      // calculated score
+      double calculatedScore = aal_ml_xa.multiply(bbl_vl_yb).sum();
+      double expectedScore = pref.getValue().get();
+      double scoreDifference = expectedScore - calculatedScore;
+
+      // DEBUG
+      // m_logger.writeChars("expectedScore: " + expectedScore + "\n");
+      // m_logger.writeChars("calculatedScore: " + calculatedScore + "\n");
+      // m_logger.writeChars("scoreDifference: " + scoreDifference + "\n");
+
+      // α_al ← α_al + 2τ * (β_bl + ν_l: * y_b:)(r − R)
+      // users ← user + userFactorization (will be used later)
+      DoubleVector userFactorization = bbl_vl_yb.multiply(2 * ALPHA
+          * scoreDifference);
+      DoubleVector users = in_userFactorizedValues.getVector().add(
+          userFactorization);
+      out_userFactorized = new VectorWritable(users);
+
+      // DEBUG
+      // m_logger.writeChars("Update userVector: "
+      // + out_userFactorized.getVector().toString() + "\n");
+
+      // update function output
+      m_usersMatrix.put(pref.getUserId(), new PipesVectorWritable(
+          out_userFactorized));
+    }
+  }
+
+  private void computeItemValues() throws IOException {
+    // compute values
+    for (Integer prefIdx : m_indexes) {
+      Preference<Long, Long> pref = m_preferences.get(prefIdx);
+
+      // function input
+      PipesVectorWritable in_userFactorizedValues = m_usersMatrix.get(pref
+          .getUserId());
+      PipesVectorWritable in_itemFactorizedValues = m_itemsMatrix.get(pref
+          .getItemId());
+
+      // function output
+      VectorWritable out_itemFactorized;
+
+      // DEBUG
+      // m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
+      // + pref.getUserId() + "," + pref.getItemId() + ","
+      // + pref.getValue().get() + ")\n");
+      // m_logger.writeChars("userVector: "
+      // + in_userFactorizedValues.getVector().toString() + "\n");
+      // m_logger.writeChars("itemVector: "
+      // + in_itemFactorizedValues.getVector().toString() + "\n");
+
+      // MeanAbsError function
+      // below vectors are all size of MATRIX_RANK
+      DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
+      DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
+
+      // calculated score
+      double calculatedScore = aal_ml_xa.multiply(bbl_vl_yb).sum();
+      double expectedScore = pref.getValue().get();
+      double scoreDifference = expectedScore - calculatedScore;
+
+      // DEBUG
+      // m_logger.writeChars("expectedScore: " + expectedScore + "\n");
+      // m_logger.writeChars("calculatedScore: " + calculatedScore + "\n");
+      // m_logger.writeChars("scoreDifference: " + scoreDifference + "\n");
+
+      // β_bl ← β_bl + 2τ * (α_al + μ_l: * x_a:)(r − R)
+      // items ← item + itemFactorization (will be used later)
+      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * ALPHA
+          * scoreDifference);
+      DoubleVector items = in_itemFactorizedValues.getVector().add(
+          itemFactorization);
+      out_itemFactorized = new VectorWritable(items);
+
+      // DEBUG
+      // m_logger.writeChars("Update itemVector: "
+      // + out_itemFactorized.getVector().toString() + "\n");
+
+      // update function output
+      m_itemsMatrix.put(pref.getItemId(), new PipesVectorWritable(
+          out_itemFactorized));
+    }
+  }
+
+  private void computeAllValues() throws IOException {
     // shuffling indexes
     int idx = 0;
     int idxValue = 0;
