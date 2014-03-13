@@ -18,6 +18,7 @@ ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
  -DblockSize=256 -DgridSize=14 \
  -DmaxIterations=150 -DmatrixRank=3 -DskipCount=1 \
  -DtestExample=true -Ddebug=true]
+ [-DinputFile=/home/user/Downloads/ml-100k/u.data]
 
 hama jar OnlineCF-GPU.jar 1 1 3 1 150 3 1 true true
 
@@ -26,6 +27,7 @@ ant run-cpu [-DnumBspTask=1 -DnumGpuBspTask=0  \
  -DblockSize=0 -DgridSize=0 \
  -DmaxIterations=150 -DmatrixRank=3 -DskipCount=1 \
  -DtestExample=true -Ddebug=true]
+ [-DinputFile=/home/user/Downloads/ml-100k/u.data]
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 600s' \
