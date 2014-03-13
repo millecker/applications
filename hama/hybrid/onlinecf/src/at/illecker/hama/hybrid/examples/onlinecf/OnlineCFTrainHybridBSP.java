@@ -81,9 +81,9 @@ public class OnlineCFTrainHybridBSP
   public static final String CONF_DEBUG = "onlinecf.is.debugging";
 
   // gridSize = amount of blocks and multiprocessors
-  public static final int GRID_SIZE = 1; // 14;
+  public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 3; // 1024;
+  public static final int BLOCK_SIZE = 256;
 
   public static final double ALPHA = 0.01;
 
@@ -677,6 +677,17 @@ public class OnlineCFTrainHybridBSP
 
       m_logger.close();
     }
+
+    List<StatsRow> stats = context.getStats();
+    for (StatsRow row : stats) {
+      LOG.info("  StatsRow:");
+      LOG.info("    serial time: " + row.getSerializationTime());
+      LOG.info("    exec time: " + row.getExecutionTime());
+      LOG.info("    deserial time: " + row.getDeserializationTime());
+      LOG.info("    num blocks: " + row.getNumBlocks());
+      LOG.info("    num threads: " + row.getNumThreads());
+      LOG.info("GPUTime: " + watch.elapsedTimeMillis() + " ms");
+    }
   }
 
   public static BSPJob createOnlineCFTrainHybridBSPConf(Path inPath,
@@ -789,6 +800,12 @@ public class OnlineCFTrainHybridBSP
       }
     }
 
+    // Check if blockSize < matrixRank when using GPU
+    if ((numGpuBspTask > 0) && (blockSize < matrixRank)) {
+      System.out.println("Error: BlockSize < matrixRank");
+      return;
+    }
+
     // Set config variables
     conf.setBoolean(CONF_DEBUG, isDebugging);
     conf.setBoolean("hama.pipes.logging", isDebugging);
@@ -845,11 +862,17 @@ public class OnlineCFTrainHybridBSP
           double actual = test.getValue().get();
           double estimated = recommender.estimatePreference(test.getUserId(),
               test.getItemId());
+
+          LOG.info("estimatePreference of userId: " + test.getUserId()
+              + " itemId: " + test.getItemId() + " actual: " + actual);
+          LOG.info("estimated: " + estimated + " error: "
+              + Math.abs(actual - estimated));
+
           correct += (Math.abs(actual - estimated) < 0.5) ? 1 : 0;
         }
 
         LOG.info("assertEquals(expected: " + (testPrefs.length * 0.75) + " == "
-            + correct + " actual with delta: 1");
+            + correct + " actual) with delta: 1");
       }
 
       if (isDebugging) {

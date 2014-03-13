@@ -15,7 +15,7 @@ ant jar-cpu
 
 # Submit GPU Task to Hama
 ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
- -DblockSize=3 -DgridSize=1 \
+ -DblockSize=256 -DgridSize=14 \
  -DmaxIterations=150 -DmatrixRank=3 -DskipCount=1 \
  -DtestExample=true -Ddebug=true]
 

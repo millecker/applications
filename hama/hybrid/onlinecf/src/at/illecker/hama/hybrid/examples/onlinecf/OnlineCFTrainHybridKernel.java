@@ -21,6 +21,13 @@ import org.trifort.rootbeer.runtime.Kernel;
 import org.trifort.rootbeer.runtime.KeyValuePair;
 import org.trifort.rootbeer.runtime.RootbeerGpu;
 
+/**
+ * Collaborative Filtering based on
+ * 
+ * Singular Value Decomposition for Collaborative Filtering on a GPU
+ * http://iopscience.iop.org/1757-899X/10/1/012017/pdf/1757-899X_10_1_012017.pdf
+ * 
+ */
 public class OnlineCFTrainHybridKernel implements Kernel {
 
   private GpuUserItemMap m_userItemMap;
