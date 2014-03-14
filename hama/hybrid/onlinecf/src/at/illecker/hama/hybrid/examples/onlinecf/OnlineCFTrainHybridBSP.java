@@ -264,11 +264,6 @@ public class OnlineCFTrainHybridBSP
 
     this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
 
-    // Set times in config
-    HamaConfiguration config = peer.getConfiguration();
-    config.setLong("setup.time", m_setupTimeCpu);
-    config.setLong("bsp.time", m_bspTimeCpu);
-
     // Logging
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("OnlineCFTrainHybridBSP,setupTimeCpu="
@@ -778,11 +773,6 @@ public class OnlineCFTrainHybridBSP
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
-    // Set times in config
-    HamaConfiguration config = peer.getConfiguration();
-    config.setLong("setup.time", m_setupTimeCpu);
-    config.setLong("bsp.time", m_bspTimeCpu);
-
     // Logging
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("OnlineCFTrainHybridBSP.bspGpu executed on GPU!\n");
@@ -1022,11 +1012,6 @@ public class OnlineCFTrainHybridBSP
 
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
-      // TODO configuration
-      LOG.info("OnlineCFTrainHybridBSP,setupTimeCpu="
-          + job.getConfiguration().get("setup.time") + " ms\n");
-      LOG.info("OnlineCFTrainHybridBSP,bspTimeCpu="
-          + job.getConfiguration().get("bsp.time") + " ms\n");
 
       if (useTestExampleInput) {
         OnlineCF recommender = new OnlineCF();
