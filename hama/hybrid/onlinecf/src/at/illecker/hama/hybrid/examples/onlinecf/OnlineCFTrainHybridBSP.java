@@ -264,6 +264,12 @@ public class OnlineCFTrainHybridBSP
 
     this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
 
+    // Set times in config
+    HamaConfiguration config = peer.getConfiguration();
+    config.setLong("setup.time", m_setupTimeCpu);
+    config.setLong("bsp.time", m_bspTimeCpu);
+
+    // Logging
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("OnlineCFTrainHybridBSP,setupTimeCpu="
           + this.m_setupTimeCpu + " ms\n");
@@ -275,6 +281,14 @@ public class OnlineCFTrainHybridBSP
           + (this.m_bspTimeCpu / 1000.0) + " seconds\n");
       m_logger.close();
     }
+    LOG.info("OnlineCFTrainHybridBSP,setupTimeCpu=" + this.m_setupTimeCpu
+        + " ms");
+    LOG.info("OnlineCFTrainHybridBSP,setupTimeCpu="
+        + (this.m_setupTimeCpu / 1000.0) + " seconds");
+    LOG.info("OnlineCFTrainHybridBSP,bspTimeCpu=" + this.m_bspTimeCpu + " ms");
+    LOG.info("OnlineCFTrainHybridBSP,bspTimeCpu="
+        + (this.m_bspTimeCpu / 1000.0) + " seconds");
+
   }
 
   private void collectInput(
@@ -764,6 +778,11 @@ public class OnlineCFTrainHybridBSP
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
+    // Set times in config
+    HamaConfiguration config = peer.getConfiguration();
+    config.setLong("setup.time", m_setupTimeCpu);
+    config.setLong("bsp.time", m_bspTimeCpu);
+
     // Logging
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("OnlineCFTrainHybridBSP.bspGpu executed on GPU!\n");
@@ -795,6 +814,7 @@ public class OnlineCFTrainHybridBSP
       m_logger.close();
     }
 
+    // Logging
     List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       LOG.info("  StatsRow:");
@@ -805,6 +825,17 @@ public class OnlineCFTrainHybridBSP
       LOG.info("    num threads: " + row.getNumThreads());
       LOG.info("GPUTime: " + watch.elapsedTimeMillis() + " ms");
     }
+    LOG.info("OnlineCFTrainHybridBSP.bspGpu executed on GPU!");
+    LOG.info("OnlineCFTrainHybridBSP.bspGpu blockSize: " + m_blockSize
+        + " gridSize: " + m_gridSize);
+    LOG.info("OnlineCFTrainHybridBSP,setupTimeGpu=" + this.m_setupTimeGpu
+        + " ms");
+    LOG.info("OnlineCFTrainHybridBSP,setupTimeGpu="
+        + (this.m_setupTimeGpu / 1000.0) + " seconds");
+    LOG.info("OnlineCFTrainHybridBSP,bspTimeGpu=" + this.m_bspTimeGpu + " ms");
+    LOG.info("OnlineCFTrainHybridBSP,bspTimeGpu="
+        + (this.m_bspTimeGpu / 1000.0) + " seconds");
+
   }
 
   public static BSPJob createOnlineCFTrainHybridBSPConf(Path inPath,
@@ -988,8 +1019,14 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
+
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
+      // TODO configuration
+      LOG.info("OnlineCFTrainHybridBSP,setupTimeCpu="
+          + job.getConfiguration().get("setup.time") + " ms\n");
+      LOG.info("OnlineCFTrainHybridBSP,bspTimeCpu="
+          + job.getConfiguration().get("bsp.time") + " ms\n");
 
       if (useTestExampleInput) {
         OnlineCF recommender = new OnlineCF();
