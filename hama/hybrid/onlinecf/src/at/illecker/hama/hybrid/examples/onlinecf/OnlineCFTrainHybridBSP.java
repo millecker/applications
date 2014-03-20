@@ -22,8 +22,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +89,7 @@ public class OnlineCFTrainHybridBSP
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 256;
+  public static final int BLOCK_SIZE = 1024;
 
   public static final double ALPHA = 0.01;
 
@@ -662,8 +665,60 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
 
-    // Fetch inputs
-    collectInput(peer);
+    // Collect inputs
+    Map<Long, HashMap<Long, Double>> preferencesMap = new HashMap<Long, HashMap<Long, Double>>();
+    Map<Long, Long> userRatingCount = new HashMap<Long, Long>();
+    Map<Long, Long> itemRatingCount = new HashMap<Long, Long>();
+
+    LongWritable key = new LongWritable();
+    PipesVectorWritable value = new PipesVectorWritable();
+    int counter = 0;
+
+    while (peer.readNext(key, value)) {
+      // parse as <k:userId, v:(itemId, score)>
+      long userId = key.get();
+      long itemId = (long) value.getVector().get(0);
+      double score = value.getVector().get(1);
+
+      // Add User vector
+      if (m_usersMatrix.containsKey(userId) == false) {
+        DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
+        for (int i = 0; i < m_matrixRank; i++) {
+          vals.set(i, m_rnd.nextDouble());
+        }
+        m_usersMatrix.put(userId, new PipesVectorWritable(vals));
+        userRatingCount.put(userId, 1l);
+      } else {
+        userRatingCount.put(userId, userRatingCount.get(userId) + 1);
+      }
+
+      // Add Item vector
+      if (m_itemsMatrix.containsKey(itemId) == false) {
+        DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
+        for (int i = 0; i < m_matrixRank; i++) {
+          vals.set(i, m_rnd.nextDouble());
+        }
+        m_itemsMatrix.put(itemId, new PipesVectorWritable(vals));
+        itemRatingCount.put(itemId, 1l);
+      } else {
+        itemRatingCount.put(itemId, itemRatingCount.get(itemId) + 1);
+      }
+
+      // Add preference
+      m_preferences.add(new Preference<Long, Long>(userId, itemId, score));
+
+      if (preferencesMap.containsKey(userId) == false) {
+        HashMap<Long, Double> map = new HashMap<Long, Double>();
+        map.put(itemId, score);
+        preferencesMap.put(userId, map);
+      } else {
+        preferencesMap.get(userId).put(itemId, score);
+      }
+
+      // Add counter
+      m_indexes.add(counter);
+      counter++;
+    }
 
     // DEBUG
     if (m_isDebuggingEnabled) {
@@ -672,69 +727,81 @@ public class OnlineCFTrainHybridBSP
           + " preferences\n");
     }
 
-    // Convert preferences to UserItemMap
-    GpuUserItemMap userItemMap = new GpuUserItemMap(m_preferences.size());
+    // TODO PREPARE GPU INPUT DATA
+    Map<Long, Long> sortedUserRatingCount = sortByValues(userRatingCount);
+    Map<Long, Long> sortedItemRatingCount = sortByValues(itemRatingCount);
+
+    // Convert preferences to double[][]
+    double[][] userItemMatrix = new double[m_usersMatrix.size()][m_itemsMatrix
+        .size()];
+    Map<Integer, Long> userItemMatrixUserRowMap = new HashMap<Integer, Long>();
+    Map<Integer, Long> userItemMatrixItemColMap = new HashMap<Integer, Long>();
+
     if (m_isDebuggingEnabled) {
-      m_logger
-          .writeChars("userItemMap: length: " + m_preferences.size() + "\n");
+      m_logger.writeChars("userItemMatrix: (m x n): " + m_usersMatrix.size()
+          + " x " + m_itemsMatrix.size());
     }
-    for (Preference<Long, Long> p : this.m_preferences) {
-      userItemMap.put(p.getUserId(), p.getItemId(), p.getValue().get());
+    int rowId = 0;
+    for (Long userId : sortedUserRatingCount.keySet()) {
+      userItemMatrixUserRowMap.put(rowId, userId);
+      int colId = 0;
+      for (Long itemId : sortedItemRatingCount.keySet()) {
+        if (rowId == 0) {
+          userItemMatrixItemColMap.put(colId, itemId);
+        }
+        if (preferencesMap.get(userId).containsKey(itemId)) {
+          userItemMatrix[rowId][colId] = preferencesMap.get(userId).get(itemId);
+        }
+        colId++;
+      }
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("userItemMap userId: '" + p.getUserId()
-            + "' itemId: '" + p.getItemId() + "' value: '" + p.getValue().get()
-            + "'\n");
+        m_logger.writeChars("userItemMatrix userId: " + userId + " row["
+            + rowId + "]: " + Arrays.toString(userItemMatrix[rowId]));
       }
     }
 
-    // Convert usersMatrix to GpuVectorMap
-    GpuVectorMap usersMatrixMap = new GpuVectorMap(m_usersMatrix.size());
+    // Convert usersMatrix to double[][]
+    double[][] userMatrix = new double[m_usersMatrix.size()][m_matrixRank];
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("usersMatrixMap: length: " + m_usersMatrix.size()
-          + "\n");
+      m_logger.writeChars("userMatrix: length: " + m_usersMatrix.size());
     }
-    Iterator<Entry<Long, PipesVectorWritable>> userIt = m_usersMatrix
-        .entrySet().iterator();
-    while (userIt.hasNext()) {
-      Entry<Long, PipesVectorWritable> entry = userIt.next();
-      long userId = entry.getKey();
-      DoubleVector vector = entry.getValue().getVector();
-      usersMatrixMap.put(userId, vector.toArray());
-
+    for (Long userId : sortedUserRatingCount.keySet()) {
+      DoubleVector vector = m_usersMatrix.get(userId).getVector();
+      for (int i = 0; i < m_matrixRank; i++) {
+        userMatrix[rowId][i] = vector.get(i);
+      }
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("usersMatrixMap userId: '" + userId + " value: '"
-            + Arrays.toString(vector.toArray()) + "'\n");
+        m_logger.writeChars("userMatrix userId: " + userId + " "
+            + Arrays.toString(vector.toArray()));
       }
     }
 
-    // Convert itemsMatrix to GpuVectorMap
-    GpuVectorMap itemsMatrixMap = new GpuVectorMap(m_itemsMatrix.size());
+    // Convert itemsMatrix to double[][]
+    double[][] itemMatrix = new double[m_itemsMatrix.size()][m_matrixRank];
     GpuIntegerMap counterMap = new GpuIntegerMap(m_itemsMatrix.size());
-
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("itemsMatrixMap: length: " + m_itemsMatrix.size()
-          + "\n");
+      m_logger.writeChars("itemMatrix: length: " + m_itemsMatrix.size());
     }
-    Iterator<Entry<Long, PipesVectorWritable>> itemIt = m_itemsMatrix
-        .entrySet().iterator();
-    while (itemIt.hasNext()) {
-      Entry<Long, PipesVectorWritable> entry = itemIt.next();
-      long itemId = entry.getKey();
-      DoubleVector vector = entry.getValue().getVector();
-      itemsMatrixMap.put(itemId, vector.toArray());
-      counterMap.put(itemId, 0);
+    rowId = 0;
+    for (Long itemId : sortedItemRatingCount.keySet()) {
+      counterMap.put(itemId.intValue(), 0);
 
-      if (m_isDebuggingEnabled) {
-        m_logger.writeChars("itemsMatrixMap itemId: '" + itemId + " value: '"
-            + Arrays.toString(vector.toArray()) + "'\n");
+      DoubleVector vector = m_itemsMatrix.get(itemId).getVector();
+      for (int i = 0; i < m_matrixRank; i++) {
+        itemMatrix[rowId][i] = vector.get(i);
       }
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("itemMatrix itemId: " + itemId + " "
+            + Arrays.toString(vector.toArray()));
+      }
+      rowId++;
     }
 
     // Run GPU Kernels
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
-        userItemMap, usersMatrixMap, itemsMatrixMap, counterMap,
-        m_usersMatrix.size(), m_itemsMatrix.size(), ALPHA, m_matrixRank,
-        m_maxIterations, m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
+        userItemMatrix, userMatrix, itemMatrix, m_usersMatrix.size(),
+        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations, counterMap,
+        m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
         peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
@@ -747,28 +814,30 @@ public class OnlineCFTrainHybridBSP
     // Save Model
     // save user information
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("saving " + m_usersMatrix.size() + " users\n");
+      m_logger.writeChars("saving " + userItemMatrixUserRowMap.size()
+          + " users\n");
     }
-    for (Long userId : m_usersMatrix.keySet()) {
+    for (Entry<Integer, Long> userMap : userItemMatrixUserRowMap.entrySet()) {
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("user: " + userId + " vector: "
-            + Arrays.toString(usersMatrixMap.get(userId)) + "\n");
+        m_logger.writeChars("user: " + userMap.getValue() + " vector: "
+            + Arrays.toString(kernel.m_usersMatrix[userMap.getKey()]) + "\n");
       }
-      peer.write(new Text("u" + userId), new PipesVectorWritable(
-          new DenseDoubleVector(usersMatrixMap.get(userId))));
+      peer.write(new Text("u" + userMap.getValue()), new PipesVectorWritable(
+          new DenseDoubleVector(kernel.m_usersMatrix[userMap.getKey()])));
     }
 
     // save item information
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("saving " + m_itemsMatrix.size() + " items\n");
+      m_logger.writeChars("saving " + userItemMatrixItemColMap.size()
+          + " items\n");
     }
-    for (Long itemId : m_itemsMatrix.keySet()) {
+    for (Entry<Integer, Long> itemMap : userItemMatrixItemColMap.entrySet()) {
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("item: " + itemId + " vector: "
-            + Arrays.toString(itemsMatrixMap.get(itemId)) + "\n");
+        m_logger.writeChars("item: " + itemMap.getValue() + " vector: "
+            + Arrays.toString(kernel.m_itemsMatrix[itemMap.getKey()]) + "\n");
       }
-      peer.write(new Text("i" + itemId), new PipesVectorWritable(
-          new DenseDoubleVector(itemsMatrixMap.get(itemId))));
+      peer.write(new Text("i" + itemMap.getValue()), new PipesVectorWritable(
+          new DenseDoubleVector(kernel.m_itemsMatrix[itemMap.getKey()])));
     }
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
@@ -826,6 +895,29 @@ public class OnlineCFTrainHybridBSP
     LOG.info("OnlineCFTrainHybridBSP,bspTimeGpu="
         + (this.m_bspTimeGpu / 1000.0) + " seconds");
 
+  }
+
+  public static <K extends Comparable, V extends Comparable> Map<K, V> sortByValues(
+      Map<K, V> map) {
+
+    List<Map.Entry<K, V>> entries = new LinkedList<Map.Entry<K, V>>(
+        map.entrySet());
+
+    Collections.sort(entries, new Comparator<Map.Entry<K, V>>() {
+      @Override
+      public int compare(Entry<K, V> o1, Entry<K, V> o2) {
+        return o2.getValue().compareTo(o1.getValue());
+      }
+    });
+
+    // LinkedHashMap will keep the keys in the order they are inserted
+    // which is currently sorted on natural ordering
+    Map<K, V> sortedMap = new LinkedHashMap<K, V>();
+    for (Map.Entry<K, V> entry : entries) {
+      sortedMap.put(entry.getKey(), entry.getValue());
+    }
+
+    return sortedMap;
   }
 
   public static BSPJob createOnlineCFTrainHybridBSPConf(Path inPath,
