@@ -17,11 +17,9 @@
  */
 package at.illecker.hama.hybrid.examples.onlinecf;
 
-import org.trifort.rootbeer.runtime.KeyValuePair;
-
 public final class GpuIntegerMap {
   public static final int DEFAULT_CAPACITY = 16;
-  private KeyValuePair[] m_values = null;
+  private GpuIntIntPair[] m_values = null;
   private boolean m_used = false;
 
   public GpuIntegerMap() {
@@ -29,7 +27,7 @@ public final class GpuIntegerMap {
   }
 
   public GpuIntegerMap(int size) {
-    this.m_values = new KeyValuePair[size];
+    this.m_values = new GpuIntIntPair[size];
   }
 
   public void clear() {
@@ -40,30 +38,29 @@ public final class GpuIntegerMap {
     }
   }
 
-  private boolean equalsKey(KeyValuePair entry, long otherKey) {
+  private boolean equalsKey(GpuIntIntPair entry, int otherKey) {
     if (entry != null) {
-      long key = (Long) entry.getKey();
-      return (key == otherKey);
+      return (entry.getKey() == otherKey);
     }
     return false;
   }
 
-  public int indexForKey(long key) {
-    return (int) (key % m_values.length);
+  public int indexForKey(int key) {
+    return (key % m_values.length);
   }
 
-  public Integer get(long key) {
-    KeyValuePair entry = m_values[indexForKey(key)];
+  public Integer get(int key) {
+    GpuIntIntPair entry = m_values[indexForKey(key)];
     while (entry != null && !equalsKey(entry, key)) {
       entry = entry.getNext();
     }
-    return (entry != null) ? (Integer) entry.getValue() : null;
+    return (entry != null) ? entry.getValue() : null;
   }
 
-  public void put(long key, int value) {
+  public void put(int key, int value) {
     m_used = true;
     int bucketIndex = indexForKey(key);
-    KeyValuePair entry = m_values[bucketIndex];
+    GpuIntIntPair entry = m_values[bucketIndex];
     if (entry != null) {
       boolean done = false;
       while (!done) {
@@ -71,25 +68,24 @@ public final class GpuIntegerMap {
           entry.setValue(value);
           done = true;
         } else if (entry.getNext() == null) {
-          entry.setNext(new KeyValuePair(key, value));
+          entry.setNext(new GpuIntIntPair(key, value));
           done = true;
         }
         entry = entry.getNext();
       }
     } else {
-      m_values[bucketIndex] = new KeyValuePair(key, value);
+      m_values[bucketIndex] = new GpuIntIntPair(key, value);
     }
   }
 
-  public void add(long key, int value) {
+  public void add(int key, int value) {
     m_used = true;
     int bucketIndex = indexForKey(key);
-    KeyValuePair entry = m_values[bucketIndex];
+    GpuIntIntPair entry = m_values[bucketIndex];
     if (entry != null) {
-      int val = (Integer) entry.getValue();
-      entry.setValue(val + value);
+      entry.setValue(entry.getValue() + value);
     } else {
-      m_values[bucketIndex] = new KeyValuePair(key, value);
+      m_values[bucketIndex] = new GpuIntIntPair(key, value);
     }
   }
 

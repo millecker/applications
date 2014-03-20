@@ -28,7 +28,6 @@ import org.apache.hama.commons.math.DoubleVector;
 
 public final class ItemMessage extends VectorWritable {
   public final static String VALUE_DELIMITER = ",";
-
   private int senderId;
   private long itemId;
 
