@@ -206,9 +206,15 @@ public class OnlineCF implements Recommender, RecommenderIO {
             }
 
             if (firstSymbol.equals(OnlineCF.DFLT_MODEL_ITEM_DELIM)) {
-              m_modelItemFactorizedValues.put(actualKey, value);
+              // LOG.info("loaded itemId: " + actualKey + " itemVector: "
+              // + value.getVector());
+              m_modelItemFactorizedValues.put(actualKey,
+                  new PipesVectorWritable(value));
             } else if (firstSymbol.equals(OnlineCF.DFLT_MODEL_USER_DELIM)) {
-              m_modelUserFactorizedValues.put(actualKey, value);
+              // LOG.info("loaded userId: " + actualKey + " userVector: "
+              // + value.getVector());
+              m_modelUserFactorizedValues.put(actualKey,
+                  new PipesVectorWritable(value));
             } else {
               // unknown
               continue;
@@ -216,8 +222,18 @@ public class OnlineCF implements Recommender, RecommenderIO {
           }
           reader.close();
         }
+
         LOG.info("loaded: " + m_modelUserFactorizedValues.size() + " users, "
             + m_modelItemFactorizedValues.size() + " items");
+        // for (Long user : m_modelUserFactorizedValues.keySet()) {
+        // LOG.info("userId: " + user + " userVector: "
+        // + m_modelUserFactorizedValues.get(user));
+        // }
+        // for (Long item : m_modelItemFactorizedValues.keySet()) {
+        // LOG.info("itemId: " + item + " itemVector: "
+        // + m_modelItemFactorizedValues.get(item));
+        // }
+
       } catch (Exception e) {
         e.printStackTrace();
         this.m_isLazyLoadModel = false;
@@ -233,8 +249,8 @@ public class OnlineCF implements Recommender, RecommenderIO {
     if (m_isLazyLoadModel == false) {
 
       InputStructure e = new InputStructure();
-      e.item = this.m_modelItemFactorizedValues.get(Long.valueOf(itemId));
-      e.user = this.m_modelUserFactorizedValues.get(Long.valueOf(userId));
+      e.item = this.m_modelItemFactorizedValues.get(itemId);
+      e.user = this.m_modelUserFactorizedValues.get(userId);
       if (e.item == null || e.user == null) {
         return 0;
       }
