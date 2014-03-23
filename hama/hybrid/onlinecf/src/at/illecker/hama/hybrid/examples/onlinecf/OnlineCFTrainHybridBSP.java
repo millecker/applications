@@ -727,7 +727,7 @@ public class OnlineCFTrainHybridBSP
           + " preferences\n");
     }
 
-    // TODO PREPARE GPU INPUT DATA
+    // Prepare input data
     Map<Long, Long> sortedUserRatingCount = sortByValues(userRatingCount);
     Map<Long, Long> sortedItemRatingCount = sortByValues(itemRatingCount);
 
@@ -739,7 +739,7 @@ public class OnlineCFTrainHybridBSP
 
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("userItemMatrix: (m x n): " + m_usersMatrix.size()
-          + " x " + m_itemsMatrix.size());
+          + " x " + m_itemsMatrix.size() + "\n");
     }
     int rowId = 0;
     for (Long userId : sortedUserRatingCount.keySet()) {
@@ -756,14 +756,16 @@ public class OnlineCFTrainHybridBSP
       }
       if (m_isDebuggingEnabled) {
         m_logger.writeChars("userItemMatrix userId: " + userId + " row["
-            + rowId + "]: " + Arrays.toString(userItemMatrix[rowId]));
+            + rowId + "]: " + Arrays.toString(userItemMatrix[rowId]) + "\n");
       }
+      rowId++;
     }
 
     // Convert usersMatrix to double[][]
     double[][] userMatrix = new double[m_usersMatrix.size()][m_matrixRank];
+    rowId = 0;
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("userMatrix: length: " + m_usersMatrix.size());
+      m_logger.writeChars("userMatrix: length: " + m_usersMatrix.size() + "\n");
     }
     for (Long userId : sortedUserRatingCount.keySet()) {
       DoubleVector vector = m_usersMatrix.get(userId).getVector();
@@ -772,17 +774,18 @@ public class OnlineCFTrainHybridBSP
       }
       if (m_isDebuggingEnabled) {
         m_logger.writeChars("userMatrix userId: " + userId + " "
-            + Arrays.toString(vector.toArray()));
+            + Arrays.toString(vector.toArray()) + "\n");
       }
+      rowId++;
     }
 
     // Convert itemsMatrix to double[][]
     double[][] itemMatrix = new double[m_itemsMatrix.size()][m_matrixRank];
+    rowId = 0;
     GpuIntegerMap counterMap = new GpuIntegerMap(m_itemsMatrix.size());
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("itemMatrix: length: " + m_itemsMatrix.size());
+      m_logger.writeChars("itemMatrix: length: " + m_itemsMatrix.size() + "\n");
     }
-    rowId = 0;
     for (Long itemId : sortedItemRatingCount.keySet()) {
       counterMap.put(itemId.intValue(), 0);
 
@@ -792,7 +795,7 @@ public class OnlineCFTrainHybridBSP
       }
       if (m_isDebuggingEnabled) {
         m_logger.writeChars("itemMatrix itemId: " + itemId + " "
-            + Arrays.toString(vector.toArray()));
+            + Arrays.toString(vector.toArray()) + "\n");
       }
       rowId++;
     }
@@ -986,6 +989,7 @@ public class OnlineCFTrainHybridBSP
     boolean useTestExampleInput = true;
     boolean isDebugging = true;
     String inputFile = "";
+    String separator = "\\t";
 
     Configuration conf = new HamaConfiguration();
     FileSystem fs = FileSystem.get(conf);
@@ -1012,6 +1016,9 @@ public class OnlineCFTrainHybridBSP
       if (args.length > 9) {
         inputFile = args[9];
       }
+      if (args.length > 10) {
+        separator = args[10];
+      }
 
     } else {
       System.out.println("Wrong argument size!");
@@ -1033,6 +1040,8 @@ public class OnlineCFTrainHybridBSP
           .println("    Argument9=debug | Enable debugging (true|false=default)");
       System.out
           .println("    Argument10=inputFile (optional) | MovieLens inputFile");
+      System.out.println("    Argument11=separator (optional) | default '"
+          + separator + "' ");
       return;
     }
 
@@ -1078,6 +1087,10 @@ public class OnlineCFTrainHybridBSP
     LOG.info("maxIteration: " + maxIteration);
     LOG.info("matrixRank: " + matrixRank);
     LOG.info("skipCount: " + skipCount);
+    if (inputFile.isEmpty() == false) {
+      LOG.info("inputFile: " + inputFile);
+      LOG.info("separator: " + separator);
+    }
 
     // prepare Input
     List<Preference<Long, Long>> testPrefs = null;
@@ -1092,7 +1105,7 @@ public class OnlineCFTrainHybridBSP
 
         Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
         testPrefs = convertInputData(conf, fs, CONF_INPUT_DIR, preferencesIn,
-            inputFile);
+            inputFile, separator);
       }
     }
 
@@ -1109,23 +1122,25 @@ public class OnlineCFTrainHybridBSP
         OnlineCF recommender = new OnlineCF();
         recommender.load(CONF_OUTPUT_DIR.toString(), false);
 
-        int correct = 0;
+        int error = 0;
+        double totalError = 0;
         for (Preference<Long, Long> test : testPrefs) {
-          double actual = test.getValue().get();
+          double expected = test.getValue().get();
           double estimated = recommender.estimatePreference(test.getUserId(),
               test.getItemId());
 
           if (testPrefs.size() <= 20) {
-            LOG.info("estimatePreference of userId: " + test.getUserId()
-                + " itemId: " + test.getItemId() + " actual: " + actual);
-            LOG.info("estimated: " + estimated + " error: "
-                + Math.abs(actual - estimated));
+            LOG.info("(" + test.getUserId() + ", " + test.getItemId() + ", "
+                + expected + "): " + estimated + " error: "
+                + Math.abs(expected - estimated));
           }
-          correct += (Math.abs(actual - estimated) < 0.5) ? 1 : 0;
+          totalError += Math.abs(expected - estimated);
+          error += (Math.abs(expected - estimated) < 0.5) ? 1 : 0;
         }
 
+        LOG.info("totalError: " + totalError);
         LOG.info("assertEquals(expected: " + (testPrefs.size() * 0.75) + " == "
-            + correct + " actual) with delta: 1");
+            + error + " actual) with delta: 1");
       }
 
       if (isDebugging) {
@@ -1148,10 +1163,9 @@ public class OnlineCFTrainHybridBSP
       throws IOException {
 
     Preference[] train_prefs = { new Preference<Integer, Integer>(1, 1, 4),
+        new Preference<Integer, Integer>(1, 1, 4),
         new Preference<Integer, Integer>(1, 2, 2.5),
         new Preference<Integer, Integer>(1, 3, 3.5),
-        new Preference<Integer, Integer>(1, 4, 1),
-        new Preference<Integer, Integer>(1, 5, 3.5),
 
         new Preference<Integer, Integer>(2, 1, 4),
         new Preference<Integer, Integer>(2, 2, 2.5),
@@ -1161,13 +1175,16 @@ public class OnlineCFTrainHybridBSP
 
         new Preference<Integer, Integer>(3, 1, 4),
         new Preference<Integer, Integer>(3, 2, 2.5),
-        new Preference<Integer, Integer>(3, 3, 3.5) };
+        new Preference<Integer, Integer>(3, 3, 3.5),
+        new Preference<Integer, Integer>(3, 4, 1),
+        new Preference<Integer, Integer>(3, 5, 3.5) };
 
     List<Preference<Long, Long>> test_prefs = new ArrayList<Preference<Long, Long>>();
+    test_prefs.add(new Preference<Long, Long>(1l, 1l, 4));
+    test_prefs.add(new Preference<Long, Long>(1l, 2l, 2.5));
     test_prefs.add(new Preference<Long, Long>(1l, 3l, 3.5));
-    test_prefs.add(new Preference<Long, Long>(2l, 4l, 1));
-    test_prefs.add(new Preference<Long, Long>(3l, 4l, 1));
-    test_prefs.add(new Preference<Long, Long>(3l, 5l, 3.5));
+    test_prefs.add(new Preference<Long, Long>(1l, 4l, 1));
+    test_prefs.add(new Preference<Long, Long>(1l, 5l, 3.5));
 
     // Delete input files if already exist
     if (fs.exists(in)) {
@@ -1199,7 +1216,7 @@ public class OnlineCFTrainHybridBSP
    */
   public static List<Preference<Long, Long>> convertInputData(
       Configuration conf, FileSystem fs, Path in, Path preferencesIn,
-      String inputFile) throws IOException {
+      String inputFile, String separator) throws IOException {
 
     List<Preference<Long, Long>> test_prefs = new ArrayList<Preference<Long, Long>>();
     int maxTestPrefs = 10;
@@ -1219,7 +1236,7 @@ public class OnlineCFTrainHybridBSP
     BufferedReader br = new BufferedReader(new FileReader(inputFile));
     String line;
     while ((line = br.readLine()) != null) {
-      String[] values = line.split("\\t");
+      String[] values = line.split(separator);
       long userId = Long.parseLong(values[0]);
       long itemId = Long.parseLong(values[1]);
       double rating = Double.parseDouble(values[2]);

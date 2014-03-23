@@ -15,7 +15,7 @@
 	<property name="bench.class" value="at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask numGpuBspTask blockSize gridSize maxIterations matrixRank skipCount testExample debug inputFile benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="application.args" value="numBspTask numGpuBspTask blockSize gridSize maxIterations matrixRank skipCount testExample debug inputFile separator benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>
