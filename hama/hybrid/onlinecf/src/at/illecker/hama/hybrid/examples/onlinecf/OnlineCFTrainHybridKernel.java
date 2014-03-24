@@ -342,6 +342,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
                   / counter;
             }
           }
+
           // Sync all threads within a block
           RootbeerGpu.syncthreads();
 
@@ -449,6 +450,6 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     // otherwise Rootbeer will remove constructors and methods
     new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, 0, null, 0, 0,
         0, null);
-    new GpuIntegerMap().put(0, 0);
+    new GpuIntegerMap();
   }
 }

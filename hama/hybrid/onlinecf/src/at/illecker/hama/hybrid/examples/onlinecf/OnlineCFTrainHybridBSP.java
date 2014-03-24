@@ -241,7 +241,7 @@ public class OnlineCFTrainHybridBSP
     // after exchanging items all tasks should have the same items! -> duplicate
     // saves
 
-    // save user information
+    // save users
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + m_usersMatrix.size() + " users\n");
     }
@@ -253,7 +253,7 @@ public class OnlineCFTrainHybridBSP
       peer.write(new Text("u" + user.getKey()), user.getValue());
     }
 
-    // save item information
+    // save items
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + m_itemsMatrix.size() + " items\n");
     }
@@ -815,7 +815,7 @@ public class OnlineCFTrainHybridBSP
     watch.stop();
 
     // Save Model
-    // save user information
+    // save users
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + userItemMatrixUserRowMap.size()
           + " users\n");
@@ -828,8 +828,7 @@ public class OnlineCFTrainHybridBSP
       peer.write(new Text("u" + userMap.getValue()), new PipesVectorWritable(
           new DenseDoubleVector(kernel.m_usersMatrix[userMap.getKey()])));
     }
-
-    // save item information
+    // save items
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + userItemMatrixItemColMap.size()
           + " items\n");
@@ -1046,7 +1045,8 @@ public class OnlineCFTrainHybridBSP
     }
 
     // Check if inputFile exists
-    if ((!inputFile.isEmpty()) && (!new File(inputFile).exists())) {
+    if ((inputFile.isEmpty() == false)
+        && (new File(inputFile).exists() == false)) {
       System.out.println("Error: inputFile: " + inputFile + " does not exist!");
       return;
     }
@@ -1094,19 +1094,16 @@ public class OnlineCFTrainHybridBSP
 
     // prepare Input
     List<Preference<Long, Long>> testPrefs = null;
-    if (useTestExampleInput) {
+    if ((useTestExampleInput) && (inputFile.isEmpty())) {
 
-      if (inputFile.isEmpty()) { // no inputFile
+      Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
+      testPrefs = prepareInputData(conf, fs, CONF_INPUT_DIR, preferencesIn);
 
-        Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
-        testPrefs = prepareInputData(conf, fs, CONF_INPUT_DIR, preferencesIn);
-
-      } else { // parse inputFile and return first entries for testing
-
-        Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
-        testPrefs = convertInputData(conf, fs, CONF_INPUT_DIR, preferencesIn,
-            inputFile, separator);
-      }
+    } else if (inputFile.isEmpty() == false) {
+      // parse inputFile and return first entries for testing
+      Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
+      testPrefs = convertInputData(conf, fs, CONF_INPUT_DIR, preferencesIn,
+          inputFile, separator);
     }
 
     BSPJob job = createOnlineCFTrainHybridBSPConf(conf, CONF_INPUT_DIR,
@@ -1118,38 +1115,34 @@ public class OnlineCFTrainHybridBSP
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
 
-      if (useTestExampleInput) {
-        OnlineCF recommender = new OnlineCF();
-        recommender.load(CONF_OUTPUT_DIR.toString(), false);
+      OnlineCF recommender = new OnlineCF();
+      recommender.load(CONF_OUTPUT_DIR.toString(), false);
 
-        int error = 0;
-        double totalError = 0;
-        for (Preference<Long, Long> test : testPrefs) {
-          double expected = test.getValue().get();
-          double estimated = recommender.estimatePreference(test.getUserId(),
-              test.getItemId());
+      // Test results
+      int error = 0;
+      double totalError = 0;
+      for (Preference<Long, Long> test : testPrefs) {
+        double expected = test.getValue().get();
+        double estimated = recommender.estimatePreference(test.getUserId(),
+            test.getItemId());
 
-          if (testPrefs.size() <= 20) {
-            LOG.info("(" + test.getUserId() + ", " + test.getItemId() + ", "
-                + expected + "): " + estimated + " error: "
-                + Math.abs(expected - estimated));
-          }
-          totalError += Math.abs(expected - estimated);
-          error += (Math.abs(expected - estimated) < 0.5) ? 1 : 0;
+        if (testPrefs.size() <= 20) {
+          LOG.info("(" + test.getUserId() + ", " + test.getItemId() + ", "
+              + expected + "): " + estimated + " error: "
+              + Math.abs(expected - estimated));
         }
-
-        LOG.info("totalError: " + totalError);
-        LOG.info("assertEquals(expected: " + (testPrefs.size() * 0.75) + " == "
-            + error + " actual) with delta: 1");
+        totalError += Math.abs(expected - estimated);
+        error += (Math.abs(expected - estimated) < 0.5) ? 1 : 0;
       }
+
+      LOG.info("totalError: " + totalError);
+      LOG.info("assertEquals(expected: " + (testPrefs.size() * 0.75) + " == "
+          + error + " actual) with delta: 1");
 
       if (isDebugging) {
         printOutput(conf, fs, ".log", new IntWritable(),
             new PipesVectorWritable());
       }
-      // TODO
-      // printFile(conf, fs, centerOut, new PipesVectorWritable(),
-      // NullWritable.get());
     }
 
   }
