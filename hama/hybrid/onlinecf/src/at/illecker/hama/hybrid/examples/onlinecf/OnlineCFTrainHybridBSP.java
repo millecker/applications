@@ -124,6 +124,9 @@ public class OnlineCFTrainHybridBSP
   private Random m_rnd = new Random(32L);
 
   /********************************* CPU *********************************/
+  // **********************************************************************
+  // setup
+  // **********************************************************************
   @Override
   public void setup(
       BSPPeer<LongWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
@@ -160,6 +163,9 @@ public class OnlineCFTrainHybridBSP
     this.m_setupTimeCpu = System.currentTimeMillis() - startTime;
   }
 
+  // **********************************************************************
+  // bsp
+  // **********************************************************************
   @Override
   public void bsp(
       BSPPeer<LongWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
@@ -204,8 +210,6 @@ public class OnlineCFTrainHybridBSP
     // calculation steps
     for (int i = 0; i < m_maxIterations; i++) {
 
-      // computeUserValues();
-      // computeItemValues();
       computeAllValues();
 
       // DEBUG
@@ -289,6 +293,9 @@ public class OnlineCFTrainHybridBSP
 
   }
 
+  // **********************************************************************
+  // collectInput
+  // **********************************************************************
   private void collectInput(
       BSPPeer<LongWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
       throws IOException {
@@ -325,118 +332,9 @@ public class OnlineCFTrainHybridBSP
     }
   }
 
-  private void computeUserValues() throws IOException {
-    // compute values
-    for (Integer prefIdx : m_indexes) {
-      Preference<Long, Long> pref = m_preferences.get(prefIdx);
-
-      // function input
-      PipesVectorWritable in_userFactorizedValues = m_usersMatrix.get(pref
-          .getUserId());
-      PipesVectorWritable in_itemFactorizedValues = m_itemsMatrix.get(pref
-          .getItemId());
-
-      // function output
-      VectorWritable out_userFactorized;
-
-      // DEBUG
-      // m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
-      // + pref.getUserId() + "," + pref.getItemId() + ","
-      // + pref.getValue().get() + ")\n");
-      // m_logger.writeChars("userVector: "
-      // + in_userFactorizedValues.getVector().toString() + "\n");
-      // m_logger.writeChars("itemVector: "
-      // + in_itemFactorizedValues.getVector().toString() + "\n");
-
-      // MeanAbsError function
-      // below vectors are all size of MATRIX_RANK
-      DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
-      DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
-
-      // calculated score
-      double calculatedScore = aal_ml_xa.multiply(bbl_vl_yb).sum();
-      double expectedScore = pref.getValue().get();
-      double scoreDifference = expectedScore - calculatedScore;
-
-      // DEBUG
-      // m_logger.writeChars("expectedScore: " + expectedScore + "\n");
-      // m_logger.writeChars("calculatedScore: " + calculatedScore + "\n");
-      // m_logger.writeChars("scoreDifference: " + scoreDifference + "\n");
-
-      // α_al ← α_al + 2τ * (β_bl + ν_l: * y_b:)(r − R)
-      // users ← user + userFactorization (will be used later)
-      DoubleVector userFactorization = bbl_vl_yb.multiply(2 * ALPHA
-          * scoreDifference);
-      DoubleVector users = in_userFactorizedValues.getVector().add(
-          userFactorization);
-      out_userFactorized = new VectorWritable(users);
-
-      // DEBUG
-      // m_logger.writeChars("Update userVector: "
-      // + out_userFactorized.getVector().toString() + "\n");
-
-      // update function output
-      m_usersMatrix.put(pref.getUserId(), new PipesVectorWritable(
-          out_userFactorized));
-    }
-  }
-
-  private void computeItemValues() throws IOException {
-    // compute values
-    for (Integer prefIdx : m_indexes) {
-      Preference<Long, Long> pref = m_preferences.get(prefIdx);
-
-      // function input
-      PipesVectorWritable in_userFactorizedValues = m_usersMatrix.get(pref
-          .getUserId());
-      PipesVectorWritable in_itemFactorizedValues = m_itemsMatrix.get(pref
-          .getItemId());
-
-      // function output
-      VectorWritable out_itemFactorized;
-
-      // DEBUG
-      // m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
-      // + pref.getUserId() + "," + pref.getItemId() + ","
-      // + pref.getValue().get() + ")\n");
-      // m_logger.writeChars("userVector: "
-      // + in_userFactorizedValues.getVector().toString() + "\n");
-      // m_logger.writeChars("itemVector: "
-      // + in_itemFactorizedValues.getVector().toString() + "\n");
-
-      // MeanAbsError function
-      // below vectors are all size of MATRIX_RANK
-      DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
-      DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
-
-      // calculated score
-      double calculatedScore = aal_ml_xa.multiply(bbl_vl_yb).sum();
-      double expectedScore = pref.getValue().get();
-      double scoreDifference = expectedScore - calculatedScore;
-
-      // DEBUG
-      // m_logger.writeChars("expectedScore: " + expectedScore + "\n");
-      // m_logger.writeChars("calculatedScore: " + calculatedScore + "\n");
-      // m_logger.writeChars("scoreDifference: " + scoreDifference + "\n");
-
-      // β_bl ← β_bl + 2τ * (α_al + μ_l: * x_a:)(r − R)
-      // items ← item + itemFactorization (will be used later)
-      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * ALPHA
-          * scoreDifference);
-      DoubleVector items = in_itemFactorizedValues.getVector().add(
-          itemFactorization);
-      out_itemFactorized = new VectorWritable(items);
-
-      // DEBUG
-      // m_logger.writeChars("Update itemVector: "
-      // + out_itemFactorized.getVector().toString() + "\n");
-
-      // update function output
-      m_itemsMatrix.put(pref.getItemId(), new PipesVectorWritable(
-          out_itemFactorized));
-    }
-  }
-
+  // **********************************************************************
+  // computeAllValues
+  // **********************************************************************
   private void computeAllValues() throws IOException {
     // shuffling indexes
     int idx = 0;
@@ -519,6 +417,9 @@ public class OnlineCFTrainHybridBSP
     }
   }
 
+  // **********************************************************************
+  // normalize and broadcast values
+  // **********************************************************************
   private void normalizeWithBroadcastingValues(
       BSPPeer<LongWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
       throws IOException, SyncException, InterruptedException {
@@ -618,6 +519,9 @@ public class OnlineCFTrainHybridBSP
   }
 
   /********************************* GPU *********************************/
+  // **********************************************************************
+  // setupGpu
+  // **********************************************************************
   @Override
   public void setupGpu(
       BSPPeer<LongWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer)
@@ -657,6 +561,9 @@ public class OnlineCFTrainHybridBSP
     this.m_setupTimeGpu = System.currentTimeMillis() - startTime;
   }
 
+  // **********************************************************************
+  // bspGpu
+  // **********************************************************************
   @Override
   public void bspGpu(
       BSPPeer<LongWritable, PipesVectorWritable, Text, PipesVectorWritable, ItemMessage> peer,
@@ -665,7 +572,9 @@ public class OnlineCFTrainHybridBSP
 
     long startTime = System.currentTimeMillis();
 
+    // **********************************************************************
     // Collect inputs
+    // **********************************************************************
     Map<Long, HashMap<Long, Double>> preferencesMap = new HashMap<Long, HashMap<Long, Double>>();
     Map<Long, Long> userRatingCount = new HashMap<Long, Long>();
     Map<Long, Long> itemRatingCount = new HashMap<Long, Long>();
@@ -727,38 +636,110 @@ public class OnlineCFTrainHybridBSP
           + " preferences\n");
     }
 
-    // Prepare input data
+    // **********************************************************************
+    // Prepare input for GPU
+    // **********************************************************************
     Map<Long, Long> sortedUserRatingCount = sortByValues(userRatingCount);
     Map<Long, Long> sortedItemRatingCount = sortByValues(itemRatingCount);
 
-    // Convert preferences to double[][]
+    // Convert preferences to userItemMatrix double[][]
+    // TODO Skip zero rows and cols
+    // sortedUserRatingCount.size() x sortedItemRatingCount.size()
     double[][] userItemMatrix = new double[m_usersMatrix.size()][m_itemsMatrix
         .size()];
-    Map<Integer, Long> userItemMatrixUserRowMap = new HashMap<Integer, Long>();
-    Map<Integer, Long> userItemMatrixItemColMap = new HashMap<Integer, Long>();
+    Map<Long, Integer> userItemMatrixUserRowMap = new HashMap<Long, Integer>();
+    Map<Long, Integer> userItemMatrixItemColMap = new HashMap<Long, Integer>();
+    // Create userHelper to int[][]
+    // userHelper[userId][0] = userRatingCount
+    // userHelper[userId][1] = colId of userItemMatrix
+    int[][] userHelper = null;
+    // Create itemHelper to int[][]
+    // itemHelper[itemId][0] = itemRatingCount
+    // itemHelper[userId][1] = rowId of userItemMatrix
+    int[][] itemHelper = null;
+    Map<Long, Integer> itemHelperId = new HashMap<Long, Integer>();
 
+    // Debug
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("userItemMatrix: (m x n): " + m_usersMatrix.size()
           + " x " + m_itemsMatrix.size() + "\n");
     }
+
     int rowId = 0;
     for (Long userId : sortedUserRatingCount.keySet()) {
-      userItemMatrixUserRowMap.put(rowId, userId);
+
+      // Map userId to rowId in userItemMatrixUserRowMap
+      userItemMatrixUserRowMap.put(userId, rowId);
+
+      // Setup userHelper
+      if (userHelper == null) {
+        // TODO sortedUserRatingCount.size()
+        userHelper = new int[m_usersMatrix.size()][sortedUserRatingCount.get(
+            userId).intValue() + 1];
+      }
+      userHelper[rowId][0] = sortedUserRatingCount.get(userId).intValue();
+
       int colId = 0;
+      int userHelperId = 1;
       for (Long itemId : sortedItemRatingCount.keySet()) {
+
+        // Map itemId to colId in userItemMatrixItemColMap
         if (rowId == 0) {
-          userItemMatrixItemColMap.put(colId, itemId);
+          userItemMatrixItemColMap.put(itemId, colId);
         }
+
+        // Setup itemHelper
+        if (itemHelper == null) {
+          // TODO sortedItemRatingCount.size()
+          itemHelper = new int[m_itemsMatrix.size()][sortedItemRatingCount.get(
+              itemId).intValue() + 1];
+        }
+        itemHelper[colId][0] = sortedItemRatingCount.get(itemId).intValue();
+
         if (preferencesMap.get(userId).containsKey(itemId)) {
+          // Add userItemMatrix
           userItemMatrix[rowId][colId] = preferencesMap.get(userId).get(itemId);
+
+          // Add userHelper
+          userHelper[rowId][userHelperId] = colId;
+          userHelperId++;
+
+          // Add itemHelper
+          if (itemHelperId.containsKey(itemId)) {
+            int idx = itemHelperId.get(itemId);
+            itemHelper[colId][idx] = rowId;
+            itemHelperId.put(itemId, idx + 1);
+          } else {
+            itemHelper[colId][1] = rowId;
+            itemHelperId.put(itemId, 2);
+          }
+
         }
+
         colId++;
       }
+
+      // Debug userItemMatrix
       if (m_isDebuggingEnabled) {
         m_logger.writeChars("userItemMatrix userId: " + userId + " row["
-            + rowId + "]: " + Arrays.toString(userItemMatrix[rowId]) + "\n");
+            + rowId + "]: " + Arrays.toString(userItemMatrix[rowId])
+            + " userRatings: " + sortedUserRatingCount.get(userId) + "\n");
       }
       rowId++;
+    }
+
+    // Debug userHelper and itemHelper
+    if (m_isDebuggingEnabled) {
+      // TODO sortedUserRatingCount.size()
+      for (int i = 0; i < m_usersMatrix.size(); i++) {
+        m_logger.writeChars("userHelper row " + i + ": "
+            + Arrays.toString(userHelper[i]) + "\n");
+      }
+      // TODO sortedItemRatingCount.size()
+      for (int i = 0; i < m_itemsMatrix.size(); i++) {
+        m_logger.writeChars("itemHelper row " + i + ": "
+            + Arrays.toString(itemHelper[i]) + "\n");
+      }
     }
 
     // Convert usersMatrix to double[][]
@@ -773,7 +754,7 @@ public class OnlineCFTrainHybridBSP
         userMatrix[rowId][i] = vector.get(i);
       }
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("userMatrix userId: " + userId + " "
+        m_logger.writeChars("userId: " + userId + " "
             + Arrays.toString(vector.toArray()) + "\n");
       }
       rowId++;
@@ -794,18 +775,20 @@ public class OnlineCFTrainHybridBSP
         itemMatrix[rowId][i] = vector.get(i);
       }
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("itemMatrix itemId: " + itemId + " "
+        m_logger.writeChars("itemId: " + itemId + " "
             + Arrays.toString(vector.toArray()) + "\n");
       }
       rowId++;
     }
 
+    // **********************************************************************
     // Run GPU Kernels
+    // **********************************************************************
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
-        userItemMatrix, userMatrix, itemMatrix, m_usersMatrix.size(),
-        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations, counterMap,
-        m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
-        peer.getAllPeerNames());
+        userItemMatrix, userHelper, itemHelper, userMatrix, itemMatrix,
+        m_usersMatrix.size(), m_itemsMatrix.size(), ALPHA, m_matrixRank,
+        m_maxIterations, counterMap, m_skipCount, peer.getNumPeers(),
+        peer.getPeerIndex(), peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
@@ -814,37 +797,42 @@ public class OnlineCFTrainHybridBSP
         * m_gridSize), context);
     watch.stop();
 
+    // **********************************************************************
     // Save Model
+    // **********************************************************************
     // save users
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + userItemMatrixUserRowMap.size()
           + " users\n");
     }
-    for (Entry<Integer, Long> userMap : userItemMatrixUserRowMap.entrySet()) {
+    for (Entry<Long, Integer> userMap : userItemMatrixUserRowMap.entrySet()) {
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("user: " + userMap.getValue() + " vector: "
-            + Arrays.toString(kernel.m_usersMatrix[userMap.getKey()]) + "\n");
+        m_logger.writeChars("user: " + userMap.getKey() + " vector: "
+            + Arrays.toString(kernel.m_usersMatrix[userMap.getValue()]) + "\n");
       }
-      peer.write(new Text("u" + userMap.getValue()), new PipesVectorWritable(
-          new DenseDoubleVector(kernel.m_usersMatrix[userMap.getKey()])));
+      peer.write(new Text("u" + userMap.getKey()), new PipesVectorWritable(
+          new DenseDoubleVector(kernel.m_usersMatrix[userMap.getValue()])));
     }
+
     // save items
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + userItemMatrixItemColMap.size()
           + " items\n");
     }
-    for (Entry<Integer, Long> itemMap : userItemMatrixItemColMap.entrySet()) {
+    for (Entry<Long, Integer> itemMap : userItemMatrixItemColMap.entrySet()) {
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("item: " + itemMap.getValue() + " vector: "
-            + Arrays.toString(kernel.m_itemsMatrix[itemMap.getKey()]) + "\n");
+        m_logger.writeChars("item: " + itemMap.getKey() + " vector: "
+            + Arrays.toString(kernel.m_itemsMatrix[itemMap.getValue()]) + "\n");
       }
-      peer.write(new Text("i" + itemMap.getValue()), new PipesVectorWritable(
-          new DenseDoubleVector(kernel.m_itemsMatrix[itemMap.getKey()])));
+      peer.write(new Text("i" + itemMap.getKey()), new PipesVectorWritable(
+          new DenseDoubleVector(kernel.m_itemsMatrix[itemMap.getValue()])));
     }
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
 
+    // **********************************************************************
     // Logging
+    // **********************************************************************
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("OnlineCFTrainHybridBSP.bspGpu executed on GPU!\n");
       m_logger.writeChars("OnlineCFTrainHybridBSP.bspGpu blockSize: "
@@ -899,6 +887,9 @@ public class OnlineCFTrainHybridBSP
 
   }
 
+  // **********************************************************************
+  // sortByValues(Map)
+  // **********************************************************************
   public static <K extends Comparable, V extends Comparable> Map<K, V> sortByValues(
       Map<K, V> map) {
 
@@ -922,6 +913,9 @@ public class OnlineCFTrainHybridBSP
     return sortedMap;
   }
 
+  // **********************************************************************
+  // createJobConfiguration
+  // **********************************************************************
   public static BSPJob createOnlineCFTrainHybridBSPConf(Path inPath,
       Path outPath) throws IOException {
     return createOnlineCFTrainHybridBSPConf(new HamaConfiguration(), inPath,
@@ -973,8 +967,10 @@ public class OnlineCFTrainHybridBSP
     return job;
   }
 
+  // **********************************************************************
+  // Main
+  // **********************************************************************
   public static void main(String[] args) throws Exception {
-
     // Defaults
     int numBspTask = 1; // CPU + GPU tasks
     int numGpuBspTask = 1; // GPU tasks
@@ -1147,10 +1143,9 @@ public class OnlineCFTrainHybridBSP
 
   }
 
-  /**
-   * prepareInputData
-   * 
-   */
+  // **********************************************************************
+  // prepareInputData (test data)
+  // **********************************************************************
   public static List<Preference<Long, Long>> prepareInputData(
       Configuration conf, FileSystem fs, Path in, Path preferencesIn)
       throws IOException {
@@ -1203,10 +1198,9 @@ public class OnlineCFTrainHybridBSP
     return test_prefs;
   }
 
-  /**
-   * convertInputData
-   * 
-   */
+  // **********************************************************************
+  // convertInputData (MovieLens input files)
+  // **********************************************************************
   public static List<Preference<Long, Long>> convertInputData(
       Configuration conf, FileSystem fs, Path in, Path preferencesIn,
       String inputFile, String separator) throws IOException {
@@ -1255,6 +1249,9 @@ public class OnlineCFTrainHybridBSP
     return test_prefs;
   }
 
+  // **********************************************************************
+  // printOutput
+  // **********************************************************************
   static void printOutput(Configuration conf, FileSystem fs,
       String extensionFilter, Writable key, Writable value) throws IOException {
     FileStatus[] files = fs.listStatus(CONF_OUTPUT_DIR);
@@ -1267,6 +1264,9 @@ public class OnlineCFTrainHybridBSP
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
+  // **********************************************************************
+  // printFile
+  // **********************************************************************
   static void printFile(Configuration conf, FileSystem fs, Path file,
       Writable key, Writable value) throws IOException {
     System.out.println("File " + file.toString());
@@ -1290,4 +1290,5 @@ public class OnlineCFTrainHybridBSP
       }
     }
   }
+
 }
