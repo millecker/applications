@@ -29,6 +29,8 @@ import org.trifort.rootbeer.runtime.RootbeerGpu;
  */
 public class OnlineCFTrainHybridKernel implements Kernel {
   private double[][] m_userItemMatrix;
+  private int[][] m_userHelper;
+  private int[][] m_itemHelper;
   public double[][] m_usersMatrix;
   public double[][] m_itemsMatrix;
   private int m_N;
@@ -46,11 +48,13 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   private GpuIntegerListMap m_senderMap;
 
   public OnlineCFTrainHybridKernel(double[][] userItemMatrix,
-      double[][] usersMatrix, double[][] itemsMatrix, int n, int m,
-      double alpha, int matrixRank, int maxIterations,
-      GpuIntegerMap counterMap, int skipCount, int peerCount, int peerId,
-      String[] allPeerNames) {
+      int[][] userHelper, int[][] itemHelper, double[][] usersMatrix,
+      double[][] itemsMatrix, int n, int m, double alpha, int matrixRank,
+      int maxIterations, GpuIntegerMap counterMap, int skipCount,
+      int peerCount, int peerId, String[] allPeerNames) {
     this.m_userItemMatrix = userItemMatrix;
+    this.m_userHelper = userHelper;
+    this.m_itemHelper = itemHelper;
     this.m_usersMatrix = usersMatrix;
     this.m_itemsMatrix = itemsMatrix;
     this.m_N = n;
@@ -73,11 +77,12 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     int thread_idxx = RootbeerGpu.getThreadIdxx();
 
     if (blockSize < m_matrixRank) {
-      return; // TODO Error
+      return;
     }
 
     int usersPerBlock = divup(m_N, gridSize);
     int itemsPerBlock = divup(m_M, gridSize);
+    int reductionStart = roundUpToNextPowerOfTwo(divup(m_matrixRank, 2));
 
     // SharedMemory per block (max 12 + 1024 * 8 = 8204 bytes)
     // e.g., maxtrixRank 256 => 12 + 256 * 8 = 2060 bytes
@@ -104,69 +109,55 @@ public class OnlineCFTrainHybridKernel implements Kernel {
       // Loop over all usersPerBlock
       for (int u = 0; u < usersPerBlock; u++) {
 
-        int userId = (usersPerBlock * u) + block_idxx;
+        int userId = (gridSize * u) + block_idxx;
         if (userId < m_N) {
 
-          // Each user loops over all items
-          for (int itemId = 0; itemId < m_M; itemId++) {
+          // Each user loops over all items which have a rating
+          for (int itemId = 0; itemId < m_userHelper[userId][0]; itemId++) {
 
-            double expectedScore = m_userItemMatrix[userId][itemId];
-            if (expectedScore != 0) {
+            // Each thread within a block computes one multiplication
+            if (thread_idxx < m_matrixRank) {
+              RootbeerGpu.setSharedDouble(shmMultVectorStartPos + thread_idxx
+                  * 8, m_usersMatrix[userId][thread_idxx]
+                  * m_itemsMatrix[itemId][thread_idxx]);
+            }
 
-              // Each thread within a block computes one multiplication
-              if (thread_idxx < m_matrixRank) {
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
 
-                RootbeerGpu.setSharedDouble(shmMultVectorStartPos + thread_idxx
-                    * 8, m_usersMatrix[userId][thread_idxx]
-                    * m_itemsMatrix[itemId][thread_idxx]);
+            // Calculate score by summing up multiplications
+            // do reduction in shared memory
+            // 1-bit right shift = divide by two to the power 1
+            for (int s = reductionStart; s > 0; s >>= 1) {
+
+              if ((thread_idxx < s) && (thread_idxx + s) < m_matrixRank) {
+                // sh_mem[tid] += sh_mem[tid + s];
+                RootbeerGpu.setSharedDouble(
+                    shmMultVectorStartPos + thread_idxx * 8,
+                    RootbeerGpu.getSharedDouble(shmMultVectorStartPos
+                        + thread_idxx * 8)
+                        + RootbeerGpu.getSharedDouble(shmMultVectorStartPos
+                            + (thread_idxx + s) * 8));
               }
 
               // Sync all threads within a block
               RootbeerGpu.syncthreads();
+            }
 
-              // Calculate score by summing up multiplications
-              // do reduction in shared memory
-              // 1-bit right shift = divide by two to the power 1
-              int shmMultVectorEndPos = shmMultVectorStartPos + m_matrixRank
-                  * 8;
-              for (int s = (int) divup(m_matrixRank, 2); s > 0; s >>= 1) {
+            // Calculate new userVector
+            // Each thread does one update operation of vector u
+            if (thread_idxx < m_matrixRank) {
+              m_usersMatrix[userId][thread_idxx] += m_itemsMatrix[itemId][thread_idxx]
+                  * 2
+                  * m_ALPHA
+                  * (m_userItemMatrix[userId][m_userHelper[userId][itemId]] - RootbeerGpu
+                      .getSharedDouble(shmMultVectorStartPos));
+            }
 
-                if (thread_idxx < s) {
-                  // sh_mem[ltid] += sh_mem[ltid + s];
-                  int multVectorIndex1 = shmMultVectorStartPos + thread_idxx
-                      * 8;
-                  int multVectorIndex2 = shmMultVectorStartPos
-                      + (thread_idxx + s) * 8;
-                  double val1 = RootbeerGpu.getSharedDouble(multVectorIndex1);
-                  double val2 = 0;
-                  if (multVectorIndex2 < shmMultVectorEndPos) {
-                    val2 = RootbeerGpu.getSharedDouble(multVectorIndex2);
-                  }
-                  RootbeerGpu.setSharedDouble(multVectorIndex1, val1 + val2);
-                }
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
 
-                // Sync all threads within a block
-                RootbeerGpu.syncthreads();
-              }
-
-              // Calculate new userVector
-              // Each thread does one update operation of vector u
-              if (thread_idxx < m_matrixRank) {
-
-                double calculatedScore = RootbeerGpu
-                    .getSharedDouble(shmMultVectorStartPos);
-
-                m_usersMatrix[userId][thread_idxx] += 2 * m_ALPHA
-                    * m_itemsMatrix[itemId][thread_idxx]
-                    * (expectedScore - calculatedScore);
-              }
-
-              // Sync all threads within a block
-              RootbeerGpu.syncthreads();
-
-            } // if expectedScore != 0
-
-          } // loop over all items
+          } // loop over all items which have a rating
 
         } // if userId < m_N
 
@@ -181,68 +172,55 @@ public class OnlineCFTrainHybridKernel implements Kernel {
       // Loop over all itemsPerBlock
       for (int v = 0; v < itemsPerBlock; v++) {
 
-        int itemId = (itemsPerBlock * v) + block_idxx;
+        int itemId = (gridSize * v) + block_idxx;
         if (itemId < m_M) {
 
-          // Each user loops over all items
-          for (int userId = 0; userId < m_N; userId++) {
+          // Each user loops over all users which have a rating
+          for (int userId = 0; userId < m_itemHelper[itemId][0]; userId++) {
 
-            double expectedScore = m_userItemMatrix[userId][itemId];
-            if (expectedScore != 0) {
+            // Each thread within a block computes one multiplication
+            if (thread_idxx < m_matrixRank) {
+              RootbeerGpu.setSharedDouble(shmMultVectorStartPos + thread_idxx
+                  * 8, m_itemsMatrix[itemId][thread_idxx]
+                  * m_usersMatrix[userId][thread_idxx]);
+            }
 
-              // Each thread within a block computes one multiplication
-              if (thread_idxx < m_matrixRank) {
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
 
-                RootbeerGpu.setSharedDouble(shmMultVectorStartPos + thread_idxx
-                    * 8, m_itemsMatrix[itemId][thread_idxx]
-                    * m_usersMatrix[userId][thread_idxx]);
+            // Calculate score by summing up multiplications
+            // do reduction in shared memory
+            // 1-bit right shift = divide by two to the power 1
+            for (int s = reductionStart; s > 0; s >>= 1) {
+
+              if ((thread_idxx < s) && (thread_idxx + s) < m_matrixRank) {
+                // sh_mem[tid] += sh_mem[tid + s];
+                RootbeerGpu.setSharedDouble(
+                    shmMultVectorStartPos + thread_idxx * 8,
+                    RootbeerGpu.getSharedDouble(shmMultVectorStartPos
+                        + thread_idxx * 8)
+                        + RootbeerGpu.getSharedDouble(shmMultVectorStartPos
+                            + (thread_idxx + s) * 8));
               }
 
               // Sync all threads within a block
               RootbeerGpu.syncthreads();
+            }
 
-              // Calculate score by summing up multiplications
-              // do reduction in shared memory
-              // 1-bit right shift = divide by two to the power 1
-              int shmMultVectorEndPos = shmMultVectorStartPos + m_matrixRank
-                  * 8;
-              for (int s = (int) divup(m_matrixRank, 2); s > 0; s >>= 1) {
+            // Calculate new userVector
+            // Each thread does one update operation of vector u
+            if (thread_idxx < m_matrixRank) {
+              m_itemsMatrix[itemId][thread_idxx] += m_usersMatrix[userId][thread_idxx]
+                  * 2
+                  * m_ALPHA
+                  * (m_userItemMatrix[userId][m_itemHelper[itemId][userId]] - RootbeerGpu
+                      .getSharedDouble(shmMultVectorStartPos));
+            }
 
-                if (thread_idxx < s) {
-                  // sh_mem[ltid] += sh_mem[ltid + s];
-                  int multVectorIndex1 = shmMultVectorStartPos + thread_idxx
-                      * 8;
-                  int multVectorIndex2 = shmMultVectorStartPos
-                      + (thread_idxx + s) * 8;
-                  double val1 = RootbeerGpu.getSharedDouble(multVectorIndex1);
-                  double val2 = 0;
-                  if (multVectorIndex2 < shmMultVectorEndPos) {
-                    val2 = RootbeerGpu.getSharedDouble(multVectorIndex2);
-                  }
-                  RootbeerGpu.setSharedDouble(multVectorIndex1, val1 + val2);
-                }
-                // Sync all threads within a block
-                RootbeerGpu.syncthreads();
-              }
+            // Sync all threads within a block
+            RootbeerGpu.syncthreads();
 
-              // Calculate new userVector
-              // Each thread does one update operation of vector u
-              if (thread_idxx < m_matrixRank) {
-
-                double calculatedScore = RootbeerGpu
-                    .getSharedDouble(shmMultVectorStartPos);
-
-                m_itemsMatrix[itemId][thread_idxx] += 2 * m_ALPHA
-                    * m_usersMatrix[userId][thread_idxx]
-                    * (expectedScore - calculatedScore);
-              }
-
-              // Sync all threads within a block
-              RootbeerGpu.syncthreads();
-
-            } // if expectedScore != 0
-
-          } // loop over all items
+          } // loop over all users which have a rating
 
         } // if (itemId < m_M)
 
@@ -434,6 +412,17 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     }
   }
 
+  private int roundUpToNextPowerOfTwo(int x) {
+    x--;
+    x |= x >> 1; // handle 2 bit numbers
+    x |= x >> 2; // handle 4 bit numbers
+    x |= x >> 4; // handle 8 bit numbers
+    x |= x >> 8; // handle 16 bit numbers
+    x |= x >> 16; // handle 32 bit numbers
+    x++;
+    return x;
+  }
+
   private String arrayToString(double[] arr) {
     if (arr != null) {
       String result = "";
@@ -448,8 +437,8 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   public static void main(String[] args) {
     // Dummy invocation
     // otherwise Rootbeer will remove constructors and methods
-    new OnlineCFTrainHybridKernel(null, null, null, 0, 0, 0, 0, 0, null, 0, 0,
-        0, null);
+    new OnlineCFTrainHybridKernel(null, null, null, null, null, 0, 0, 0, 0, 0,
+        null, 0, 0, 0, null);
     new GpuIntegerMap();
   }
 }
