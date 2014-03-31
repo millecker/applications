@@ -113,7 +113,9 @@ public class OnlineCFTrainHybridKernel implements Kernel {
         if (userId < m_N) {
 
           // Each user loops over all items which have a rating
-          for (int itemId = 0; itemId < m_userHelper[userId][0]; itemId++) {
+          for (int itemIdxx = 1; itemIdxx <= m_userHelper[userId][0]; itemIdxx++) {
+
+            int itemId = m_userHelper[userId][itemIdxx];
 
             // Each thread within a block computes one multiplication
             if (thread_idxx < m_matrixRank) {
@@ -150,7 +152,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
               m_usersMatrix[userId][thread_idxx] += m_itemsMatrix[itemId][thread_idxx]
                   * 2
                   * m_ALPHA
-                  * (m_userItemMatrix[userId][m_userHelper[userId][itemId]] - RootbeerGpu
+                  * (m_userItemMatrix[userId][itemId] - RootbeerGpu
                       .getSharedDouble(shmMultVectorStartPos));
             }
 
@@ -176,7 +178,9 @@ public class OnlineCFTrainHybridKernel implements Kernel {
         if (itemId < m_M) {
 
           // Each user loops over all users which have a rating
-          for (int userId = 0; userId < m_itemHelper[itemId][0]; userId++) {
+          for (int userIdxx = 1; userIdxx <= m_itemHelper[itemId][0]; userIdxx++) {
+
+            int userId = m_itemHelper[itemId][userIdxx];
 
             // Each thread within a block computes one multiplication
             if (thread_idxx < m_matrixRank) {
@@ -213,7 +217,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
               m_itemsMatrix[itemId][thread_idxx] += m_usersMatrix[userId][thread_idxx]
                   * 2
                   * m_ALPHA
-                  * (m_userItemMatrix[userId][m_itemHelper[itemId][userId]] - RootbeerGpu
+                  * (m_userItemMatrix[userId][itemId] - RootbeerGpu
                       .getSharedDouble(shmMultVectorStartPos));
             }
 
