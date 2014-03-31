@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<classpath>
-	<classpathentry kind="src" path="testmap/src"/>
-	<classpathentry kind="src" path="testnumbertostring/src"/>
-	<classpathentry kind="src" path="teststringbuilder/src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/applications/lib/rootbeer-develop-branch.jar"/>
-	<classpathentry kind="output" path="bin"/>
-</classpath>
