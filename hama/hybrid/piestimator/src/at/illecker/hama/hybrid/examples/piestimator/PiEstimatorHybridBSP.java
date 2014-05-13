@@ -111,8 +111,7 @@ public class PiEstimatorHybridBSP extends
     for (long i = 0; i < m_calculationsPerBspTask; i++) {
       double x = 2.0 * m_lcg.nextDouble() - 1.0;
       double y = 2.0 * m_lcg.nextDouble() - 1.0;
-
-      if ((Math.sqrt(x * x + y * y) < 1.0)) {
+      if ((x * x + y * y) <= 1.0) {
         hits++;
       }
     }
