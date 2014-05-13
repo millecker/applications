@@ -42,6 +42,8 @@ public class PiEstimatorKernel implements Kernel {
     int thread_idxx = RootbeerGpu.getThreadIdxx();
     int globalThreadId = RootbeerGpu.getThreadIdxx()
         + RootbeerGpu.getBlockIdxx() * RootbeerGpu.getBlockDimx();
+    int reductionStart = roundUpToNextPowerOfTwo(divup(
+        RootbeerGpu.getBlockDimx(), 2));
 
     LinearCongruentialRandomGenerator lcg = new LinearCongruentialRandomGenerator(
         seed / globalThreadId);
@@ -61,14 +63,15 @@ public class PiEstimatorKernel implements Kernel {
 
     // do reduction in shared memory
     // 1-bit right shift = divide by two to the power 1
-    for (int s = RootbeerGpu.getBlockDimx() / 2; s > 0; s >>= 1) {
+    for (int s = reductionStart; s > 0; s >>= 1) {
       if (thread_idxx < s) {
-        // sh_mem[ltid] += sh_mem[ltid + s];
-        long val1 = RootbeerGpu.getSharedLong(thread_idxx * 8);
-        long val2 = RootbeerGpu.getSharedLong((thread_idxx + s) * 8);
-        RootbeerGpu.setSharedLong(thread_idxx * 8, val1 + val2);
+        // sh_mem[tid] += sh_mem[tid + s];
+        RootbeerGpu.setSharedLong(
+            thread_idxx * 8,
+            RootbeerGpu.getSharedLong(thread_idxx * 8)
+                + RootbeerGpu.getSharedLong((thread_idxx + s) * 8));
       }
-
+      // Sync all threads within a block
       RootbeerGpu.syncthreads();
     }
 
@@ -79,8 +82,26 @@ public class PiEstimatorKernel implements Kernel {
     }
   }
 
-  public static void main(String[] args) {
+  private int divup(int x, int y) {
+    if (x % y != 0) {
+      return ((x + y - 1) / y); // round up
+    } else {
+      return x / y;
+    }
+  }
 
+  private int roundUpToNextPowerOfTwo(int x) {
+    x--;
+    x |= x >> 1; // handle 2 bit numbers
+    x |= x >> 2; // handle 4 bit numbers
+    x |= x >> 4; // handle 8 bit numbers
+    x |= x >> 8; // handle 16 bit numbers
+    x |= x >> 16; // handle 32 bit numbers
+    x++;
+    return x;
+  }
+
+  public static void main(String[] args) {
     // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
     // ptxas info : Used 39 registers, 40984 bytes smem, 380 bytes cmem[0], 88
     // bytes cmem[2]
