@@ -212,38 +212,15 @@ public class OnlineCFTrainHybridBSP
 
       computeAllValues();
 
-      // DEBUG
-      // m_logger.writeChars("values after computeValues(" + i + ")\n");
-      // m_logger.writeChars("usersMatrix: length: " + this.m_usersMatrix.size()
-      // + "\n");
-      // for (Map.Entry<Long, PipesVectorWritable> e : this.m_usersMatrix
-      // .entrySet()) {
-      // m_logger.writeChars("key: '" + e.getKey() + "' value: '"
-      // + e.getValue().toString() + "'\n");
-      // }
-      // m_logger.writeChars("itemsMatrix: length: " + this.m_itemsMatrix.size()
-      // + "\n");
-      // for (Map.Entry<Long, PipesVectorWritable> e : this.m_itemsMatrix
-      // .entrySet()) {
-      // m_logger.writeChars("key: '" + e.getKey() + "' value: '"
-      // + e.getValue().toString() + "'\n");
-      // }
-      // m_logger.writeChars("indexes: length: " + this.m_indexes.size()
-      // + " indexes: " + Arrays.toString(this.m_indexes.toArray()) + "\n");
-
       if ((i + 1) % m_skipCount == 0) {
-        // DEBUG
-        // m_logger.writeChars("normalizeWithBroadcastingValues: i: " + i +
-        // "\n");
-
         normalizeWithBroadcastingValues(peer);
       }
     }
 
     // Save Model
     // TODO why is each task saving all items?
-    // after exchanging items all tasks should have the same items! -> duplicate
-    // saves
+    // after exchanging items all tasks should have the same items!
+    // -> duplicate saves
 
     // save users
     if (m_isDebuggingEnabled) {
@@ -351,69 +328,30 @@ public class OnlineCFTrainHybridBSP
     // compute values
     for (Integer prefIdx : m_indexes) {
       Preference<Long, Long> pref = m_preferences.get(prefIdx);
-
-      // function input
-      PipesVectorWritable in_userFactorizedValues = m_usersMatrix.get(pref
-          .getUserId());
-      PipesVectorWritable in_itemFactorizedValues = m_itemsMatrix.get(pref
-          .getItemId());
-
-      // function output
-      VectorWritable out_userFactorized;
-      VectorWritable out_itemFactorized;
-
-      // DEBUG
-      // m_logger.writeChars("preferenceIdx: " + prefIdx + " - (a,b,r) = ("
-      // + pref.getUserId() + "," + pref.getItemId() + ","
-      // + pref.getValue().get() + ")\n");
-      // m_logger.writeChars("alpa_al: "
-      // + in_userFactorizedValues.getVector().toString() + "\n");
-      // m_logger.writeChars("beta_bl: "
-      // + in_itemFactorizedValues.getVector().toString() + "\n");
-
-      // MeanAbsError function
-      // below vectors are all size of MATRIX_RANK
-      DoubleVector bbl_vl_yb = in_itemFactorizedValues.getVector();
-      DoubleVector aal_ml_xa = in_userFactorizedValues.getVector();
+      DoubleVector alpha = m_usersMatrix.get(pref.getUserId()).getVector();
+      DoubleVector beta = m_itemsMatrix.get(pref.getItemId()).getVector();
 
       // calculated score
-      double calculatedScore = aal_ml_xa.multiply(bbl_vl_yb).sum();
+      double calculatedScore = alpha.multiply(beta).sum();
       double expectedScore = pref.getValue().get();
-      double scoreDifference = 0.0;
-      scoreDifference = expectedScore - calculatedScore;
-
+      double loss = expectedScore - calculatedScore;
       // DEBUG
       // m_logger.writeChars("expectedScore: " + expectedScore
-      // + " calculatedScore: " + calculatedScore + " scoreDifference: "
-      // + scoreDifference + "\n");
+      // + " calculatedScore: " + calculatedScore + " loss: " + loss + "\n");
 
-      // α_al ← α_al + 2τ * (β_bl + ν_l: * y_b:)(r − R)
-      // users ← user + userFactorization (will be used later)
-      DoubleVector userFactorization = bbl_vl_yb.multiply(2 * ALPHA
-          * scoreDifference);
-      DoubleVector users = in_userFactorizedValues.getVector().add(
-          userFactorization);
-      out_userFactorized = new VectorWritable(users);
-
-      // β_bl ← β_bl + 2τ * (α_al + μ_l: * x_a:)(r − R)
-      // items ← item + itemFactorization (will be used later)
-      DoubleVector itemFactorization = aal_ml_xa.multiply(2 * ALPHA
-          * scoreDifference);
-      DoubleVector items = in_itemFactorizedValues.getVector().add(
-          itemFactorization);
-      out_itemFactorized = new VectorWritable(items);
-
+      // update A
+      DoubleVector newAlpha = alpha.add(beta.multiply(2 * ALPHA * loss));
       // DEBUG
-      // m_logger.writeChars("UPDATE alpa_al: "
-      // + out_userFactorized.getVector().toString() + "\n");
-      // m_logger.writeChars("UPDATE beta_bl: "
-      // + out_itemFactorized.getVector().toString() + "\n");
-
-      // update function output
+      // m_logger.writeChars("UPDATE alpa: " + newBeta.toString() + "\n");
       m_usersMatrix.put(pref.getUserId(), new PipesVectorWritable(
-          out_userFactorized));
+          new VectorWritable(newAlpha)));
+
+      // update B
+      DoubleVector newBeta = beta.add(alpha.multiply(2 * ALPHA * loss));
+      // DEBUG
+      // m_logger.writeChars("UPDATE beta: " + newBeta.toString() + "\n");
       m_itemsMatrix.put(pref.getItemId(), new PipesVectorWritable(
-          out_itemFactorized));
+          new VectorWritable(newBeta)));
     }
   }
 
