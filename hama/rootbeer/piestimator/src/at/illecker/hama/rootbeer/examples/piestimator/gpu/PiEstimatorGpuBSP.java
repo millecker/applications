@@ -101,7 +101,6 @@ public class PiEstimatorGpuBSP extends
         CONF_GRIDSIZE));
 
     int threadCount = m_blockSize * m_gridSize;
-
     m_calculationsPerThread = divup(m_iterations, threadCount);
   }
 
@@ -233,6 +232,8 @@ public class PiEstimatorGpuBSP extends
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(DoubleWritable.class);
     FileOutputFormat.setOutputPath(job, outPath);
+
+    job.setMessageClass(LongWritable.class);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
 

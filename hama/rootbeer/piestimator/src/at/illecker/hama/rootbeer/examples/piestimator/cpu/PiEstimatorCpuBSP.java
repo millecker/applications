@@ -100,8 +100,7 @@ public class PiEstimatorCpuBSP extends
     for (long i = 0; i < m_calculationsPerBspTask; i++) {
       double x = 2.0 * m_lcg.nextDouble() - 1.0;
       double y = 2.0 * m_lcg.nextDouble() - 1.0;
-
-      if ((Math.sqrt(x * x + y * y) < 1.0)) {
+      if ((x * x + y * y) <= 1.0) {
         hits++;
       }
     }
@@ -116,10 +115,11 @@ public class PiEstimatorCpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
 
+    // MasterTask writes out results
     if (peer.getPeerName().equals(m_masterTask)) {
 
       int numMessages = peer.getNumCurrentMessages();
-      
+
       long totalHits = 0;
       LongWritable received;
       while ((received = peer.getCurrentMessage()) != null) {
@@ -136,7 +136,7 @@ public class PiEstimatorCpuBSP extends
         FSDataOutputStream outStream = fs.create(new Path(FileOutputFormat
             .getOutputPath(job), peer.getTaskId() + ".log"));
 
-        outStream.writeChars("BSP=PiEstimatorGpuBSP,Iterations=" + m_iterations
+        outStream.writeChars("BSP=PiEstimatorCpuBSP,Iterations=" + m_iterations
             + "\n");
 
         outStream.writeChars("totalHits: " + totalHits + "\n");
@@ -201,6 +201,8 @@ public class PiEstimatorCpuBSP extends
     job.setOutputValueClass(DoubleWritable.class);
     FileOutputFormat.setOutputPath(job, outPath);
 
+    job.setMessageClass(LongWritable.class);
+
     job.set("bsp.child.java.opts", "-Xmx4G");
 
     return job;
@@ -221,7 +223,7 @@ public class PiEstimatorCpuBSP extends
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
-        System.out.println("    Argument3=totalIterations");
+        System.out.println("    Argument2=totalIterations");
         return;
       }
     } else {
@@ -234,7 +236,7 @@ public class PiEstimatorCpuBSP extends
     LOG.info("TotalIterations: " + totalIterations);
     LOG.info("IterationsPerBspTask: " + totalIterations / job.getNumBspTask());
     job.setBoolean(CONF_DEBUG, true);
-    
+
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
       printOutput(job);
