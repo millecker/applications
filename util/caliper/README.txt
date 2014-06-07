@@ -16,21 +16,25 @@
 
 # Hadoop MatrixMultiplicationBenchmark
 ./CaliperResults.R \
-  results/hadoop/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13\:37\:02Z.json \
+  results/hadoop/rootbeer/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13\:37\:02Z.json \
   6 "(n=matrixSize)" "(ms)" false true n false
   
 # Hama MatrixMultiplicationBenchmark
 ./CaliperResults.R \
-  results/hama/matrixmultiplication/at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-08-21T17\:42\:32Z.json \
+  results/hama/rootbeer/matrixmultiplication/at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-08-21T17\:42\:32Z.json \
   6 "(n=matrixSize)" "(ms)" false true n false
 
 # Hama PiEstimatorBenchmark
 ./CaliperResults.R \
-  results/hama/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T08:24:43Z.json \
+  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T08:24:43Z.json \
   9 "(n*1024*14)" "(sec)" false true n false
 
 ./CaliperResults.R \
-  results/hama/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T14\:47\:49Z.json \
+  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T14\:47\:49Z.json \
+  9 "(n*1024*14)" "(sec)" false true n false
+
+./CaliperResults.R \
+  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2014-06-07T15:33:50Z.json \
   9 "(n*1024*14)" "(sec)" false true n false
 
 # Hama PiEstimatorHybridBenchmark
