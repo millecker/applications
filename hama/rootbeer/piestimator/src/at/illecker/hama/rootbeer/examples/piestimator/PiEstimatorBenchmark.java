@@ -39,11 +39,18 @@ import com.google.caliper.api.Macrobenchmark;
 import com.google.caliper.runner.CaliperMain;
 
 public class PiEstimatorBenchmark extends Benchmark {
+  // Known Issue: out of inodes
+  // because of temp files in
+  // /tmp/hadoop-martin/bsp/local/groomServer
+  // -> maximum of 16 x 2 = 32 experiments
 
+  // Step 1
   @Param({ "10000", "20000", "40000", "60000", "80000", "100000", "120000",
       "140000", "160000", "180000", "200000", "220000", "240000", "260000",
       "280000", "300000" })
-  // "400000"
+  // Step 2
+  // @Param({ "300000", "320000", "340000", "360000", "380000", "400000",
+  // "420000", "440000", "460000", "480000", "500000" })
   private long n;
 
   @Param
