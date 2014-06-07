@@ -18,11 +18,13 @@ package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
 import java.util.List;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.RootbeerGpu;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorKernel implements Kernel {
 
@@ -123,12 +125,13 @@ public class PiEstimatorKernel implements Kernel {
     PiEstimatorKernel kernel = new PiEstimatorKernel(calculationsPerThread,
         System.currentTimeMillis());
     Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
 
     // Run GPU Kernels
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(blockSize, gridSize, blockSize
+        * gridSize), context);
     watch.stop();
 
     System.out.println("PiEstimatorKernel,GPUTime=" + watch.elapsedTimeMillis()
@@ -136,10 +139,9 @@ public class PiEstimatorKernel implements Kernel {
     System.out.println("PiEstimatorKernel,Samples=" + calculationsPerThread
         * blockSize * gridSize);
 
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       System.out.println("  StatsRow:\n");
-      System.out.println("    init time: " + row.getInitTime() + "\n");
       System.out.println("    serial time: " + row.getSerializationTime()
           + "\n");
       System.out.println("    exec time: " + row.getExecutionTime() + "\n");

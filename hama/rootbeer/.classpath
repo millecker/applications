@@ -18,8 +18,8 @@
 	<classpathentry kind="lib" path="/applications/lib/hama-core-0.7.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/hama-graph-0.7.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/mahout-core-0.8-SNAPSHOT-job.jar"/>
-	<classpathentry kind="lib" path="/applications/lib/rootbeer-develop-old-branch.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/trove-3.0.2.jar"/>
 	<classpathentry kind="lib" path="/applications/lib/zookeeper-3.4.5.jar"/>
+	<classpathentry kind="lib" path="/applications/lib/rootbeer-develop-branch.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
