@@ -6087,22 +6087,6 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.8569270683E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 1.05588718329E11,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
           "magnitude": 4.8580651812E10,
           "unit": "ns"
         },
