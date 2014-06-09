@@ -2,49 +2,53 @@
 ##### Caliper R Script                                                    #####
 ###############################################################################
 
-# Usage
+###############################################################################
+# Usage and Command Line Arguments
+###############################################################################
 
-./CaliperResults.R <InputFile> 
-   [<MagnitudeNormalizer>] 
+./CaliperResults.R <JsonInputFile> 
+   [<MagnitudeNormalizer=PowerOf10>] 
    [<XaxisDescription>]
    [<YaxisDescription>] 
-   [<GenerateGeoLinePlot>]
-   [<GenerateGeoLinePlot_CPU_GPU> <Variable>]
-   [<Speedup_EfficiencyPlot>]
+   [<GenerateGeoLinePlot=true|false>]
+   [<GenerateGeoLinePlot_CPU_GPU=true|false>
+      <Variable=ParameterOnX>
+      <VariableNormalizer=PowerOf10>
+      [<OtherXaxisDescription>]
+   ]
+   [<Speedup_EfficiencyPlot=true|false>]
 
-# Examples
+###############################################################################
+# Rootbeer Examples
+###############################################################################
 
 # Hadoop MatrixMultiplicationBenchmark
 ./CaliperResults.R \
-  results/hadoop/rootbeer/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13\:37\:02Z.json \
-  6 "(n=matrixSize)" "(ms)" false true n false
+  results/hadoop/rootbeer/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.*.json \
+  6 "(n=matrixSize)" "(ms)" false true n 0 false
   
 # Hama MatrixMultiplicationBenchmark
 ./CaliperResults.R \
-  results/hama/rootbeer/matrixmultiplication/at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-08-21T17\:42\:32Z.json \
-  6 "(n=matrixSize)" "(ms)" false true n false
+  results/hama/rootbeer/matrixmultiplication/at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.*.json \
+  6 "(n=matrixSize)" "(ms)" false true n 0 false
 
 # Hama PiEstimatorBenchmark
 ./CaliperResults.R \
-  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T08:24:43Z.json \
-  9 "(n*1024*14)" "(sec)" false true n false
+  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.*.json \
+  9 "(n*1024*14)" "(sec)" false true n 3 "(n*1024*1000)" false
 
-./CaliperResults.R \
-  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T14\:47\:49Z.json \
-  9 "(n*1024*14)" "(sec)" false true n false
-
-./CaliperResults.R \
-  results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2014-06-07T15:33:50Z.json \
-  9 "(n*1024*14)" "(sec)" false true n false
+###############################################################################
+# Hybrid Examples
+###############################################################################
 
 # Hama PiEstimatorHybridBenchmark
 ./CaliperResults.R \
-  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2013-08-27T08:29:35Z.json \
-  9 "(n*1024*14)" "(sec)" true false "" true
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
+  9 "(n*1024*14)" "(sec)" true false "" 0 "" true
 
 # Hama KMeansHybridBenchmark
 ./CaliperResults.R \
-  results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-01-30T11\:23\:10Z.json \
-  9 "(n=1000000)" "(sec)" false true k false
+  results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
+  9 "(n=1000000)" "(sec)" false true k 0 "" false
 
 ###############################################################################

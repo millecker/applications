@@ -4,22 +4,39 @@ library(reshape2)
 suppressPackageStartupMessages(library(sqldf))
 library(ggplot2)
 
-# Functions
-# List append
+###############################################################################
+# List append function
+###############################################################################
 lappend <- function (lst, ...) {
   lst <- c(lst, list(...))
   return(lst)
 }
+
+###############################################################################
+# check command line arguments
+###############################################################################
+#./CaliperResults.R
+# arg1: <JsonInputFile> 
+# arg2: [<MagnitudeNormalizer=PowerOf10>] 
+# arg3: [<XaxisDescription>]
+# arg4: [<YaxisDescription>] 
+# arg5: [<GenerateGeoLinePlot=true|false>]
+# arg6: [<GenerateGeoLinePlot_CPU_GPU=true|false> 
+# arg7:     <Variable=ParameterOnX>
+# arg8:     <VariableNormalizer=PowerOf10>
+# arg9:     [<OtherXaxisDescription>] ]
+# arg10: [<Speedup_EfficiencyPlot=true|false>]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
   stop("Argument CaliperResult JsonFile is missing! (~/.caliper/results)")
 }
 
-# Load result file
+###############################################################################
+# load result file
+###############################################################################
 caliperJsonFile <- args[1]
-# caliperJsonFile <- "results/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2013-06-23T13:37:02Z.json"
-# caliperJsonFile <- "results/hama/piestimator_hybrid/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2013-08-27T08:29:35Z.json"
+# caliperJsonFile <- "results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.2013-08-19T08:24:43Z.json"
 caliperResult <- NULL
 caliperResult <- fromJSON(file=caliperJsonFile)
 if (is.null(caliperResult)) {
@@ -27,10 +44,15 @@ if (is.null(caliperResult)) {
   stop(message)
 }
 
+###############################################################################
+# init variables
+###############################################################################
 scenarioTable <- NULL
 measurementResults <-list()
 
-# Loop over all scenarios and build measurements
+###############################################################################
+# loop over all scenarios and build measurements
+###############################################################################
 for (scenarioIndex in 1:length(caliperResult)) {
   
   scenarioTableRow <- data.frame(scenario=scenarioIndex)
@@ -142,8 +164,9 @@ for (scenarioIndex in 1:length(caliperResult)) {
   }
 }
 
-
-## Measurement Table
+###############################################################################
+# create Measurement Table
+###############################################################################
 # Create table from vectors
 measurementTable <- data.frame(measurementResults)
 # Transpose table
@@ -153,17 +176,22 @@ row.names(measurementTable.T) <- 1:nrow(measurementTable.T)
 measurementTable <- measurementTable.T
 measurementTable <- data.frame(measurementTable)
 
-# Convert Strings to Numeric
+###############################################################################
+# convert Strings to Numeric
+###############################################################################
+# str(measurementTable) # type infos
 measurementTable <- transform(measurementTable,scenario = as.numeric(as.character(measurementTable$scenario)))
 measurementTable <- transform(measurementTable,measurement = as.numeric(as.character(measurementTable$measurement)))
 measurementTable <- transform(measurementTable,magnitude = as.numeric(as.character(measurementTable$magnitude)))
 measurementTable <- transform(measurementTable,weight = as.numeric(as.character(measurementTable$weight)))
 
+# str(scenarioTable) # type infos
 scenarioTable <- transform(scenarioTable,Measurements = as.numeric(as.character(scenarioTable$Measurements)))
 scenarioTable <- transform(scenarioTable,AvailableProcessors = as.numeric(as.character(scenarioTable$AvailableProcessors)))
 
-
-## Cleanup
+###############################################################################
+# cleanup unused variables
+###############################################################################
 rm(scenario)
 rm(scenarioIndex)
 rm(measurementIndex)
@@ -190,28 +218,37 @@ rm(scenarioInstrumentSpec)
 rm(scenarioProperties)
 rm(scenarioRun)
 
+###############################################################################
 # add weighted magnitude
+###############################################################################
 measurementTable["weighted_magnitude"] <- NA
 measurementTable$weighted_magnitude <- measurementTable$magnitude / measurementTable$weight
 
+###############################################################################
+# merge measurementTable and scenarioTable together
+###############################################################################
 benchmarkTable <- merge(x = measurementTable, y = scenarioTable, by = "scenario", all.x=TRUE)
 #benchmarkTable <- sqldf('SELECT * FROM measurementTable JOIN scenarioTable USING(scenario)')
-
-cat("Info: BenchmarkTable Execution Times\n")
+cat("BenchmarkTable Execution Times\n")
 sqldf('SELECT scenario,magnitude,unit,weight,weighted_magnitude,AllParameters FROM benchmarkTable')
 
+###############################################################################
+# generate average benchmark table
+###############################################################################
 benchmarkTableAvg <- sqldf('SELECT scenario,avg(magnitude/weight) as magnitude,unit,AllParameters FROM benchmarkTable GROUP BY scenario')
 cat("BenchmarkTable Average Execution Time avg(magnitude/weight)\n")
 benchmarkTableAvg
-#str(benchmarkTableAvg)
+# str(benchmarkTableAvg) # type info
 
-#cat("Info: Summary of benchmarkTable\n")
+#cat("Summary of benchmarkTable\n")
 #summary(benchmarkTable)
 
-
+###############################################################################
+# generate Figures
+###############################################################################
 title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
-               #".",benchmarkTable$MethodName[1],
-               " with ",benchmarkTable$Measurements[1],
+               #".", benchmarkTable$MethodName[1],
+               " with ", benchmarkTable$Measurements[1],
                " measurements ", sep="")
 
 xaxisDesc <- paste("Parameter", sep="")
@@ -228,17 +265,21 @@ if (is.na(args[2])) {
   }
 }
 
-# Align magnitude
+###############################################################################
+# align magnitude
+###############################################################################
 if (!is.na(args[2])) {
-  power <- as.numeric(args[2])
-  benchmarkTableAvgAligned <- within(benchmarkTableAvg, magnitude <- magnitude / 10^power)
+  magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
+  benchmarkTableAvgAligned <- within(benchmarkTableAvg, magnitude <- magnitude / 10^magnitudeNormalizer)
   benchmarkTableAvg <- benchmarkTableAvgAligned
   
-  benchmarkTableAligned <- within(benchmarkTable, weighted_magnitude  <- weighted_magnitude  / 10^power)
+  benchmarkTableAligned <- within(benchmarkTable, weighted_magnitude  <- weighted_magnitude  / 10^magnitudeNormalizer)
   benchmarkTable <- benchmarkTableAligned
 }
 
-# Generate Bar chart of average data
+###############################################################################
+# generate Bar chart of average data
+###############################################################################
 ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
   geom_bar(stat="identity",color="black") +
   xlab(xaxisDesc) +
@@ -252,7 +293,9 @@ ggsave(file=outputfile, scale=2)
 message <- paste("Info: Saved Barplot in",outputfile,"\n")
 cat(message)
 
-# Generate Geom Line plot of average data
+###############################################################################
+# generate Geom Line plot of average data
+###############################################################################
 if (!is.na(args[5]) && args[5]=='true') {
   ggplot(benchmarkTableAvg, aes(x=AllParameters,y=magnitude,color="red",group=unit)) + 
     geom_point(size=5) + 
@@ -269,7 +312,9 @@ if (!is.na(args[5]) && args[5]=='true') {
   cat(message)
 }
 
-# Generate Box plot
+###############################################################################
+# generate Box plot
+###############################################################################
 #benchmarkTable
 #str(benchmarkTable)
 ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scenario))) + 
@@ -285,14 +330,42 @@ ggsave(file=outputfile, scale=2)
 message <- paste("Info: Saved Boxplot in",outputfile,"\n")
 cat(message)
 
-
-# Generate CPU + GPU plot
+###############################################################################
+# generate CPU + GPU plot
+###############################################################################
 if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
-  power <- as.numeric(args[2])
-  customVariable <- as.character(args[7])
-  #cat(paste("Generate geom_line plot and normalize magnitude with 10^",power,"\n",sep=""))
+  magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
+  customVariable <- as.character(args[7]) # variable on X
+  customVariableNormalizer<- as.numeric(args[8]) # powerOf10
+  if (!is.na(args[10]) && !is.na(args[9])) { # description of X axis
+    xaxisdescription <- as.character(args[9])
+  } else {
+    xaxisdescription <- as.character(args[3])
+  }
+  # debug message
+  #cat(paste("Generate geom_line plot and normalize magnitude with 10^",magnitudeNormalizer,"\n",sep=""))
   
-  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,$customVariable,(avg(magnitude/weight) / power(10,$power)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
+  if (customVariableNormalizer != 0) {
+    benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,($customVariable / power(10,$customVariableNormalizer)) as $customVariable,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
+    # convert customVariable to Factor (not numeric) for ticks of X axis
+    benchmarkTableAvgScenarioGroup[, customVariable] <- sapply(benchmarkTableAvgScenarioGroup[, customVariable], as.factor)
+  } else {
+    benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,$customVariable,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
+  }
+  
+  cat("BenchmarkTable Average Execution Time grouped by Scenarios\n")
+  print(benchmarkTableAvgScenarioGroup)
+  # str(benchmarkTableAvgScenarioGroup) # type infos
+  
+  # minX <- min(benchmarkTableAvgScenarioGroup[,customVariable])
+  # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
+  # maxX <- max(benchmarkTableAvgScenarioGroup[,customVariable])
+  # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
+  minY <- round(min(benchmarkTableAvgScenarioGroup$magnitude))
+  # cat(paste("Minimum of magnitude: ", minY, sep=""))
+  maxY <- round(max(benchmarkTableAvgScenarioGroup$magnitude))
+  # cat(paste(" - Maximum of magnitude: ", maxY, "\n", sep=""))
+  
   #benchmarkTableAvgScenarioGroup <- transform(benchmarkTableAvgScenarioGroup,customVariable = as.numeric(as.character(benchmarkTableAvgScenarioGroup$customVariable)))
   #benchmarkTableAvgScenarioGroup
   # str(benchmarkTableAvgScenarioGroup)
@@ -300,22 +373,26 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",colour="type",group="type")) + 
     geom_point(size=5) + 
     geom_line() +
-    xlab(paste(customVariable,args[3])) +
+#    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = 1), 1)) +
+    xlab(xaxisdescription) +
     ylab(paste("Time",args[4])) +
     ggtitle(title) +
     theme(legend.position = "bottom")
   
   outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
 }
 
-# Generate Speedup and Efficiency plot
-if (!is.na(args[8]) && args[8]=='true') {
-  power <- as.numeric(args[2])
+###############################################################################
+# generate Speedup and Efficiency plot
+###############################################################################
+if (!is.na(args[10]) && args[10]=='true') {
+  magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
   
-  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$power)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
+  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
   # convert bspTaskNum col to numeric
   benchmarkTableAvgScenarioGroup$bspTaskNum <- as.numeric(benchmarkTableAvgScenarioGroup$bspTaskNum)
   # get magnitude of bspTaskNum=1
@@ -340,7 +417,7 @@ if (!is.na(args[8]) && args[8]=='true') {
      theme(legend.position = "none")
   outputfile <- paste(caliperJsonFile,"_speedup_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved Speedup GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  message <- paste("Info: Saved Speedup GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
   
   # Save efficiency plot 
@@ -353,7 +430,7 @@ if (!is.na(args[8]) && args[8]=='true') {
     theme(legend.position = "none")
   outputfile <- paste(caliperJsonFile,"_efficiency_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  message <- paste("Info: Saved Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
   
   # prepare data for plot speedup and efficiency together
@@ -370,7 +447,7 @@ if (!is.na(args[8]) && args[8]=='true') {
   
   # outputfile <- paste(caliperJsonFile,"_speedup_efficiency_geom_line.pdf", sep="")
   # ggsave(file=outputfile, scale=1.5)
-  # message <- paste("Info: Saved Speedup and Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",power,")\n",sep="")
+  # message <- paste("Info: Saved Speedup and Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   # cat(message)
 }
 
