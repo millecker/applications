@@ -37,7 +37,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class PiEstimatorHybridBenchmark extends Benchmark {
 
-  @Param({ "300000" })
+  @Param({ "500000" })
   private long n;
 
   // maximal 8 cpu tasks and 1 gpu task
