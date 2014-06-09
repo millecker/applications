@@ -3,6 +3,7 @@ library(rjson)
 library(reshape2)
 suppressPackageStartupMessages(library(sqldf))
 library(ggplot2)
+library(scales) # percentage for efficiency plot
 
 ###############################################################################
 # List append function
@@ -16,20 +17,27 @@ lappend <- function (lst, ...) {
 # check command line arguments
 ###############################################################################
 #./CaliperResults.R
-# arg1: <JsonInputFile> 
-# arg2: [<MagnitudeNormalizer=PowerOf10>] 
+# arg1: <JsonInputFile>
+# arg2: [<MagnitudeNormalizer=PowerOf10>]
 # arg3: [<XaxisDescription>]
-# arg4: [<YaxisDescription>] 
+# arg4: [<YaxisDescription>]
 # arg5: [<GenerateGeoLinePlot=true|false>]
-# arg6: [<GenerateGeoLinePlot_CPU_GPU=true|false> 
+# arg6: [<GenerateGeoLinePlot_CPU_GPU=true|false>
 # arg7:     <Variable=ParameterOnX>
 # arg8:     <VariableNormalizer=PowerOf10>
 # arg9:     [<OtherXaxisDescription>] ]
 # arg10: [<Speedup_EfficiencyPlot=true|false>]
+# arg11: [ticksIncrement]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
   stop("Argument CaliperResult JsonFile is missing! (~/.caliper/results)")
+}
+
+if (is.na(args[11])) {
+  ticksIncrement <- 2
+} else {
+  ticksIncrement <- as.numeric(args[11]);
 }
 
 ###############################################################################
@@ -280,8 +288,14 @@ if (!is.na(args[2])) {
 ###############################################################################
 # generate Bar chart of average data
 ###############################################################################
+
+# min and max for Y axis ticks
+minY <- 0 #round(min(benchmarkTableAvg$magnitude))
+maxY <- round(max(benchmarkTableAvg$magnitude)) + ticksIncrement
+
 ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
   geom_bar(stat="identity",color="black") +
+  scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
   xlab(xaxisDesc) +
   ylab(yaxisDesc) +
   ggtitle(title) +
@@ -296,10 +310,16 @@ cat(message)
 ###############################################################################
 # generate Geom Line plot of average data
 ###############################################################################
+
+# min and max for Y axis ticks
+minY <- round(min(benchmarkTableAvg$magnitude))
+maxY <- round(max(benchmarkTableAvg$magnitude)) + ticksIncrement
+
 if (!is.na(args[5]) && args[5]=='true') {
   ggplot(benchmarkTableAvg, aes(x=AllParameters,y=magnitude,color="red",group=unit)) + 
     geom_point(size=5) + 
     geom_line() +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
     xlab(xaxisDesc) +
     ylab(yaxisDesc) +
     ggtitle(title) +
@@ -317,8 +337,14 @@ if (!is.na(args[5]) && args[5]=='true') {
 ###############################################################################
 #benchmarkTable
 #str(benchmarkTable)
+
+# min and max for Y axis ticks
+minY <- round(min(benchmarkTable$weighted_magnitude))
+maxY <- round(max(benchmarkTable$weighted_magnitude)) + ticksIncrement
+
 ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scenario))) + 
   geom_boxplot(outlier.colour = "red", outlier.size = 5) +
+  scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
   xlab(xaxisDesc) +
   ylab(yaxisDesc) +
   ggtitle(title) +
@@ -361,9 +387,11 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
   # maxX <- max(benchmarkTableAvgScenarioGroup[,customVariable])
   # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
+  
+  # min and max for Y axis ticks
   minY <- round(min(benchmarkTableAvgScenarioGroup$magnitude))
   # cat(paste("Minimum of magnitude: ", minY, sep=""))
-  maxY <- round(max(benchmarkTableAvgScenarioGroup$magnitude))
+  maxY <- round(max(benchmarkTableAvgScenarioGroup$magnitude)) + ticksIncrement
   # cat(paste(" - Maximum of magnitude: ", maxY, "\n", sep=""))
   
   #benchmarkTableAvgScenarioGroup <- transform(benchmarkTableAvgScenarioGroup,customVariable = as.numeric(as.character(benchmarkTableAvgScenarioGroup$customVariable)))
@@ -374,7 +402,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     geom_point(size=5) + 
     geom_line() +
 #    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
-    scale_y_continuous(breaks = round(seq(minY, maxY, by = 1), 1)) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
     xlab(xaxisdescription) +
     ylab(paste("Time",args[4])) +
     ggtitle(title) +
@@ -407,14 +435,20 @@ if (!is.na(args[10]) && args[10]=='true') {
   # add group column
   benchmarkTableAvgScenarioGroup$type <- 1
   
+  # min and max for Y axis ticks
+  minY <- 1
+  maxY <- round(max(benchmarkTableAvgScenarioGroup$speedup)) + 1
+  
   # Save speedup plot 
   ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=speedup,colour=type,group=type)) + 
      geom_point(size=5) + 
      geom_line() +
+     scale_y_continuous(breaks = round(seq(minY, maxY, by = 0.5), 1)) +
      xlab(paste("bspTaskNum")) +
      ylab(paste("speedup")) +
      ggtitle(title) +
      theme(legend.position = "none")
+  
   outputfile <- paste(caliperJsonFile,"_speedup_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
   message <- paste("Info: Saved Speedup GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
@@ -424,10 +458,12 @@ if (!is.na(args[10]) && args[10]=='true') {
   ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=efficiency,colour=type,group=type)) + 
     geom_point(size=5) + 
     geom_line() +
+    scale_y_continuous(labels  = percent) +
     xlab(paste("bspTaskNum")) +
     ylab(paste("efficiency")) +
     ggtitle(title) +
     theme(legend.position = "none")
+  
   outputfile <- paste(caliperJsonFile,"_efficiency_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
   message <- paste("Info: Saved Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
