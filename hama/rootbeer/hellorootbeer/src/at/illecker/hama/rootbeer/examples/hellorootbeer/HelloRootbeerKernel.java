@@ -18,10 +18,12 @@ package at.illecker.hama.rootbeer.examples.hellorootbeer;
 
 import java.util.List;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class HelloRootbeerKernel implements Kernel {
 
@@ -50,22 +52,22 @@ public class HelloRootbeerKernel implements Kernel {
     }
 
     HelloRootbeerKernel kernel = new HelloRootbeerKernel(0);
-    Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(blockSize, gridSize, blockSize * gridSize);
 
     // Run GPU Kernels
+    Rootbeer rootbeer = new Rootbeer();
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(blockSize, gridSize, blockSize
+        * gridSize), context);
     watch.stop();
 
     System.out.println("HelloRootbeerKernel,GPUTime="
         + watch.elapsedTimeMillis() + "ms\n");
 
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       System.out.println("  StatsRow:\n");
-      System.out.println("    init time: " + row.getInitTime() + "\n");
       System.out.println("    serial time: " + row.getSerializationTime()
           + "\n");
       System.out.println("    exec time: " + row.getExecutionTime() + "\n");

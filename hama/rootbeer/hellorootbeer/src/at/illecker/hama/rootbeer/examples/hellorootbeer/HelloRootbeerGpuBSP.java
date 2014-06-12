@@ -41,11 +41,11 @@ import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
 import org.apache.hama.bsp.sync.SyncException;
-
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class HelloRootbeerGpuBSP extends
     BSP<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> {
@@ -83,10 +83,12 @@ public class HelloRootbeerGpuBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
+    // Run GPU Kernels
+    Rootbeer rootbeer = new Rootbeer();
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    Rootbeer rootbeer = new Rootbeer();
-    rootbeer.runAll(kernels);
+    rootbeer.run(kernels, context);
     watch.stop();
 
     // Write log to dfs
@@ -98,10 +100,9 @@ public class HelloRootbeerGpuBSP extends
     outStream.writeChars("KernelCount: " + m_kernelCount + "\n");
     outStream.writeChars("Iterations: " + m_iterations + "\n");
     outStream.writeChars("gpu time: " + watch.elapsedTimeMillis() + " ms\n");
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
-      outStream.writeChars("    init time: " + row.getInitTime() + "\n");
       outStream.writeChars("    serial time: " + row.getSerializationTime()
           + "\n");
       outStream.writeChars("    exec time: " + row.getExecutionTime() + "\n");
