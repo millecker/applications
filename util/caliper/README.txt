@@ -31,7 +31,7 @@
 # PiEstimatorBenchmark
 ./CaliperResults.R \
   results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.*.json \
-  9 "(n*1024*14)" "(sec)" false true n 3 "N (n*1024*1000)" false 2
+  9 "(n*1024*14)" "(sec)" false true n 3 "N (n*1024*14*1000)" false 2
 
 ###############################################################################
 # Hybrid Examples

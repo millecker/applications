@@ -436,6 +436,10 @@ if (!is.na(args[10]) && args[10]=='true') {
   benchmarkTableAvgScenarioGroup$type <- 1
   
   # min and max for Y axis ticks
+  minX <- 1
+  maxX <- max(benchmarkTableAvgScenarioGroup$scenario)
+  
+  # min and max for Y axis ticks
   minY <- 1
   maxY <- round(max(benchmarkTableAvgScenarioGroup$speedup)) + 1
   
@@ -443,6 +447,7 @@ if (!is.na(args[10]) && args[10]=='true') {
   ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=speedup,colour=type,group=type)) + 
      geom_point(size=5) + 
      geom_line() +
+     scale_x_continuous(breaks = round(seq(minX, maxX, by = 1), 1)) +
      scale_y_continuous(breaks = round(seq(minY, maxY, by = 0.5), 1)) +
      xlab(paste("bspTaskNum")) +
      ylab(paste("speedup")) +
@@ -458,6 +463,7 @@ if (!is.na(args[10]) && args[10]=='true') {
   ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=efficiency,colour=type,group=type)) + 
     geom_point(size=5) + 
     geom_line() +
+    scale_x_continuous(breaks = round(seq(minX, maxX, by = 1), 1)) +
     scale_y_continuous(labels  = percent) +
     xlab(paste("bspTaskNum")) +
     ylab(paste("efficiency")) +
