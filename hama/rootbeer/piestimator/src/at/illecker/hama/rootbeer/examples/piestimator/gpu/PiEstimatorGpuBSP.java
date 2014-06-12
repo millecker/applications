@@ -112,9 +112,9 @@ public class PiEstimatorGpuBSP extends
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_calculationsPerThread,
         System.currentTimeMillis());
-    Rootbeer rootbeer = new Rootbeer();
 
     // Run GPU Kernels
+    Rootbeer rootbeer = new Rootbeer();
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
