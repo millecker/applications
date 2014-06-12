@@ -18,7 +18,7 @@ ant run-kernel
 # java -jar PiEstimator-GPU.jar 100000 1024 14
 
 # Run Benchmark
-ant run-bench -DbenchTimeLimit='--time-limit 1200s' \
+ant run-bench -DbenchTimeLimit='--time-limit 2400s' \
   -DbenchInstrument='--instrument macro' \
   -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
   -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'
