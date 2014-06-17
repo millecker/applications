@@ -27,15 +27,15 @@ import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class HelloRootbeerKernel implements Kernel {
 
-  private long m_iterations;
-  public double result = 0;
+  private long m_iterations; // input
+  public double m_result = 0; // output
 
   public HelloRootbeerKernel(long iterations) {
-    m_iterations = iterations;
+    this.m_iterations = iterations;
   }
 
   public void gpuMethod() {
-    result = m_iterations;
+    m_result = m_iterations;
   }
 
   public static void main(String[] args) {

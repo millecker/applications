@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.Assert;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -34,9 +36,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSP;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.NullInputFormat;
 import org.apache.hama.bsp.TextOutputFormat;
@@ -59,7 +59,6 @@ public class HelloRootbeerGpuBSP extends
   private String m_masterTask;
   private int m_kernelCount;
   private long m_iterations;
-  private List<Kernel> kernels = new ArrayList<Kernel>();
 
   @Override
   public void setup(
@@ -73,15 +72,18 @@ public class HelloRootbeerGpuBSP extends
     // Choose one as a master
     this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
 
-    for (int i = 0; i < m_kernelCount; i++) {
-      kernels.add(new HelloRootbeerKernel(m_iterations));
-    }
   }
 
   @Override
   public void bsp(
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
+
+    // Generate GPU Kernels
+    List<Kernel> kernels = new ArrayList<Kernel>();
+    for (int i = 0; i < m_kernelCount; i++) {
+      kernels.add(new HelloRootbeerKernel(m_iterations));
+    }
 
     // Run GPU Kernels
     Rootbeer rootbeer = new Rootbeer();
@@ -99,7 +101,7 @@ public class HelloRootbeerGpuBSP extends
 
     outStream.writeChars("KernelCount: " + m_kernelCount + "\n");
     outStream.writeChars("Iterations: " + m_iterations + "\n");
-    outStream.writeChars("gpu time: " + watch.elapsedTimeMillis() + " ms\n");
+    outStream.writeChars("GPU time: " + watch.elapsedTimeMillis() + " ms\n");
     List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       outStream.writeChars("  StatsRow:\n");
@@ -115,8 +117,8 @@ public class HelloRootbeerGpuBSP extends
 
     // Send result to MasterTask
     for (int i = 0; i < m_kernelCount; i++) {
-      peer.send(m_masterTask,
-          new DoubleWritable(((HelloRootbeerKernel) kernels.get(i)).result));
+      HelloRootbeerKernel kernel = (HelloRootbeerKernel) kernels.get(i);
+      peer.send(m_masterTask, new DoubleWritable(kernel.m_result));
     }
     peer.sync();
   }
@@ -134,6 +136,9 @@ public class HelloRootbeerGpuBSP extends
       while ((received = peer.getCurrentMessage()) != null) {
         sum += received.get();
       }
+
+      double expectedResult = peer.getNumPeers() * m_kernelCount * m_iterations;
+      Assert.assertEquals(expectedResult, sum);
 
       peer.write(new Text("Result of "
           + (peer.getNumPeers() * m_kernelCount * m_iterations)
@@ -169,15 +174,13 @@ public class HelloRootbeerGpuBSP extends
     job.setJarByClass(HelloRootbeerGpuBSP.class);
 
     job.setInputFormat(NullInputFormat.class);
+
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(DoubleWritable.class);
     job.setOutputFormat(TextOutputFormat.class);
     FileOutputFormat.setOutputPath(job, TMP_OUTPUT);
 
     job.set("bsp.child.java.opts", "-Xmx4G");
-
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
 
     if (args.length > 0) {
       if (args.length == 3) {
@@ -192,7 +195,7 @@ public class HelloRootbeerGpuBSP extends
         return;
       }
     } else {
-      job.setNumBspTask(cluster.getMaxTasks());
+      job.setNumBspTask(1); // one GPU task only
       job.set("hellorootbeer.kernelCount", "" + HelloRootbeerGpuBSP.kernelCount);
       job.set("hellorootbeer.iterations", "" + HelloRootbeerGpuBSP.iterations);
     }
