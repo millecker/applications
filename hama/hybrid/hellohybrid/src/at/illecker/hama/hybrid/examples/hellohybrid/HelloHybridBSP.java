@@ -335,6 +335,7 @@ public class HelloHybridBSP
       // BSPJobClient jobClient = new BSPJobClient(conf);
       // ClusterStatus cluster = jobClient.getClusterStatus(true);
       // job.setNumBspTask(cluster.getMaxTasks());
+
       conf.setInt("bsp.peers.num", 2); // 1 CPU and 1 GPU
     }
     // Enable one GPU task
@@ -360,8 +361,11 @@ public class HelloHybridBSP
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
 
+      // Print input files
       // printOutput(job, CONF_INPUT_DIR);
       // printOutput(job, example);
+
+      // Print output
       printOutput(job, FileOutputFormat.getOutputPath(job));
     }
   }

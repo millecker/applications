@@ -72,13 +72,6 @@ public class SummationBSP extends
   }
 
   @Override
-  public void setupGpu(
-      BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
-      throws IOException, SyncException, InterruptedException {
-    setup(peer);
-  }
-
-  @Override
   public void bsp(BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
@@ -122,6 +115,13 @@ public class SummationBSP extends
       peer.write(new Text("Sum"), new DoubleWritable(sum));
     }
     outStream.close();
+  }
+
+  @Override
+  public void setupGpu(
+      BSPPeer<Text, Text, Text, DoubleWritable, DoubleWritable> peer)
+      throws IOException, SyncException, InterruptedException {
+    setup(peer);
   }
 
   @Override
@@ -204,27 +204,34 @@ public class SummationBSP extends
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  static BigDecimal writeSummationInputFile(FileSystem fs, Path dir)
-      throws IOException {
-    DataOutputStream out = fs.create(new Path(dir, "part0"));
+  static BigDecimal writeSummationInputFile(FileSystem fs, Path dir,
+      int fileCount) throws IOException {
+
+    BigDecimal sum = new BigDecimal(0);
     Random rand = new Random();
     double rangeMin = 0;
     double rangeMax = 100;
-    BigDecimal sum = new BigDecimal(0);
-    // loop between 50 and 149 times
-    for (int i = 0; i < rand.nextInt(100) + 50; i++) {
-      // generate key value pair inputs
-      double randomValue = rangeMin + (rangeMax - rangeMin) * rand.nextDouble();
-      String truncatedValue = new BigDecimal(randomValue).setScale(
-          DOUBLE_PRECISION, BigDecimal.ROUND_DOWN).toString();
 
-      String line = "key" + (i + 1) + "\t" + truncatedValue + "\n";
-      out.writeBytes(line);
+    for (int i = 0; i < fileCount; i++) {
+      DataOutputStream out = fs.create(new Path(dir, "part" + i));
 
-      sum = sum.add(new BigDecimal(truncatedValue));
-      LOG.info("input[" + i + "]: '" + line + "' sum: " + sum.toString());
+      // loop between 50 and 149 times
+      for (int j = 0; j < rand.nextInt(100) + 50; j++) {
+        // generate key value pair inputs
+        double randomValue = rangeMin + (rangeMax - rangeMin)
+            * rand.nextDouble();
+
+        String truncatedValue = new BigDecimal(randomValue).setScale(
+            DOUBLE_PRECISION, BigDecimal.ROUND_DOWN).toString();
+
+        String line = "key" + (j + 1) + "\t" + truncatedValue + "\n";
+        out.writeBytes(line);
+
+        sum = sum.add(new BigDecimal(truncatedValue));
+        LOG.debug("input[" + j + "]: '" + line + "' sum: " + sum.toString());
+      }
+      out.close();
     }
-    out.close();
     return sum;
   }
 
@@ -263,11 +270,6 @@ public class SummationBSP extends
       IOException, ClassNotFoundException {
 
     HamaConfiguration conf = new HamaConfiguration();
-    FileSystem fs = FileSystem.get(conf);
-
-    // Generate Summation input
-    BigDecimal sum = writeSummationInputFile(fs, CONF_INPUT_DIR);
-
     BSPJob job = getSummationJob(conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
     if (args.length > 0) {
@@ -283,6 +285,11 @@ public class SummationBSP extends
       job.setNumBspTask(2); // 1 CPU and 1 GPU
     }
     job.setNumBspGpuTask(1);
+
+    // Generate Summation input
+    FileSystem fs = FileSystem.get(conf);
+    BigDecimal sum = writeSummationInputFile(fs, CONF_INPUT_DIR,
+        job.getNumBspTask());
 
     LOG.info("NumBspTask: " + job.getNumBspTask());
     LOG.info("NumBspGpuTask: " + job.getNumBspGpuTask());

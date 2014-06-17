@@ -14,6 +14,7 @@ ant jar-gpu
 ant run-gpu
 
 # Build and run GPU Kernel
+# for compilation purpose only
 ant run-kernel
 
 ###############################################################################
