@@ -36,6 +36,7 @@ public class KMeansHybridBenchmark extends Benchmark {
 
   @Param({ "10", "20", "40", "60", "80", "100" })
   // @Param({ "120", "140", "160", "180", "200", "220" })
+  // @Param({ "240", "260", "280", "300", "320", "340", "360", "380" })
   private int k;
 
   @Param
