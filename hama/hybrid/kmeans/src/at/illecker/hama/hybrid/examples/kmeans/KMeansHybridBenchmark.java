@@ -34,7 +34,8 @@ public class KMeansHybridBenchmark extends Benchmark {
   // @Param({ "1000000" })
   private long n = 1000000;
 
-  @Param({ "10", "30", "50", "70", "90", "110" })
+  @Param({ "10", "20", "40", "60", "80", "100" })
+  // @Param({ "120", "140", "160", "180", "200", "220" })
   private int k;
 
   @Param
@@ -43,6 +44,10 @@ public class KMeansHybridBenchmark extends Benchmark {
   public enum CalcType {
     CPU, GPU
   };
+
+  // maximal 8 cpu tasks and 1 gpu task
+  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+  private int bspTaskNum = 8;
 
   private int vectorDimension = 3;
   private int maxIteration = 10;
@@ -118,16 +123,38 @@ public class KMeansHybridBenchmark extends Benchmark {
     m_conf.set(KMeansHybridBSP.CONF_CENTER_IN_PATH, centerIn.toString());
     m_conf.set(KMeansHybridBSP.CONF_CENTER_OUT_PATH, centerOut.toString());
 
-    KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
-        CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
+    // TODO CPU vs GPU benchmark
+    int numGpuBspTask = 0;
+    if (type == CalcType.GPU) {
+      bspTaskNum = 1;
+      numGpuBspTask = 1;
+    }
 
+    // TODO CPU + GPU Hybrid benchmark
+    // if (bspTaskNum == 9) {
+    // numGpuBspTask = 1;
+    // } else {
+    // numGpuBspTask = 0;
+    // }
+
+    // Set CPU tasks
+    m_conf.setInt("bsp.peers.num", bspTaskNum);
+    // Set GPU tasks
+    m_conf.setInt("bsp.peers.gpu.num", numGpuBspTask);
+
+    KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
+        CONF_INPUT_DIR, centerIn, bspTaskNum, n, k, vectorDimension, null);
+
+    System.out.println("CalcType: " + type);
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
     System.out.println("n: " + n + " k: " + k);
+    System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
+    System.out.println("NumGpuBspTask: "
+        + m_conf.getInt("bsp.peers.gpu.num", 0));
   }
 
   @Override
   protected void tearDown() throws Exception {
-
     verify();
 
     FileSystem fs = FileSystem.get(m_conf);
@@ -144,48 +171,19 @@ public class KMeansHybridBenchmark extends Benchmark {
   }
 
   public void doBenchmark() {
-    switch (type) {
-      case CPU:
-        try {
-          ToolRunner.run(new KMeans(false), null);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        break;
-      case GPU:
-        try {
-          ToolRunner.run(new KMeans(true), null);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        break;
-      default:
-        break;
+    try {
+      ToolRunner.run(new KMeans(), null);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
   private class KMeans extends Configured implements Tool {
-    private boolean useGPU;
-
-    public KMeans(boolean useGPU) {
-      this.useGPU = useGPU;
+    public KMeans() {
     }
 
     @Override
     public int run(String[] arg0) throws Exception {
-
-      if (useGPU) {
-        // Set CPU tasks
-        m_conf.setInt("bsp.peers.num", 1);
-        // Set GPU tasks
-        m_conf.setInt("bsp.peers.gpu.num", 1);
-      } else {
-        // Set CPU tasks
-        m_conf.setInt("bsp.peers.num", 1);
-        // Set GPU tasks
-        m_conf.setInt("bsp.peers.gpu.num", 0);
-      }
-
       BSPJob job = KMeansHybridBSP.createKMeansHybridBSPConf(m_conf,
           CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
@@ -202,5 +200,4 @@ public class KMeansHybridBenchmark extends Benchmark {
   public static void main(String[] args) {
     CaliperMain.main(KMeansHybridBenchmark.class, args);
   }
-
 }

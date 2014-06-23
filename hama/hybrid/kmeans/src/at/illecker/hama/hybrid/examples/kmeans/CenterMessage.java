@@ -81,10 +81,6 @@ public final class CenterMessage implements Writable {
     return incrementCounter;
   }
 
-  public final int getTag() {
-    return centerIndex;
-  }
-
   public final DoubleVector getData() {
     return newCenter;
   }

@@ -707,11 +707,11 @@ public class KMeansHybridBSP
     // prepare Input
     if (useTestExampleInput) {
       // prepareTestInput(conf, fs, input, centerIn);
-      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
-          + numGpuBspTask, n, k, vectorDimension, null);
+      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask, n, k,
+          vectorDimension, null);
     } else {
-      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask
-          + numGpuBspTask, n, k, vectorDimension, new Random(3337L));
+      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask, n, k,
+          vectorDimension, new Random(3337L));
     }
 
     BSPJob job = createKMeansHybridBSPConf(conf, CONF_INPUT_DIR,
