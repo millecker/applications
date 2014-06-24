@@ -4,23 +4,19 @@
 
 nvcc generated.cu --ptxas-options=-v -arch sm_35
 
-ptxas info    : 331 bytes gmem
+ptxas info    : 312 bytes gmem
 ptxas info    : Compiling entry function '_Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei' for 'sm_35'
 ptxas info    : Function properties for _Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei
-    16 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
-ptxas info    : Used 158 registers, 16384 bytes smem, 404 bytes cmem[0], 160 bytes cmem[2]
-ptxas info    : Function properties for _Z70at_illecker_hama_hybrid_examples_kmeans_KMeansHybridKernel_gpuMethod0_iPi
     552 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 143 registers, 16384 bytes smem, 404 bytes cmem[0], 160 bytes cmem[2]
 
 nvcc generated.cu --ptxas-options=-v -arch sm_35 --maxrregcount=56
 
-ptxas info    : 331 bytes gmem
+ptxas info    : 312 bytes gmem
 ptxas info    : Compiling entry function '_Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei' for 'sm_35'
 ptxas info    : Function properties for _Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei
-    32 bytes stack frame, 16 bytes spill stores, 24 bytes spill loads
+    728 bytes stack frame, 400 bytes spill stores, 292 bytes spill loads
 ptxas info    : Used 56 registers, 16384 bytes smem, 404 bytes cmem[0], 160 bytes cmem[2]
-ptxas info    : Function properties for _Z70at_illecker_hama_hybrid_examples_kmeans_KMeansHybridKernel_gpuMethod0_iPi
-    744 bytes stack frame, 496 bytes spill stores, 328 bytes spill loads
 
 
 ###############################################################################

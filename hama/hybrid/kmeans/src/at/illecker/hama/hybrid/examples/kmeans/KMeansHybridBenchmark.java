@@ -31,13 +31,13 @@ import com.google.caliper.runner.CaliperMain;
 
 public class KMeansHybridBenchmark extends Benchmark {
 
-  // @Param({ "1000000" })
-  private long n = 1000000;
+  // @Param({ "250000", "500000", "750000", "1000000", "1250000", "1500000",
+  // "1750000", "2000000" })
+  private long n = 2000000;
 
-  @Param({ "10", "20", "40", "60", "80", "100" })
-  // @Param({ "120", "140", "160", "180", "200", "220" })
-  // @Param({ "240", "260", "280", "300", "320", "340", "360", "380" })
-  private int k;
+  @Param({ "50", "100", "150", "200", "250", "300" })
+  // @Param({ "350", "400", "450", "500" })
+  private int k; // = 500;
 
   @Param
   CalcType type;
@@ -48,8 +48,8 @@ public class KMeansHybridBenchmark extends Benchmark {
 
   // maximal 8 cpu tasks and 1 gpu task
   // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-  private int bspTaskNum = 8;
-
+  private int bspTaskNum = 2;
+  // 2 threads only, because more threads would consume more than 16G RAM
   private int vectorDimension = 3;
   private int maxIteration = 10;
 
@@ -148,7 +148,8 @@ public class KMeansHybridBenchmark extends Benchmark {
 
     System.out.println("CalcType: " + type);
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
-    System.out.println("n: " + n + " k: " + k);
+    System.out.println("n: " + n + " k: " + k + " vectorDimension: "
+        + vectorDimension);
     System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
     System.out.println("NumGpuBspTask: "
         + m_conf.getInt("bsp.peers.gpu.num", 0));
