@@ -35,8 +35,7 @@ public class KMeansHybridBenchmark extends Benchmark {
   // "1750000", "2000000" })
   private long n = 2000000;
 
-  @Param({ "50", "100", "150", "200", "250", "300" })
-  // @Param({ "350", "400", "450", "500" })
+  @Param({ "50", "100", "150", "200", "250", "300", "350", "400", "450", "500" })
   private int k; // = 500;
 
   @Param
