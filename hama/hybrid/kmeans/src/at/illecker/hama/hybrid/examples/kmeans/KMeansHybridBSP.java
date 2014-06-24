@@ -605,7 +605,7 @@ public class KMeansHybridBSP
 
     job.setMessageClass(CenterMessage.class);
 
-    job.set("bsp.child.java.opts", "-Xmx4G");
+    job.set("bsp.child.java.opts", "-Xmx16G");
 
     return job;
   }

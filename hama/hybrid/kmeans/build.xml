@@ -1,8 +1,8 @@
 <project>
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<property name="rootbeer.args" value="-64bit -noexceptions -maxrregcount 64" />
-	<!-- -shared-mem-size 8204 -->
+	<property name="rootbeer.args" value="-64bit -noexceptions -computecapability sm_35 -maxrregcount 56 -shared-mem-size 16360" />
+	<!-- Rootbeer uses 24 bytes shared memory -->
 	<property name="output.file" value="KMeans" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />
