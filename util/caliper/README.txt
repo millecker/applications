@@ -45,6 +45,6 @@
 # KMeansHybridBenchmark
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
-  9 "(n=1000000)" "(sec)" false true k 0 "k" false 2
+  9 "(n=2000000)" "(sec)" false true k 0 "k" false 5
 
 ###############################################################################
