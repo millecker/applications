@@ -420,7 +420,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
 if (!is.na(args[10]) && args[10]=='true') {
   magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
   
-  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,n,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
+  benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
   # convert bspTaskNum col to numeric
   benchmarkTableAvgScenarioGroup$bspTaskNum <- as.numeric(benchmarkTableAvgScenarioGroup$bspTaskNum)
   # get magnitude of bspTaskNum=1
