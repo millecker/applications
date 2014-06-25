@@ -195,8 +195,11 @@ public class PiEstimatorHybridBSP extends
 
     // Get GPU results
     long totalHits = 0;
-    List<Result> resultList = kernel.resultList.getList();
+    Result[] resultList = kernel.resultList.getList();
     for (Result result : resultList) {
+      if (result == null) { // break at end of list
+        break;
+      }
       totalHits += result.hits;
     }
 
@@ -225,7 +228,6 @@ public class PiEstimatorHybridBSP extends
       outStream.writeChars("totalHits: " + totalHits + "\n");
       outStream.writeChars("calculationsPerThread: " + m_calculationsPerThread
           + "\n");
-      outStream.writeChars("results: " + resultList.size() + "\n");
       outStream.writeChars("calculationsTotalOnGPU: " + m_calculationsPerThread
           * m_blockSize * m_gridSize + "\n");
       outStream.close();

@@ -28,9 +28,9 @@ import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorKernel implements Kernel {
 
-  private long iterations;
-  private long seed;
-  public ResultList resultList;
+  private long iterations; // input
+  private long seed; // input
+  public ResultList resultList; // output
 
   public PiEstimatorKernel(long iterations, long seed) {
     this.iterations = iterations;
@@ -80,6 +80,8 @@ public class PiEstimatorKernel implements Kernel {
       result.hits = RootbeerGpu.getSharedLong(thread_idxx * 8);
       resultList.add(result);
     }
+
+    RootbeerGpu.syncblocks(1);
   }
 
   private int divup(int x, int y) {
@@ -153,9 +155,14 @@ public class PiEstimatorKernel implements Kernel {
 
     // Get GPU results
     long totalHits = 0;
-    List<Result> resultList = kernel.resultList.getList();
+    long resultCounter = 0;
+    Result[] resultList = kernel.resultList.getList();
     for (Result result : resultList) {
+      if (result == null) { // break at end of list
+        break;
+      }
       totalHits += result.hits;
+      resultCounter++;
     }
 
     double result = 4.0 * totalHits
@@ -164,7 +171,7 @@ public class PiEstimatorKernel implements Kernel {
     System.out.println("Pi: " + result);
     System.out.println("totalHits: " + totalHits);
     System.out.println("calculationsPerThread: " + calculationsPerThread);
-    System.out.println("results: " + resultList.size());
+    System.out.println("results: " + resultCounter);
     System.out.println("calculationsTotal: " + calculationsPerThread
         * blockSize * gridSize);
   }
