@@ -31,24 +31,30 @@ import com.google.caliper.runner.CaliperMain;
 
 public class KMeansHybridBenchmark extends Benchmark {
 
+  // Plot 1
   // @Param({ "250000", "500000", "750000", "1000000", "1250000", "1500000",
   // "1750000", "2000000" })
-  private long n = 2000000;
+  // private long n = 2000000;
 
-  @Param({ "50", "100", "150", "200", "250", "300", "350", "400", "450", "500" })
-  private int k; // = 500;
+  // Plot 2
+  // @Param({ "50", "100", "150", "200", "250", "300", "350", "400", "450",
+  // "500" })
+  private int k = 500;
 
-  @Param
-  CalcType type;
+  // @Param
+  // CalcType type;
 
   public enum CalcType {
     CPU, GPU
   };
 
+  // Plot 3
   // maximal 8 cpu tasks and 1 gpu task
-  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-  private int bspTaskNum = 2;
+  @Param({ "1", "2", "3", "4", "5" })
+  private int bspTaskNum; // = 2;
   // 2 threads only, because more threads would consume more than 16G RAM
+  private long n = 1000000;
+
   private int vectorDimension = 3;
   private int maxIteration = 10;
 
@@ -123,19 +129,21 @@ public class KMeansHybridBenchmark extends Benchmark {
     m_conf.set(KMeansHybridBSP.CONF_CENTER_IN_PATH, centerIn.toString());
     m_conf.set(KMeansHybridBSP.CONF_CENTER_OUT_PATH, centerOut.toString());
 
-    // TODO CPU vs GPU benchmark
+    // CPU vs GPU benchmark
+    // Plot 1 and 2
     int numGpuBspTask = 0;
-    if (type == CalcType.GPU) {
-      bspTaskNum = 1;
-      numGpuBspTask = 1;
-    }
-
-    // TODO CPU + GPU Hybrid benchmark
-    // if (bspTaskNum == 9) {
+    // if (type == CalcType.GPU) {
+    // bspTaskNum = 1;
     // numGpuBspTask = 1;
-    // } else {
-    // numGpuBspTask = 0;
     // }
+
+    // CPU + GPU Hybrid benchmark
+    // Plot 3
+    if (bspTaskNum == 5) {
+      numGpuBspTask = 1;
+    } else {
+      numGpuBspTask = 0;
+    }
 
     // Set CPU tasks
     m_conf.setInt("bsp.peers.num", bspTaskNum);
@@ -145,7 +153,7 @@ public class KMeansHybridBenchmark extends Benchmark {
     KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
         CONF_INPUT_DIR, centerIn, bspTaskNum, n, k, vectorDimension, null);
 
-    System.out.println("CalcType: " + type);
+    // System.out.println("CalcType: " + type);
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
     System.out.println("n: " + n + " k: " + k + " vectorDimension: "
         + vectorDimension);
