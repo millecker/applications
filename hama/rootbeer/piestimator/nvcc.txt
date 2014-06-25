@@ -1,0 +1,21 @@
+###############################################################################
+##### PiEstimator Rootbeer CUDA Code Analysis                             #####
+###############################################################################
+
+nvcc generated.cu --ptxas-options=-v -arch sm_35
+
+ptxas info    : 150 bytes gmem
+ptxas info    : Compiling entry function '_Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei' for 'sm_35'
+ptxas info    : Function properties for _Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei
+    8 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 42 registers, 8228 bytes smem, 404 bytes cmem[0], 36 bytes cmem[2]
+
+nvcc generated.cu --ptxas-options=-v -arch sm_35 --maxrregcount=32
+
+ptxas info    : 150 bytes gmem
+ptxas info    : Compiling entry function '_Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei' for 'sm_35'
+ptxas info    : Function properties for _Z5entryPcS_PiPxS1_S0_S0_S0_S0_P19HostDeviceInterfacei
+    24 bytes stack frame, 28 bytes spill stores, 40 bytes spill loads
+ptxas info    : Used 31 registers, 8228 bytes smem, 404 bytes cmem[0], 44 bytes cmem[2]
+
+###############################################################################

@@ -16,9 +16,6 @@
  */
 package at.illecker.hama.rootbeer.examples.piestimator.gpu;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ResultList {
 
   private Result[] data;
@@ -43,11 +40,7 @@ public class ResultList {
     }
   }
 
-  public List<Result> getList() {
-    List<Result> ret = new ArrayList<Result>();
-    for (int i = 0; i < size; ++i) {
-      ret.add(data[i]);
-    }
-    return ret;
+  public Result[] getList() {
+    return data;
   }
 }
