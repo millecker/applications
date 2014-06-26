@@ -1,10 +1,10 @@
 [
   {
-    "id": "f55a6347-a53d-4141-afcf-d2aeb21c2b32",
+    "id": "c40d496b-32a7-41ba-bccf-f5204f4b70ff",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -25,7 +25,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -725,7 +725,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.0471031146E10,
+          "magnitude": 1.6374447718E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -733,7 +733,7 @@
       },
       {
         "value": {
-          "magnitude": 2.1305234848E10,
+          "magnitude": 1.8855957613E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -741,7 +741,7 @@
       },
       {
         "value": {
-          "magnitude": 2.8382271406E10,
+          "magnitude": 2.0614853087E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -749,7 +749,7 @@
       },
       {
         "value": {
-          "magnitude": 2.4499922507E10,
+          "magnitude": 1.4132087784E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -757,7 +757,7 @@
       },
       {
         "value": {
-          "magnitude": 2.0111813534E10,
+          "magnitude": 2.0278491044E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -766,11 +766,11 @@
     ]
   },
   {
-    "id": "36685d9c-2be5-4be9-b935-8214dd3f6ffb",
+    "id": "af3dd3f0-1231-4884-9474-29da8fac6835",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -791,7 +791,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -1491,7 +1491,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 6.350037434E9,
+          "magnitude": 5.840332782E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -1499,7 +1499,7 @@
       },
       {
         "value": {
-          "magnitude": 5.876883508E9,
+          "magnitude": 3.833074993E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -1507,7 +1507,7 @@
       },
       {
         "value": {
-          "magnitude": 6.379832345E9,
+          "magnitude": 6.424106086E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -1515,7 +1515,15 @@
       },
       {
         "value": {
-          "magnitude": 6.002262711E9,
+          "magnitude": 5.89114801E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 5.876512586E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -1524,11 +1532,11 @@
     ]
   },
   {
-    "id": "aeb1910d-47ae-4a0c-9aee-bef3c86cfc7d",
+    "id": "472412b3-5163-49d5-bee1-af47ae4ebb96",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -1549,7 +1557,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -2249,7 +2257,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.4214008285E10,
+          "magnitude": 1.8135696001E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -2257,7 +2265,7 @@
       },
       {
         "value": {
-          "magnitude": 2.4890195734E10,
+          "magnitude": 1.8555525067E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -2265,7 +2273,7 @@
       },
       {
         "value": {
-          "magnitude": 2.2135028181E10,
+          "magnitude": 1.9165851724E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -2273,7 +2281,15 @@
       },
       {
         "value": {
-          "magnitude": 2.418264085E10,
+          "magnitude": 2.4192581563E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 1.7851838154E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -2282,11 +2298,11 @@
     ]
   },
   {
-    "id": "18768b44-3590-4c36-a7a1-f7b942021f53",
+    "id": "e014ee52-4b05-4918-a28e-483ddd9e29ad",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -2307,7 +2323,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -3007,7 +3023,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 5.867717497E9,
+          "magnitude": 6.352366981E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3015,7 +3031,7 @@
       },
       {
         "value": {
-          "magnitude": 7.983345565E9,
+          "magnitude": 5.92509173E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3023,7 +3039,7 @@
       },
       {
         "value": {
-          "magnitude": 4.344516234E9,
+          "magnitude": 5.859854482E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3031,7 +3047,7 @@
       },
       {
         "value": {
-          "magnitude": 5.89491087E9,
+          "magnitude": 3.883385345E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3039,7 +3055,7 @@
       },
       {
         "value": {
-          "magnitude": 5.840070562E9,
+          "magnitude": 6.366946946E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3048,11 +3064,11 @@
     ]
   },
   {
-    "id": "f5ebd085-d196-4287-9794-be481afaef4e",
+    "id": "87a80376-7602-4f5a-8189-ec465e8465f7",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -3073,7 +3089,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -3773,7 +3789,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.987796998E10,
+          "magnitude": 2.0129512303E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3781,7 +3797,7 @@
       },
       {
         "value": {
-          "magnitude": 2.4261947881E10,
+          "magnitude": 2.0925993885E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3789,7 +3805,7 @@
       },
       {
         "value": {
-          "magnitude": 2.9416060983E10,
+          "magnitude": 2.2480471647E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3797,7 +3813,15 @@
       },
       {
         "value": {
-          "magnitude": 2.4784547266E10,
+          "magnitude": 2.3899347198E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 2.0601689526E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -3806,11 +3830,11 @@
     ]
   },
   {
-    "id": "b77f008c-675f-4c81-9208-0093e24158bb",
+    "id": "329896c8-8390-4be9-8132-22bb89698493",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -3831,7 +3855,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -4531,7 +4555,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 5.890848309E9,
+          "magnitude": 5.989493592E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -4539,7 +4563,7 @@
       },
       {
         "value": {
-          "magnitude": 5.923833698E9,
+          "magnitude": 5.843785177E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -4547,7 +4571,7 @@
       },
       {
         "value": {
-          "magnitude": 6.356918188E9,
+          "magnitude": 5.921674075E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -4555,15 +4579,7 @@
       },
       {
         "value": {
-          "magnitude": 5.913870415E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 5.833711588E9,
+          "magnitude": 6.152578699E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -4572,11 +4588,11 @@
     ]
   },
   {
-    "id": "c435e380-7242-4688-94d4-fc98039eb29e",
+    "id": "d510f3a5-4e40-4d97-adbd-62f067917fc2",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -4597,7 +4613,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -5297,7 +5313,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.1129025835E10,
+          "magnitude": 2.4710516556E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -5305,7 +5321,7 @@
       },
       {
         "value": {
-          "magnitude": 3.4742057881E10,
+          "magnitude": 2.4292666421E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -5313,7 +5329,7 @@
       },
       {
         "value": {
-          "magnitude": 2.7203924178E10,
+          "magnitude": 1.998245385E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -5321,15 +5337,7 @@
       },
       {
         "value": {
-          "magnitude": 2.0121272595E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 2.6335723785E10,
+          "magnitude": 2.4411961789E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -5338,11 +5346,11 @@
     ]
   },
   {
-    "id": "7b74470a-17b4-459f-8509-55741a234ad4",
+    "id": "a33abf72-010b-4536-a6db-ae59c446aceb",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -5363,7 +5371,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -6063,7 +6071,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.715668905E9,
+          "magnitude": 5.885566209E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6071,7 +6079,7 @@
       },
       {
         "value": {
-          "magnitude": 6.350491865E9,
+          "magnitude": 5.879903061E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6079,7 +6087,7 @@
       },
       {
         "value": {
-          "magnitude": 5.853589668E9,
+          "magnitude": 6.325409488E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6087,7 +6095,7 @@
       },
       {
         "value": {
-          "magnitude": 5.916839185E9,
+          "magnitude": 5.706487386E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6095,7 +6103,7 @@
       },
       {
         "value": {
-          "magnitude": 6.331566675E9,
+          "magnitude": 5.973853568E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6104,11 +6112,11 @@
     ]
   },
   {
-    "id": "45d14f10-5b3b-4758-80e0-3af39a97b8ff",
+    "id": "1979279a-3fed-4577-8d7b-9ca4123befa0",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -6129,7 +6137,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -6829,7 +6837,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.2535895647E10,
+          "magnitude": 2.0936553683E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6837,7 +6845,7 @@
       },
       {
         "value": {
-          "magnitude": 2.9650822777E10,
+          "magnitude": 2.2599903671E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6845,7 +6853,7 @@
       },
       {
         "value": {
-          "magnitude": 2.2025794126E10,
+          "magnitude": 2.6360642581E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6853,15 +6861,7 @@
       },
       {
         "value": {
-          "magnitude": 2.6689536458E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 3.2539997881E10,
+          "magnitude": 2.6022395354E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -6870,11 +6870,11 @@
     ]
   },
   {
-    "id": "a63df1c4-a824-4065-9f36-fa5b8c5b73e8",
+    "id": "826faeec-a715-4bbb-bb66-eef097767bfa",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -6895,7 +6895,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -7595,7 +7595,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.909025331E9,
+          "magnitude": 5.83996118E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -7603,7 +7603,7 @@
       },
       {
         "value": {
-          "magnitude": 5.875532477E9,
+          "magnitude": 5.948840121E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -7611,7 +7611,7 @@
       },
       {
         "value": {
-          "magnitude": 6.34601287E9,
+          "magnitude": 6.383093729E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -7619,7 +7619,7 @@
       },
       {
         "value": {
-          "magnitude": 5.936730638E9,
+          "magnitude": 5.916174661E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -7627,7 +7627,7 @@
       },
       {
         "value": {
-          "magnitude": 5.860829378E9,
+          "magnitude": 5.810973101E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -7636,11 +7636,11 @@
     ]
   },
   {
-    "id": "169ca698-ddda-4836-9490-d0381898de8a",
+    "id": "d5652630-9ef3-47a8-bf48-d9c636c53316",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -7661,7 +7661,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -8361,7 +8361,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.2316557614E10,
+          "magnitude": 2.3229236465E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -8369,7 +8369,7 @@
       },
       {
         "value": {
-          "magnitude": 3.2171601038E10,
+          "magnitude": 2.8179742069E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -8377,7 +8377,7 @@
       },
       {
         "value": {
-          "magnitude": 3.0660835635E10,
+          "magnitude": 2.4028233842E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -8385,15 +8385,7 @@
       },
       {
         "value": {
-          "magnitude": 2.2017413235E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 2.9637195917E10,
+          "magnitude": 2.6006794731E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -8402,11 +8394,11 @@
     ]
   },
   {
-    "id": "f29c66b7-82a1-44e6-a87c-0342ec58cabc",
+    "id": "ac52e19c-a427-47b8-a4a3-a4f993c15aa2",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -8427,7 +8419,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -9127,7 +9119,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.881289908E9,
+          "magnitude": 5.843456884E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9135,7 +9127,7 @@
       },
       {
         "value": {
-          "magnitude": 5.969685283E9,
+          "magnitude": 5.96478514E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9143,7 +9135,23 @@
       },
       {
         "value": {
-          "magnitude": 7.901345349E9,
+          "magnitude": 5.986496337E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 5.944582404E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 5.992713268E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9152,11 +9160,11 @@
     ]
   },
   {
-    "id": "5f550963-3592-421f-831d-4e7b99d5f46e",
+    "id": "90517ba7-7491-44ed-bd1b-1b9c8a8d1a35",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -9177,7 +9185,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -9877,7 +9885,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.2213259372E10,
+          "magnitude": 2.4247567944E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9885,7 +9893,7 @@
       },
       {
         "value": {
-          "magnitude": 3.554983141E10,
+          "magnitude": 3.0441273123E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9893,7 +9901,7 @@
       },
       {
         "value": {
-          "magnitude": 2.6299247734E10,
+          "magnitude": 2.4100117759E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9901,7 +9909,7 @@
       },
       {
         "value": {
-          "magnitude": 2.2070621819E10,
+          "magnitude": 2.6926281215E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9909,7 +9917,7 @@
       },
       {
         "value": {
-          "magnitude": 3.0934651464E10,
+          "magnitude": 2.7093858004E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -9918,11 +9926,11 @@
     ]
   },
   {
-    "id": "69dda860-3777-4928-a71c-e42beb5aca10",
+    "id": "223707a4-a356-4b99-8676-b4885344cb9a",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -9943,7 +9951,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -10643,7 +10651,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 8.019647717E9,
+          "magnitude": 5.863149638E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -10651,7 +10659,31 @@
       },
       {
         "value": {
-          "magnitude": 6.375071588E9,
+          "magnitude": 7.95915839E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 8.323652943E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 7.933686737E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 7.810378729E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -10660,11 +10692,11 @@
     ]
   },
   {
-    "id": "b11ba445-b05e-4f36-bf88-3d729f24e9ad",
+    "id": "afba7468-86e5-4f52-a309-df5a7074b48b",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -10685,7 +10717,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -11385,7 +11417,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.6503273565E10,
+          "magnitude": 2.6199277338E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -11393,7 +11425,7 @@
       },
       {
         "value": {
-          "magnitude": 2.6484895874E10,
+          "magnitude": 2.8817411797E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -11401,7 +11433,23 @@
       },
       {
         "value": {
-          "magnitude": 2.9970467956E10,
+          "magnitude": 2.9005380515E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 2.3744167356E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 2.8263245921E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -11410,11 +11458,11 @@
     ]
   },
   {
-    "id": "423495e0-3032-46e1-8eac-77c4aada277d",
+    "id": "0bfcc30c-421c-4ba6-a924-484b29388a03",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -11435,7 +11483,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -12135,7 +12183,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.832839208E9,
+          "magnitude": 7.845205253E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12143,7 +12191,7 @@
       },
       {
         "value": {
-          "magnitude": 7.89592478E9,
+          "magnitude": 8.026223584E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12151,7 +12199,7 @@
       },
       {
         "value": {
-          "magnitude": 7.871470265E9,
+          "magnitude": 7.908221461E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12159,15 +12207,7 @@
       },
       {
         "value": {
-          "magnitude": 8.386303608E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 7.858237884E9,
+          "magnitude": 7.858826002E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12176,11 +12216,11 @@
     ]
   },
   {
-    "id": "c5c8b37b-0751-44f3-a77f-22300d0f9272",
+    "id": "39096fa3-4499-46b8-a39d-1cae9ab19d9f",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -12201,7 +12241,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -12901,7 +12941,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 2.6918760527E10,
+          "magnitude": 2.8055227741E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12909,7 +12949,7 @@
       },
       {
         "value": {
-          "magnitude": 2.8389601409E10,
+          "magnitude": 3.2670719842E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12917,7 +12957,7 @@
       },
       {
         "value": {
-          "magnitude": 2.8088848034E10,
+          "magnitude": 2.7933639368E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12925,15 +12965,7 @@
       },
       {
         "value": {
-          "magnitude": 2.6264740879E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 2.8423097494E10,
+          "magnitude": 2.6214031259E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -12942,11 +12974,11 @@
     ]
   },
   {
-    "id": "dedefc77-bf43-4975-9eda-8596102e7094",
+    "id": "c11734db-db04-45e0-a294-2fb889cc4d1a",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -12967,7 +12999,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -13667,7 +13699,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.819851668E9,
+          "magnitude": 7.873608191E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -13675,7 +13707,7 @@
       },
       {
         "value": {
-          "magnitude": 7.911747786E9,
+          "magnitude": 8.111134711E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -13683,23 +13715,7 @@
       },
       {
         "value": {
-          "magnitude": 8.363052704E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 7.839191482E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 8.195949539E9,
+          "magnitude": 7.881602958E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -13708,11 +13724,11 @@
     ]
   },
   {
-    "id": "1c5e53d9-e86e-45b4-b584-04db07bfa1c0",
+    "id": "412522b6-f0d5-41a1-b47c-2a9dc99104df",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -13733,7 +13749,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -14433,7 +14449,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.1112976744E10,
+          "magnitude": 3.1202930766E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -14441,7 +14457,15 @@
       },
       {
         "value": {
-          "magnitude": 2.6306931123E10,
+          "magnitude": 3.0009823217E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 2.9152242837E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -14450,11 +14474,11 @@
     ]
   },
   {
-    "id": "c359aa88-6e90-4bea-8d12-547f70b9d1d3",
+    "id": "b10e8a48-a85d-46c6-8c6a-ac45aa8e58cb",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -14475,7 +14499,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -15175,7 +15199,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 8.326788882E9,
+          "magnitude": 7.949544691E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -15183,7 +15207,7 @@
       },
       {
         "value": {
-          "magnitude": 7.889345042E9,
+          "magnitude": 7.890859387E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -15191,7 +15215,7 @@
       },
       {
         "value": {
-          "magnitude": 7.897391424E9,
+          "magnitude": 8.41296552E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -15199,7 +15223,7 @@
       },
       {
         "value": {
-          "magnitude": 7.924770967E9,
+          "magnitude": 7.840134874E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -15207,7 +15231,7 @@
       },
       {
         "value": {
-          "magnitude": 8.405451003E9,
+          "magnitude": 7.896515478E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -15216,11 +15240,11 @@
     ]
   },
   {
-    "id": "4317f298-001b-4fd2-a862-dcb8af40cd90",
+    "id": "ab01ea9e-af75-4de5-8461-2cec0375253a",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -15241,7 +15265,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -15941,31 +15965,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.0482769791E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 3.2303031085E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 3.1745902175E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 2.4040647141E10,
+          "magnitude": 3.0791376219E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -15974,11 +15974,11 @@
     ]
   },
   {
-    "id": "c5f9b654-d6a3-488a-8d19-e50649516e31",
+    "id": "5f21dda6-2566-42e2-8f01-922493a32b07",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -15999,7 +15999,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -16699,7 +16699,23 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.903526404E9,
+          "magnitude": 7.927306792E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 8.085279234E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 7.909283054E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -16708,11 +16724,11 @@
     ]
   },
   {
-    "id": "11f08300-ed83-4fad-9b4a-e5945eb1e129",
+    "id": "bcc13616-5d72-4770-8451-e04bfab10ed9",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -16733,7 +16749,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -17433,7 +17449,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.0073058101E10,
+          "magnitude": 3.6084243984E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -17441,7 +17457,7 @@
       },
       {
         "value": {
-          "magnitude": 3.2870634854E10,
+          "magnitude": 3.4309259494E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -17449,7 +17465,23 @@
       },
       {
         "value": {
-          "magnitude": 3.0917586275E10,
+          "magnitude": 3.0080413429E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 3.3614579265E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 3.4440019513E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -17458,11 +17490,11 @@
     ]
   },
   {
-    "id": "35611d5e-8c83-4c91-ba9b-0a643887cca7",
+    "id": "16f58b7f-a928-4a4a-85f7-3a1da8d02a27",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -17483,7 +17515,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -18183,7 +18215,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.817056924E9,
+          "magnitude": 7.845221729E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18191,7 +18223,7 @@
       },
       {
         "value": {
-          "magnitude": 8.401654215E9,
+          "magnitude": 7.855018832E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18199,7 +18231,7 @@
       },
       {
         "value": {
-          "magnitude": 7.849414006E9,
+          "magnitude": 7.814521417E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18207,15 +18239,7 @@
       },
       {
         "value": {
-          "magnitude": 7.819980174E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 8.369218234E9,
+          "magnitude": 8.36724037E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18224,11 +18248,11 @@
     ]
   },
   {
-    "id": "3f16d5e7-7f9f-4e17-b50b-8ef60e19b670",
+    "id": "38ac33e8-c9d7-4717-a3c5-68450baba732",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -18249,7 +18273,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -18949,7 +18973,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.0184603901E10,
+          "magnitude": 3.8620013799E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18957,7 +18981,7 @@
       },
       {
         "value": {
-          "magnitude": 4.037502664E10,
+          "magnitude": 2.9962782584E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18965,7 +18989,7 @@
       },
       {
         "value": {
-          "magnitude": 3.2283801768E10,
+          "magnitude": 3.3908051104E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18973,7 +18997,7 @@
       },
       {
         "value": {
-          "magnitude": 3.6272106417E10,
+          "magnitude": 3.4263975283E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18981,7 +19005,7 @@
       },
       {
         "value": {
-          "magnitude": 3.1944838647E10,
+          "magnitude": 4.0880480447E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -18990,11 +19014,11 @@
     ]
   },
   {
-    "id": "8487279e-3daf-495b-897d-e05eb74523da",
+    "id": "6865dce2-94d6-414e-9bae-131776b325f2",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -19015,7 +19039,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -19715,7 +19739,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 7.975720655E9,
+          "magnitude": 7.854706116E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -19723,7 +19747,7 @@
       },
       {
         "value": {
-          "magnitude": 8.388563316E9,
+          "magnitude": 8.369137625E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -19731,7 +19755,7 @@
       },
       {
         "value": {
-          "magnitude": 7.910191857E9,
+          "magnitude": 7.860280492E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -19739,7 +19763,15 @@
       },
       {
         "value": {
-          "magnitude": 7.882553994E9,
+          "magnitude": 7.888177309E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 7.922227445E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -19748,11 +19780,11 @@
     ]
   },
   {
-    "id": "b301e527-176f-45b5-95ac-9a3dba87b19d",
+    "id": "bafd8090-98ee-4d6f-9020-edf1f302152e",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -19773,7 +19805,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -20473,7 +20505,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.4460178708E10,
+          "magnitude": 3.615497425E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -20481,23 +20513,7 @@
       },
       {
         "value": {
-          "magnitude": 3.4823875378E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 3.5677766066E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 3.6357477323E10,
+          "magnitude": 3.729224468E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -20506,11 +20522,11 @@
     ]
   },
   {
-    "id": "a2821494-e146-4184-bb78-17554b97099f",
+    "id": "2020a4b7-4d4a-4ea3-9729-51e1140a7428",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -20531,7 +20547,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -21231,7 +21247,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 8.351683278E9,
+          "magnitude": 9.953542291E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -21239,7 +21255,7 @@
       },
       {
         "value": {
-          "magnitude": 9.905187163E9,
+          "magnitude": 7.888377262E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -21247,7 +21263,7 @@
       },
       {
         "value": {
-          "magnitude": 9.869926291E9,
+          "magnitude": 8.344350625E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -21255,7 +21271,7 @@
       },
       {
         "value": {
-          "magnitude": 7.895744977E9,
+          "magnitude": 9.855000508E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -21263,7 +21279,7 @@
       },
       {
         "value": {
-          "magnitude": 1.0457038444E10,
+          "magnitude": 9.86953708E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -21272,11 +21288,11 @@
     ]
   },
   {
-    "id": "0ade1376-976f-46e4-ad90-2389969de281",
+    "id": "c6301363-6b89-4da8-b732-48dbd89b7f88",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -21297,7 +21313,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -21997,7 +22013,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.0216711623E10,
+          "magnitude": 3.5126893538E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22005,7 +22021,7 @@
       },
       {
         "value": {
-          "magnitude": 3.4368344828E10,
+          "magnitude": 3.2282309907E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22013,7 +22029,7 @@
       },
       {
         "value": {
-          "magnitude": 4.0595725867E10,
+          "magnitude": 4.1668102652E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22021,7 +22037,7 @@
       },
       {
         "value": {
-          "magnitude": 3.5041103105E10,
+          "magnitude": 3.9953011876E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22029,7 +22045,7 @@
       },
       {
         "value": {
-          "magnitude": 3.9977099402E10,
+          "magnitude": 4.0526454207E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22038,11 +22054,11 @@
     ]
   },
   {
-    "id": "dd0597ee-8a8f-4040-8de3-bb9a1f763ff5",
+    "id": "48f4f492-22e5-4bc2-a412-ab3478351f35",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -22063,7 +22079,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -22763,7 +22779,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 9.943348805E9,
+          "magnitude": 9.629519718E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22771,7 +22787,7 @@
       },
       {
         "value": {
-          "magnitude": 8.392331554E9,
+          "magnitude": 1.0063219283E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22779,23 +22795,7 @@
       },
       {
         "value": {
-          "magnitude": 9.903384958E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 9.897492143E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 9.883595664E9,
+          "magnitude": 9.897786878E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -22804,11 +22804,11 @@
     ]
   },
   {
-    "id": "7af4a53d-0004-4371-97bd-e6ff050183e7",
+    "id": "80d255cd-eb6b-48bd-8973-28c584046021",
     "run": {
-      "id": "9105e7ea-f419-4b96-8606-f9b22434470a",
+      "id": "0208c19e-a652-479c-8944-b5fa829ef78c",
       "label": "",
-      "startTime": "2014-06-25T17:45:41.844Z"
+      "startTime": "2014-06-26T11:33:48.219Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -22829,7 +22829,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -23529,7 +23529,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.8528275776E10,
+          "magnitude": 4.0581807357E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -23537,7 +23537,23 @@
       },
       {
         "value": {
-          "magnitude": 4.0064936338E10,
+          "magnitude": 3.9913223657E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 4.0296876339E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 3.656085481E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -23546,11 +23562,11 @@
     ]
   },
   {
-    "id": "4c8307f8-0cd6-418c-a865-35ecceb1ff97",
+    "id": "6dd3439c-8490-4382-bb3a-9526fa4d9853",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -23571,7 +23587,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -24271,7 +24287,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 9.654441153E9,
+          "magnitude": 9.827118952E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -24279,23 +24295,7 @@
       },
       {
         "value": {
-          "magnitude": 9.891295862E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 9.865419154E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 9.86404606E9,
+          "magnitude": 9.853985393E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -24304,11 +24304,11 @@
     ]
   },
   {
-    "id": "56a9359c-1e49-49c8-8305-678be1f86045",
+    "id": "70e3a872-ab8d-4725-b87f-dfebeacbdccc",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -24329,7 +24329,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -25029,7 +25029,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.6835513551E10,
+          "magnitude": 3.9807519414E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25037,7 +25037,7 @@
       },
       {
         "value": {
-          "magnitude": 3.9988061069E10,
+          "magnitude": 3.862809605E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25045,7 +25045,7 @@
       },
       {
         "value": {
-          "magnitude": 3.7989988362E10,
+          "magnitude": 3.7817629181E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25053,7 +25053,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2215356144E10,
+          "magnitude": 4.2428581995E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25061,7 +25061,7 @@
       },
       {
         "value": {
-          "magnitude": 3.9864038134E10,
+          "magnitude": 4.2317194267E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25070,11 +25070,11 @@
     ]
   },
   {
-    "id": "d64e91af-c188-4ccb-9c1c-ad235f2d60a3",
+    "id": "df9b4844-37cd-4fe5-bdfc-db574763ea39",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -25095,7 +25095,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -25795,7 +25795,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 9.954975476E9,
+          "magnitude": 1.0329830686E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25803,7 +25803,7 @@
       },
       {
         "value": {
-          "magnitude": 9.89068672E9,
+          "magnitude": 9.884667992E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25811,7 +25811,23 @@
       },
       {
         "value": {
-          "magnitude": 9.878279141E9,
+          "magnitude": 9.877949498E9,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 1.0045780196E10,
+          "unit": "ns"
+        },
+        "weight": 1.0,
+        "description": "runtime"
+      },
+      {
+        "value": {
+          "magnitude": 1.0417760907E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -25820,11 +25836,11 @@
     ]
   },
   {
-    "id": "9c63a747-e873-4e6a-a44c-575af0b2aa68",
+    "id": "1b7ed667-b609-4753-91dd-59eee0313690",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -25845,7 +25861,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -26545,7 +26561,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 3.8463431097E10,
+          "magnitude": 4.2054250844E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -26553,7 +26569,7 @@
       },
       {
         "value": {
-          "magnitude": 3.8166179147E10,
+          "magnitude": 4.2399797972E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -26561,7 +26577,7 @@
       },
       {
         "value": {
-          "magnitude": 4.0304594744E10,
+          "magnitude": 4.0024484756E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -26569,7 +26585,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2171133451E10,
+          "magnitude": 4.0573013219E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -26577,7 +26593,7 @@
       },
       {
         "value": {
-          "magnitude": 4.0035246321E10,
+          "magnitude": 4.2159567894E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -26586,11 +26602,11 @@
     ]
   },
   {
-    "id": "98ed661b-6876-40b7-814c-14ab0f49867c",
+    "id": "ddfbea92-9275-4aee-8f53-41f6b5df8b1d",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -26611,7 +26627,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -27311,7 +27327,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 9.906869778E9,
+          "magnitude": 9.943426606E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -27319,7 +27335,7 @@
       },
       {
         "value": {
-          "magnitude": 9.872824606E9,
+          "magnitude": 9.894136124E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -27327,7 +27343,7 @@
       },
       {
         "value": {
-          "magnitude": 9.879052843E9,
+          "magnitude": 1.0352594428E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -27335,7 +27351,7 @@
       },
       {
         "value": {
-          "magnitude": 1.0387952107E10,
+          "magnitude": 9.879172912E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -27343,7 +27359,7 @@
       },
       {
         "value": {
-          "magnitude": 9.884655967E9,
+          "magnitude": 9.892229076E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -27352,11 +27368,11 @@
     ]
   },
   {
-    "id": "564cef4e-4ee0-45f2-a26d-48eb0b9e9033",
+    "id": "4a4a8362-c3ff-4eb2-bd95-beecb1d62a76",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -27377,7 +27393,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -28077,7 +28093,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.1928369816E10,
+          "magnitude": 4.3404800876E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28085,7 +28101,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2211930044E10,
+          "magnitude": 4.220192962E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28093,7 +28109,7 @@
       },
       {
         "value": {
-          "magnitude": 4.4315454121E10,
+          "magnitude": 4.0921476943E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28101,7 +28117,7 @@
       },
       {
         "value": {
-          "magnitude": 3.8284482649E10,
+          "magnitude": 4.0238649252E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28109,7 +28125,7 @@
       },
       {
         "value": {
-          "magnitude": 3.8073547976E10,
+          "magnitude": 4.1337824001E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28118,11 +28134,11 @@
     ]
   },
   {
-    "id": "b40acfb1-8300-4cc2-ac11-72f0da4378ca",
+    "id": "af2a0960-bbcc-4d07-bae5-10c3d6437da9",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -28143,7 +28159,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -28843,7 +28859,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 9.99176448E9,
+          "magnitude": 9.949481772E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28851,7 +28867,7 @@
       },
       {
         "value": {
-          "magnitude": 1.0340630727E10,
+          "magnitude": 9.87794416E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28859,7 +28875,7 @@
       },
       {
         "value": {
-          "magnitude": 9.962162315E9,
+          "magnitude": 1.0347735194E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28867,7 +28883,7 @@
       },
       {
         "value": {
-          "magnitude": 9.887306822E9,
+          "magnitude": 9.856667407E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28875,7 +28891,7 @@
       },
       {
         "value": {
-          "magnitude": 9.852769076E9,
+          "magnitude": 9.9020265E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -28884,11 +28900,11 @@
     ]
   },
   {
-    "id": "bcb60550-8db6-4cc0-a870-d0e7b0606c42",
+    "id": "c75014de-5afd-4dae-853e-52903f6b22c7",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -28909,7 +28925,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -29609,7 +29625,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.0781848037E10,
+          "magnitude": 4.4474619231E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -29617,7 +29633,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2163120768E10,
+          "magnitude": 4.2220770542E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -29625,7 +29641,7 @@
       },
       {
         "value": {
-          "magnitude": 3.8492018164E10,
+          "magnitude": 4.2245179396E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -29633,15 +29649,7 @@
       },
       {
         "value": {
-          "magnitude": 4.5826904163E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 4.0976114831E10,
+          "magnitude": 3.9916795727E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -29650,11 +29658,11 @@
     ]
   },
   {
-    "id": "6b05af89-465e-4f98-b2f7-b51ad9c781b1",
+    "id": "0d40d75b-4275-49f9-8482-a49934384a50",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -29675,7 +29683,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -30375,7 +30383,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 9.954967931E9,
+          "magnitude": 9.951622975E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -30383,7 +30391,7 @@
       },
       {
         "value": {
-          "magnitude": 9.865343187E9,
+          "magnitude": 9.886622805E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -30391,7 +30399,7 @@
       },
       {
         "value": {
-          "magnitude": 1.0377450454E10,
+          "magnitude": 9.923853886E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -30399,15 +30407,7 @@
       },
       {
         "value": {
-          "magnitude": 1.005325943E10,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 1.0335324764E10,
+          "magnitude": 1.0443479877E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -30416,11 +30416,11 @@
     ]
   },
   {
-    "id": "e3511c0f-da82-4278-9cf2-9b07e14b69bb",
+    "id": "fbc6e642-0607-47ca-9002-c0b983a256f8",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -30441,7 +30441,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -31141,7 +31141,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.0239422617E10,
+          "magnitude": 4.1095691397E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31149,7 +31149,7 @@
       },
       {
         "value": {
-          "magnitude": 4.4214839444E10,
+          "magnitude": 4.6811075191E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31157,7 +31157,7 @@
       },
       {
         "value": {
-          "magnitude": 4.6527674847E10,
+          "magnitude": 4.201358133E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31165,7 +31165,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2073787908E10,
+          "magnitude": 4.2170191166E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31173,7 +31173,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2094162652E10,
+          "magnitude": 4.3146908284E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31182,11 +31182,11 @@
     ]
   },
   {
-    "id": "daf762aa-eb5f-4f82-bcee-4f19dc3d590a",
+    "id": "4adf706c-1c66-46ef-823d-02de1b9d089b",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -31207,7 +31207,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -31907,7 +31907,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.0451402403E10,
+          "magnitude": 9.916348011E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31915,23 +31915,7 @@
       },
       {
         "value": {
-          "magnitude": 9.90130494E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 9.90688413E9,
-          "unit": "ns"
-        },
-        "weight": 1.0,
-        "description": "runtime"
-      },
-      {
-        "value": {
-          "magnitude": 1.0336722446E10,
+          "magnitude": 1.0400212001E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -31940,11 +31924,11 @@
     ]
   },
   {
-    "id": "16f04016-d545-4bc3-b53c-0d24dfe14eb9",
+    "id": "3df24562-dc46-45ee-8aae-fd676ad0e62c",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -31965,7 +31949,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -32665,7 +32649,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.682745012E10,
+          "magnitude": 4.5987812811E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -32673,7 +32657,7 @@
       },
       {
         "value": {
-          "magnitude": 4.376041534E10,
+          "magnitude": 4.6175077249E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -32681,7 +32665,7 @@
       },
       {
         "value": {
-          "magnitude": 4.2979642764E10,
+          "magnitude": 4.639629531E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -32689,7 +32673,7 @@
       },
       {
         "value": {
-          "magnitude": 4.4205675775E10,
+          "magnitude": 4.433923925E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -32697,7 +32681,7 @@
       },
       {
         "value": {
-          "magnitude": 4.4704632051E10,
+          "magnitude": 4.4187669787E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -32706,11 +32690,11 @@
     ]
   },
   {
-    "id": "875d3f21-9e34-46b5-bbf8-af616c90b110",
+    "id": "d4ddd26d-e126-4196-b42b-3ead0a8b4604",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -32731,7 +32715,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -33431,7 +33415,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.1964738221E10,
+          "magnitude": 1.1912969783E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -33439,7 +33423,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1911935475E10,
+          "magnitude": 9.923468106E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -33447,7 +33431,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1884980585E10,
+          "magnitude": 9.901957225E9,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -33455,7 +33439,7 @@
       },
       {
         "value": {
-          "magnitude": 9.902447429E9,
+          "magnitude": 1.2380742298E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -33463,7 +33447,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1926150617E10,
+          "magnitude": 1.1932896711E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -33472,11 +33456,11 @@
     ]
   },
   {
-    "id": "b7f1db02-5e9e-48a1-8705-8b2d2a4084b8",
+    "id": "db2f80b3-bce0-4c98-b1fe-0b667eb46a2d",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -33497,7 +33481,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -34197,7 +34181,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.5728328783E10,
+          "magnitude": 4.3803731016E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34205,7 +34189,7 @@
       },
       {
         "value": {
-          "magnitude": 4.4223924879E10,
+          "magnitude": 4.7302717142E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34213,7 +34197,7 @@
       },
       {
         "value": {
-          "magnitude": 4.6979631379E10,
+          "magnitude": 4.6458453638E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34221,7 +34205,7 @@
       },
       {
         "value": {
-          "magnitude": 4.6082843104E10,
+          "magnitude": 4.578870121E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34229,7 +34213,7 @@
       },
       {
         "value": {
-          "magnitude": 4.8025042087E10,
+          "magnitude": 4.8500102745E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34238,11 +34222,11 @@
     ]
   },
   {
-    "id": "72f8e67b-875d-4158-8617-a47e1dddda80",
+    "id": "70424942-05ee-4569-bcf9-e83504b41241",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -34263,7 +34247,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -34963,7 +34947,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.1912711412E10,
+          "magnitude": 1.1963946366E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34971,7 +34955,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2337412254E10,
+          "magnitude": 1.1888847359E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34979,7 +34963,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1902252287E10,
+          "magnitude": 1.2323473895E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34987,7 +34971,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1893605911E10,
+          "magnitude": 1.1906559878E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -34995,7 +34979,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1849040995E10,
+          "magnitude": 1.1812851127E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -35004,11 +34988,11 @@
     ]
   },
   {
-    "id": "89bd4526-dc97-49ab-8a57-7866078846ac",
+    "id": "6596f374-13c7-4049-9525-e96f151b4b9b",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -35029,7 +35013,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -35729,7 +35713,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 4.5758799057E10,
+          "magnitude": 4.7957234171E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -35737,7 +35721,7 @@
       },
       {
         "value": {
-          "magnitude": 4.8331209481E10,
+          "magnitude": 4.8286790573E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -35745,7 +35729,7 @@
       },
       {
         "value": {
-          "magnitude": 4.8180099734E10,
+          "magnitude": 4.8780296525E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -35753,7 +35737,7 @@
       },
       {
         "value": {
-          "magnitude": 4.9057305152E10,
+          "magnitude": 4.8006084389E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -35761,7 +35745,7 @@
       },
       {
         "value": {
-          "magnitude": 4.7933727188E10,
+          "magnitude": 5.007549963E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -35770,11 +35754,11 @@
     ]
   },
   {
-    "id": "8f85b2dc-0f5a-4beb-a65e-c1713c0aebde",
+    "id": "e2e1ce5f-4de6-45dd-b62c-6605ff65858d",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -35795,7 +35779,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -36495,7 +36479,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.1969491177E10,
+          "magnitude": 1.193400093E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -36503,7 +36487,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2349815581E10,
+          "magnitude": 1.1891686126E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -36511,7 +36495,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1882356829E10,
+          "magnitude": 1.23942495E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -36519,7 +36503,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1852977244E10,
+          "magnitude": 1.1889480161E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -36527,7 +36511,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2363806404E10,
+          "magnitude": 1.1884700158E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -36536,11 +36520,11 @@
     ]
   },
   {
-    "id": "9ae45b8b-6787-4724-8b5e-1ef9f72bedbc",
+    "id": "6f21e3a4-2ed4-454d-9e95-da1ac0a5999b",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -36561,7 +36545,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -37261,7 +37245,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 5.0141796259E10,
+          "magnitude": 4.974270729E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -37269,7 +37253,7 @@
       },
       {
         "value": {
-          "magnitude": 5.0084991067E10,
+          "magnitude": 5.0126611544E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -37277,7 +37261,7 @@
       },
       {
         "value": {
-          "magnitude": 5.0391697417E10,
+          "magnitude": 5.2257294282E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -37285,7 +37269,7 @@
       },
       {
         "value": {
-          "magnitude": 4.9953823825E10,
+          "magnitude": 5.0557845084E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -37293,7 +37277,7 @@
       },
       {
         "value": {
-          "magnitude": 4.7891629337E10,
+          "magnitude": 4.9716207024E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -37302,11 +37286,11 @@
     ]
   },
   {
-    "id": "8840d818-44ea-4cf2-a20a-945e832d472c",
+    "id": "0ec3e996-83c5-40c1-b904-0e7fe045e6fe",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -37327,7 +37311,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -38027,7 +38011,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.2454643597E10,
+          "magnitude": 1.2436691134E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38035,7 +38019,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1899913767E10,
+          "magnitude": 1.1886518111E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38043,7 +38027,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1892128807E10,
+          "magnitude": 1.1876473914E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38051,7 +38035,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2176216288E10,
+          "magnitude": 1.191714813E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38059,7 +38043,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2403471051E10,
+          "magnitude": 1.2332891208E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38068,11 +38052,11 @@
     ]
   },
   {
-    "id": "516f2a63-29d5-44a9-a74e-2af3f3044203",
+    "id": "66455451-1769-407e-b18e-84f9c9d499e1",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -38093,7 +38077,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -38793,7 +38777,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 5.0397255353E10,
+          "magnitude": 5.2779181421E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38801,7 +38785,7 @@
       },
       {
         "value": {
-          "magnitude": 5.2330171707E10,
+          "magnitude": 5.1976987011E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38809,7 +38793,7 @@
       },
       {
         "value": {
-          "magnitude": 5.0112324391E10,
+          "magnitude": 5.6039596726E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38817,7 +38801,7 @@
       },
       {
         "value": {
-          "magnitude": 5.2229318043E10,
+          "magnitude": 5.2363749809E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38825,7 +38809,7 @@
       },
       {
         "value": {
-          "magnitude": 4.8158196581E10,
+          "magnitude": 5.0042118515E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -38834,11 +38818,11 @@
     ]
   },
   {
-    "id": "6b888936-7bcf-4de7-af19-bfc9704011f8",
+    "id": "dccfbc06-8a5b-4f66-b25b-cfe7562fd9cc",
     "run": {
-      "id": "d580ce4d-0e86-4c80-bb06-1b228754cace",
+      "id": "e7b498f1-8315-4cc1-a7e0-76d5ffc72cd8",
       "label": "",
-      "startTime": "2014-06-25T19:26:20.672Z"
+      "startTime": "2014-06-26T13:26:15.526Z"
     },
     "instrumentSpec": {
       "className": "com.google.caliper.runner.MacrobenchmarkInstrument",
@@ -38859,7 +38843,7 @@
           "host.memory.swap": "[17498108 kB]",
           "os.arch": "amd64",
           "os.name": "Linux",
-          "os.version": "3.5.0-51-generic"
+          "os.version": "3.5.0-52-generic"
         }
       },
       "vmSpec": {
@@ -39559,7 +39543,7 @@
     "measurements": [
       {
         "value": {
-          "magnitude": 1.1945727035E10,
+          "magnitude": 1.1984255861E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -39567,7 +39551,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1878612403E10,
+          "magnitude": 1.2336223112E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -39575,7 +39559,7 @@
       },
       {
         "value": {
-          "magnitude": 1.1885096491E10,
+          "magnitude": 1.1879675934E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -39583,7 +39567,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2051008765E10,
+          "magnitude": 1.187861255E10,
           "unit": "ns"
         },
         "weight": 1.0,
@@ -39591,7 +39575,7 @@
       },
       {
         "value": {
-          "magnitude": 1.2356882617E10,
+          "magnitude": 1.1944381471E10,
           "unit": "ns"
         },
         "weight": 1.0,
