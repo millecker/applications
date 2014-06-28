@@ -411,9 +411,13 @@ public class OnlineCFTrainHybridBSP
         // m_logger.writeChars("receiveItem itemId: " + itemId + " fromPeerId: "
         // + senderId + " value: " + vector + "\n");
 
-        normalizedValues.put(itemId, normalizedValues.get(itemId).add(vector));
-        normalizedValueCount.put(itemId, normalizedValueCount.get(itemId) + 1);
-        senderList.get(itemId).add(senderId);
+        if (normalizedValues.get(itemId) != null) {
+          normalizedValues
+              .put(itemId, normalizedValues.get(itemId).add(vector));
+          normalizedValueCount
+              .put(itemId, normalizedValueCount.get(itemId) + 1);
+          senderList.get(itemId).add(senderId);
+        }
       }
 
       // Step 3)
