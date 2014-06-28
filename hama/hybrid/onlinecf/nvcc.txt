@@ -1,5 +1,5 @@
 ###############################################################################
-##### Code Analysis                                                       #####
+##### Online Collaboration Filtering CUDA Code Analysis                   #####
 ###############################################################################
 
 nvcc generated.cu --ptxas-options=-v -arch sm_20

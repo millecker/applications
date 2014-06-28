@@ -20,11 +20,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -121,7 +124,7 @@ public class OnlineCFTrainHybridBSP
   // itemId, factorized value
   private HashMap<Long, PipesVectorWritable> m_itemsMatrix = new HashMap<Long, PipesVectorWritable>();
 
-  private Random m_rnd = new Random(32L);
+  private Random m_rand = new Random(32L);
 
   /********************************* CPU *********************************/
   // **********************************************************************
@@ -291,7 +294,7 @@ public class OnlineCFTrainHybridBSP
       if (m_usersMatrix.containsKey(actualId) == false) {
         DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
         for (int i = 0; i < m_matrixRank; i++) {
-          vals.set(i, m_rnd.nextDouble());
+          vals.set(i, m_rand.nextDouble());
         }
         m_usersMatrix.put(actualId, new PipesVectorWritable(vals));
       }
@@ -299,7 +302,7 @@ public class OnlineCFTrainHybridBSP
       if (m_itemsMatrix.containsKey(itemId) == false) {
         DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
         for (int i = 0; i < m_matrixRank; i++) {
-          vals.set(i, m_rnd.nextDouble());
+          vals.set(i, m_rand.nextDouble());
         }
         m_itemsMatrix.put(itemId, new PipesVectorWritable(vals));
       }
@@ -318,7 +321,7 @@ public class OnlineCFTrainHybridBSP
     int idxValue = 0;
     int tmp = 0;
     for (int i = m_indexes.size(); i > 0; i--) {
-      idx = Math.abs(m_rnd.nextInt()) % i;
+      idx = Math.abs(m_rand.nextInt()) % i;
       idxValue = m_indexes.get(idx);
       tmp = m_indexes.get(i - 1);
       m_indexes.set(i - 1, idxValue);
@@ -531,7 +534,7 @@ public class OnlineCFTrainHybridBSP
       if (m_usersMatrix.containsKey(userId) == false) {
         DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
         for (int i = 0; i < m_matrixRank; i++) {
-          vals.set(i, m_rnd.nextDouble());
+          vals.set(i, m_rand.nextDouble());
         }
         m_usersMatrix.put(userId, new PipesVectorWritable(vals));
         userRatingCount.put(userId, 1l);
@@ -543,7 +546,7 @@ public class OnlineCFTrainHybridBSP
       if (m_itemsMatrix.containsKey(itemId) == false) {
         DenseDoubleVector vals = new DenseDoubleVector(m_matrixRank);
         for (int i = 0; i < m_matrixRank; i++) {
-          vals.set(i, m_rnd.nextDouble());
+          vals.set(i, m_rand.nextDouble());
         }
         m_itemsMatrix.put(itemId, new PipesVectorWritable(vals));
         itemRatingCount.put(itemId, 1l);
@@ -919,6 +922,11 @@ public class OnlineCFTrainHybridBSP
     int matrixRank = 3;
     int skipCount = 1;
 
+    double alpha = ALPHA;
+    int userCount = 0;
+    int itemCount = 0;
+    int percentNonZeroValues = 0;
+
     boolean useTestExampleInput = true;
     boolean isDebugging = true;
     String inputFile = "";
@@ -942,15 +950,20 @@ public class OnlineCFTrainHybridBSP
       matrixRank = Integer.parseInt(args[5]);
       skipCount = Integer.parseInt(args[6]);
 
-      useTestExampleInput = Boolean.parseBoolean(args[7]);
-      isDebugging = Boolean.parseBoolean(args[8]);
+      alpha = Double.parseDouble(args[7]);
+      userCount = Integer.parseInt(args[8]);
+      itemCount = Integer.parseInt(args[9]);
+      percentNonZeroValues = Integer.parseInt(args[10]);
+
+      useTestExampleInput = Boolean.parseBoolean(args[11]);
+      isDebugging = Boolean.parseBoolean(args[12]);
 
       // optional parameters
-      if (args.length > 9) {
-        inputFile = args[9];
+      if (args.length > 13) {
+        inputFile = args[13];
       }
-      if (args.length > 10) {
-        separator = args[10];
+      if (args.length > 14) {
+        separator = args[14];
       }
 
     } else {
@@ -959,7 +972,6 @@ public class OnlineCFTrainHybridBSP
       System.out.println("    Argument2=numGpuBspTask");
       System.out.println("    Argument3=blockSize");
       System.out.println("    Argument4=gridSize");
-
       System.out
           .println("    Argument5=maxIterations | Number of maximal iterations ("
               + maxIteration + ")");
@@ -967,21 +979,37 @@ public class OnlineCFTrainHybridBSP
           + ")");
       System.out.println("    Argument7=skipCount | skipCount (" + skipCount
           + ")");
+      System.out.println("    Argument8=alpha | alpha (" + alpha + ")");
+      System.out.println("    Argument9=userCount | userCount (" + userCount
+          + ")");
+      System.out.println("    Argument10=itemCount | itemCount (" + itemCount
+          + ")");
       System.out
-          .println("    Argument8=testExample | Use testExample input (true|false=default)");
+          .println("    Argument11=percentNonZeroValues | percentNonZeroValues ("
+              + percentNonZeroValues + ")");
       System.out
-          .println("    Argument9=debug | Enable debugging (true|false=default)");
+          .println("    Argument12=testExample | Use testExample input (true|false=default)");
       System.out
-          .println("    Argument10=inputFile (optional) | MovieLens inputFile");
+          .println("    Argument13=debug | Enable debugging (true|false=default)");
+      System.out
+          .println("    Argument14=inputFile (optional) | MovieLens inputFile");
       System.out.println("    Argument11=separator (optional) | default '"
           + separator + "' ");
       return;
     }
 
     // Check if inputFile exists
-    if ((inputFile.isEmpty() == false)
-        && (new File(inputFile).exists() == false)) {
+    if ((!inputFile.isEmpty()) && (!new File(inputFile).exists())) {
       System.out.println("Error: inputFile: " + inputFile + " does not exist!");
+      return;
+    }
+
+    // Check parameters
+    if ((inputFile.isEmpty()) && (!useTestExampleInput) && (userCount <= 0)
+        && (itemCount <= 0) && (percentNonZeroValues <= 0)) {
+      System.out.println("Invalid parameter: userCount: " + userCount
+          + " itemCount: " + itemCount + " percentNonZeroValues: "
+          + percentNonZeroValues);
       return;
     }
 
@@ -1021,34 +1049,49 @@ public class OnlineCFTrainHybridBSP
     LOG.info("maxIteration: " + maxIteration);
     LOG.info("matrixRank: " + matrixRank);
     LOG.info("skipCount: " + skipCount);
-    if (inputFile.isEmpty() == false) {
+
+    LOG.info("alpha: " + alpha);
+    LOG.info("userCount: " + userCount);
+    LOG.info("itemCount: " + itemCount);
+    LOG.info("percentNonZeroValues: " + percentNonZeroValues);
+
+    if (!inputFile.isEmpty()) {
       LOG.info("inputFile: " + inputFile);
       LOG.info("separator: " + separator);
     }
 
     // prepare Input
+    int maxTestPrefs = 10;
+    Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
     List<Preference<Long, Long>> testPrefs = null;
-    if ((useTestExampleInput) && (inputFile.isEmpty())) {
+    if (useTestExampleInput) {
 
-      Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
-      testPrefs = prepareInputData(conf, fs, CONF_INPUT_DIR, preferencesIn);
+      testPrefs = prepareTestInputData(conf, fs, CONF_INPUT_DIR, preferencesIn);
 
-    } else if (inputFile.isEmpty() == false) {
+    } else if (inputFile.isEmpty()) {
+
+      testPrefs = generateRandomInputData(conf, fs, CONF_INPUT_DIR,
+          preferencesIn, userCount, itemCount, percentNonZeroValues,
+          maxTestPrefs);
+
+    } else if (!inputFile.isEmpty()) {
       // parse inputFile and return first entries for testing
-      Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
       testPrefs = convertInputData(conf, fs, CONF_INPUT_DIR, preferencesIn,
-          inputFile, separator);
+          inputFile, separator, maxTestPrefs);
     }
 
+    // Generate Job config
     BSPJob job = createOnlineCFTrainHybridBSPConf(conf, CONF_INPUT_DIR,
         CONF_OUTPUT_DIR);
 
+    // Execute Job
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
 
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
 
+      // Load Job results for testing
       OnlineCF recommender = new OnlineCF();
       recommender.load(CONF_OUTPUT_DIR.toString(), false);
 
@@ -1082,9 +1125,9 @@ public class OnlineCFTrainHybridBSP
   }
 
   // **********************************************************************
-  // prepareInputData (test data)
+  // prepareTestInputData
   // **********************************************************************
-  public static List<Preference<Long, Long>> prepareInputData(
+  public static List<Preference<Long, Long>> prepareTestInputData(
       Configuration conf, FileSystem fs, Path in, Path preferencesIn)
       throws IOException {
 
@@ -1137,14 +1180,75 @@ public class OnlineCFTrainHybridBSP
   }
 
   // **********************************************************************
+  // generateRandomInputData and return test data
+  // **********************************************************************
+  public static List<Preference<Long, Long>> generateRandomInputData(
+      Configuration conf, FileSystem fs, Path in, Path preferencesIn,
+      int userCount, int itemCount, int percentNonZeroValues, int maxTestPrefs)
+      throws IOException {
+
+    // Delete input files if already exist
+    if (fs.exists(in)) {
+      fs.delete(in, true);
+    }
+    if (fs.exists(preferencesIn)) {
+      fs.delete(preferencesIn, true);
+    }
+
+    Random rand = new Random(32L);
+    Set<Map.Entry<Long, Long>> userItemPairs = new HashSet<Map.Entry<Long, Long>>();
+    List<Preference<Long, Long>> testItems = new ArrayList<Preference<Long, Long>>();
+
+    int possibleUserItemRatings = userCount * itemCount;
+    int userItemRatings = possibleUserItemRatings * percentNonZeroValues / 100;
+    System.out.println("possibleRatings: " + possibleUserItemRatings
+        + " ratings: " + userItemRatings);
+
+    final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs, conf,
+        preferencesIn, LongWritable.class, PipesVectorWritable.class,
+        CompressionType.NONE);
+
+    for (int i = 0; i < userItemRatings; i++) {
+
+      // Find new user item rating which was not used before
+      Map.Entry<Long, Long> userItemPair;
+      do {
+        long userId = rand.nextInt(userCount);
+        long itemId = rand.nextInt(itemCount);
+        userItemPair = new AbstractMap.SimpleImmutableEntry<Long, Long>(userId,
+            itemId);
+      } while (userItemPairs.contains(userItemPair));
+
+      // Add user item rating
+      userItemPairs.add(userItemPair);
+
+      // Generate rating
+      int rating = rand.nextInt(5) + 1; // values between 1 and 5
+
+      // Add user item rating to test data
+      if (i < maxTestPrefs) {
+        testItems.add(new Preference<Long, Long>(userItemPair.getKey(),
+            userItemPair.getValue(), rating));
+      }
+
+      // Write out user item rating
+      dataWriter.append(new LongWritable(userItemPair.getKey()),
+          new PipesVectorWritable(new DenseDoubleVector(new double[] {
+              userItemPair.getValue(), rating })));
+    }
+    dataWriter.close();
+
+    return testItems;
+  }
+
+  // **********************************************************************
   // convertInputData (MovieLens input files)
   // **********************************************************************
   public static List<Preference<Long, Long>> convertInputData(
       Configuration conf, FileSystem fs, Path in, Path preferencesIn,
-      String inputFile, String separator) throws IOException {
+      String inputFile, String separator, int maxTestPrefs) throws IOException {
 
     List<Preference<Long, Long>> test_prefs = new ArrayList<Preference<Long, Long>>();
-    int maxTestPrefs = 10;
 
     // Delete input files if already exist
     if (fs.exists(in)) {
