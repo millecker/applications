@@ -70,7 +70,7 @@ public class KMeansHybridBenchmark extends Benchmark {
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 384; // 1024;
+  public static final int BLOCK_SIZE = 1024;
 
   @Override
   protected void setUp() throws Exception {
