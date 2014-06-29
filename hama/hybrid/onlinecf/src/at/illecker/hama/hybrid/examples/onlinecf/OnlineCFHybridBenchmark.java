@@ -31,11 +31,15 @@ import com.google.caliper.runner.CaliperMain;
 
 public class OnlineCFHybridBenchmark extends Benchmark {
 
-  // @Param({ "1000000" })
-  private long n = 1000000;
+  // @Param({ "10000" })
+  private long n = 5000; // users
 
-  @Param({ "10", "30", "50", "70", "90", "110" })
-  private int k;
+  // @Param({ "10000" })
+  private long m = 5000; // items
+
+  // Plot 1
+  @Param({ "1", "10", "25", "50", "75", "100", "125", "150" })
+  private int iteration; // amount of iterations
 
   @Param
   CalcType type;
@@ -44,8 +48,12 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  private int vectorDimension = 3;
-  private int maxIteration = 10;
+  // Plot 2
+  // maximal 4 cpu tasks and 1 gpu task
+  // @Param({ "1", "2", "3", "4", "5" })
+  private int bspTaskNum = 1;
+
+  private int vectorDimension = 256;
 
   private static final Path CONF_TMP_DIR = new Path(
       "output/hama/hybrid/examples/onlinecf/bench-"
@@ -59,7 +67,7 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 384; // 1024;
+  public static final int BLOCK_SIZE = 1024;
 
   @Override
   protected void setUp() throws Exception {
@@ -109,11 +117,37 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.set(OnlineCFTrainHybridBSP.CONF_BLOCKSIZE, "" + BLOCK_SIZE);
     m_conf.set(OnlineCFTrainHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
 
-    // KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
+    // CPU vs GPU iterations benchmark
+    // Plot 1 and 2
+    int numGpuBspTask = 0;
+    if (type == CalcType.GPU) {
+      bspTaskNum = 1;
+      numGpuBspTask = 1;
+    }
+
+    // CPU + GPU Hybrid benchmark
+    // Plot 2
+    // if (bspTaskNum == 5) {
+    // numGpuBspTask = 1;
+    // } else {
+    // numGpuBspTask = 0;
+    // }
+
+    // Set CPU tasks
+    m_conf.setInt("bsp.peers.num", bspTaskNum);
+    // Set GPU tasks
+    m_conf.setInt("bsp.peers.gpu.num", numGpuBspTask);
+
+    // TODO Generate input data
+    // OnlineCFTrainHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
     // CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
 
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
-    System.out.println("n: " + n + " k: " + k);
+    System.out.println("n: " + n + " m: " + m + " vectorDimension: "
+        + vectorDimension);
+    System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
+    System.out.println("NumGpuBspTask: "
+        + m_conf.getInt("bsp.peers.gpu.num", 0));
   }
 
   @Override
@@ -131,54 +165,33 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
   // Microbenchmark
   // Uncomment Macro to use Micro
-  public void timeCalculate(int reps) {
-    int sum = 0;
-    for (int rep = 0; rep < reps; rep++) {
-      sum = doBenchmark(sum);
-    }
-    System.out.println(sum);
-  }
+  // public void timeCalculate(int reps) {
+  // int sum = 0;
+  // for (int rep = 0; rep < reps; rep++) {
+  // sum = doBenchmark(sum);
+  // }
+  // System.out.println(sum);
+  // }
 
   @Macrobenchmark
   public void timeCalculate() {
-    doBenchmark(0);
+    doBenchmark();
   }
 
-  public int doBenchmark(int sum) {
-    switch (type) {
-      case CPU:
-        sum = kmeansHamaCPU(sum);
-        break;
-      case GPU:
-        sum = kmeansHamaGPU(sum);
-        break;
-      default:
-        break;
+  public void doBenchmark() {
+    try {
+      ToolRunner.run(new OnlineCF(), null);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
-    return sum;
   }
 
-  private class KMeans extends Configured implements Tool {
-    private boolean useGPU;
-
-    public KMeans(boolean useGPU) {
-      this.useGPU = useGPU;
+  private class OnlineCF extends Configured implements Tool {
+    public OnlineCF() {
     }
 
     @Override
     public int run(String[] arg0) throws Exception {
-
-      if (useGPU) {
-        // Set CPU tasks
-        m_conf.setInt("bsp.peers.num", 1);
-        // Set GPU tasks
-        m_conf.setInt("bsp.peers.gpu.num", 1);
-      } else {
-        // Set CPU tasks
-        m_conf.setInt("bsp.peers.num", 1);
-        // Set GPU tasks
-        m_conf.setInt("bsp.peers.gpu.num", 0);
-      }
 
       BSPJob job = OnlineCFTrainHybridBSP.createOnlineCFTrainHybridBSPConf(
           m_conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
@@ -191,24 +204,6 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
       return 0;
     }
-  }
-
-  private int kmeansHamaCPU(int sum) {
-    try {
-      sum += ToolRunner.run(new KMeans(false), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
-  }
-
-  private int kmeansHamaGPU(int sum) {
-    try {
-      sum += ToolRunner.run(new KMeans(true), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
   }
 
   public static void main(String[] args) {

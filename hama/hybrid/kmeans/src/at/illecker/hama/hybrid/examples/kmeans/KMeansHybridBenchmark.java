@@ -49,10 +49,11 @@ public class KMeansHybridBenchmark extends Benchmark {
   };
 
   // Plot 3
-  // maximal 8 cpu tasks and 1 gpu task
+  // maximal 4 cpu tasks and 1 gpu task
   @Param({ "1", "2", "3", "4", "5" })
   private int bspTaskNum; // = 2;
-  // 2 threads only, because more threads would consume more than 16G RAM
+  // Plot 1 and Plot 2 support 2 threads only,
+  // because more threads would consume more than 16G RAM
   private long n = 1000000;
 
   private int vectorDimension = 3;
@@ -150,6 +151,7 @@ public class KMeansHybridBenchmark extends Benchmark {
     // Set GPU tasks
     m_conf.setInt("bsp.peers.gpu.num", numGpuBspTask);
 
+    // Generate input data
     KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
         CONF_INPUT_DIR, centerIn, bspTaskNum, n, k, vectorDimension, null);
 
@@ -164,14 +166,8 @@ public class KMeansHybridBenchmark extends Benchmark {
 
   @Override
   protected void tearDown() throws Exception {
-    verify();
-
     FileSystem fs = FileSystem.get(m_conf);
     fs.delete(CONF_TMP_DIR, true);
-  }
-
-  private void verify() throws Exception {
-
   }
 
   @Macrobenchmark
