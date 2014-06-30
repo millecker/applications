@@ -92,7 +92,7 @@ public class OnlineCFTrainHybridBSP
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 1024;
+  public static final int BLOCK_SIZE = 256; // 1024;
 
   public static final double ALPHA = 0.01;
 

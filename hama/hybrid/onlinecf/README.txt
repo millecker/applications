@@ -57,7 +57,7 @@ ant run-cpu [-DnumBspTask=1 -DnumGpuBspTask=0  \
 # Run Benchmark
 ###############################################################################
 
-ant run-bench -DbenchTimeLimit='--time-limit 600s' \
+ant run-bench -DbenchTimeLimit='--time-limit 10000s' \
   -DbenchInstrument='--instrument macro' \
   -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
   -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'

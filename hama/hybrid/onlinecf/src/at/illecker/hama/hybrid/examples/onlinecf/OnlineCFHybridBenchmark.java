@@ -16,13 +16,27 @@
  */
 package at.illecker.hama.hybrid.examples.onlinecf;
 
+import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hama.bsp.BSPJob;
+import org.apache.hama.commons.io.PipesVectorWritable;
+import org.apache.hama.commons.math.DenseDoubleVector;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
@@ -32,14 +46,19 @@ import com.google.caliper.runner.CaliperMain;
 public class OnlineCFHybridBenchmark extends Benchmark {
 
   // @Param({ "10000" })
-  private long n = 5000; // users
+  private int n = 5000; // users
 
   // @Param({ "10000" })
-  private long m = 5000; // items
+  private int m = 5000; // items
 
   // Plot 1
-  @Param({ "1", "10", "25", "50", "75", "100", "125", "150" })
+  @Param({ "1" })
+  // , "10", "25", "50", "75", "100", "125", "150" })
   private int iteration; // amount of iterations
+
+  // Plot 2
+  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" })
+  private int percentNonZeroValues = 10;
 
   @Param
   CalcType type;
@@ -53,7 +72,8 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   // @Param({ "1", "2", "3", "4", "5" })
   private int bspTaskNum = 1;
 
-  private int vectorDimension = 256;
+  private int matrixRank = 256;
+  private int skipCount = 1;
 
   private static final Path CONF_TMP_DIR = new Path(
       "output/hama/hybrid/examples/onlinecf/bench-"
@@ -63,11 +83,13 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
   private Configuration m_conf = null;
   private boolean m_runLocally = false;
+  private int m_maxTestPrefs = 10;
+  private List<double[]> m_testPrefs = null;
 
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 1024;
+  public static final int BLOCK_SIZE = 256; // 1024;
 
   @Override
   protected void setUp() throws Exception {
@@ -118,7 +140,7 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.set(OnlineCFTrainHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
 
     // CPU vs GPU iterations benchmark
-    // Plot 1 and 2
+    // Plot 1
     int numGpuBspTask = 0;
     if (type == CalcType.GPU) {
       bspTaskNum = 1;
@@ -138,13 +160,20 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     // Set GPU tasks
     m_conf.setInt("bsp.peers.gpu.num", numGpuBspTask);
 
-    // TODO Generate input data
-    // OnlineCFTrainHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
-    // CONF_INPUT_DIR, centerIn, 1, n, k, vectorDimension, null);
+    m_conf.setInt(OnlineCF.CONF_ITERATION_COUNT, iteration);
+    m_conf.setInt(OnlineCF.CONF_MATRIX_RANK, matrixRank);
+    m_conf.setInt(OnlineCF.CONF_SKIP_COUNT, skipCount);
+
+    // Generate input data
+    Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
+    m_testPrefs = generateRandomInputData(m_conf, FileSystem.get(m_conf),
+        CONF_INPUT_DIR, preferencesIn, n, m, percentNonZeroValues,
+        m_maxTestPrefs);
 
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
-    System.out.println("n: " + n + " m: " + m + " vectorDimension: "
-        + vectorDimension);
+    System.out.println("n: " + n + " m: " + m + " matrixRank: " + matrixRank);
+    System.out.println(" iterations: " + iteration + " percentNonZeroValues: "
+        + percentNonZeroValues);
     System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
     System.out.println("NumGpuBspTask: "
         + m_conf.getInt("bsp.peers.gpu.num", 0));
@@ -160,7 +189,65 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   }
 
   private void verify() throws Exception {
+    // TODO verify results with m_testPrefs
+  }
 
+  public static List<double[]> generateRandomInputData(Configuration conf,
+      FileSystem fs, Path in, Path preferencesIn, int userCount, int itemCount,
+      int percentNonZeroValues, int maxTestPrefs) throws IOException {
+
+    // Delete input files if already exist
+    if (fs.exists(in)) {
+      fs.delete(in, true);
+    }
+    if (fs.exists(preferencesIn)) {
+      fs.delete(preferencesIn, true);
+    }
+
+    Random rand = new Random(32L);
+    Set<Map.Entry<Long, Long>> userItemPairs = new HashSet<Map.Entry<Long, Long>>();
+    List<double[]> testItems = new ArrayList<double[]>();
+
+    int possibleUserItemRatings = userCount * itemCount;
+    int userItemRatings = possibleUserItemRatings * percentNonZeroValues / 100;
+    System.out.println("possibleRatings: " + possibleUserItemRatings
+        + " ratings: " + userItemRatings);
+
+    final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs, conf,
+        preferencesIn, LongWritable.class, PipesVectorWritable.class,
+        CompressionType.NONE);
+
+    for (int i = 0; i < userItemRatings; i++) {
+
+      // Find new user item rating which was not used before
+      Map.Entry<Long, Long> userItemPair;
+      do {
+        long userId = rand.nextInt(userCount);
+        long itemId = rand.nextInt(itemCount);
+        userItemPair = new AbstractMap.SimpleImmutableEntry<Long, Long>(userId,
+            itemId);
+      } while (userItemPairs.contains(userItemPair));
+
+      // Add user item rating
+      userItemPairs.add(userItemPair);
+
+      // Generate rating
+      int rating = rand.nextInt(5) + 1; // values between 1 and 5
+
+      // Add user item rating to test data
+      if (i < maxTestPrefs) {
+        testItems.add(new double[] { userItemPair.getKey(),
+            userItemPair.getValue(), rating });
+      }
+
+      // Write out user item rating
+      dataWriter.append(new LongWritable(userItemPair.getKey()),
+          new PipesVectorWritable(new DenseDoubleVector(new double[] {
+              userItemPair.getValue(), rating })));
+    }
+    dataWriter.close();
+
+    return testItems;
   }
 
   // Microbenchmark
@@ -180,14 +267,14 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
   public void doBenchmark() {
     try {
-      ToolRunner.run(new OnlineCF(), null);
+      ToolRunner.run(new OnlineCFRunner(), null);
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  private class OnlineCF extends Configured implements Tool {
-    public OnlineCF() {
+  private class OnlineCFRunner extends Configured implements Tool {
+    public OnlineCFRunner() {
     }
 
     @Override
