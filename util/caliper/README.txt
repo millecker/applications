@@ -63,4 +63,12 @@
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
   9 "(n=1000000, k=500)" "(sec)" true false "" 0 "" true 5
 
+#########################
+# OnlineCFHybridBenchmark
+#########################
+
+./CaliperResults.R \
+  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
+  9 "(n=m=5000,k=256)" "(sec)" false true iteration 0 "iterations" false 10
+
 ###############################################################################

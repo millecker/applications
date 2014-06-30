@@ -52,8 +52,8 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   private int m = 5000; // items
 
   // Plot 1
-  @Param({ "1" })
-  // , "10", "25", "50", "75", "100", "125", "150" })
+  // @Param({ "1", "5", "10", "25", "50" })
+  @Param({ "75", "100", "125", "150" })
   private int iteration; // amount of iterations
 
   // Plot 2
