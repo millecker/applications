@@ -69,7 +69,7 @@
 
 ./CaliperResults.R \
   results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
-  9 "(n=m=5000,k=256)" "(sec)" false true iteration 0 "iterations" false 10
+  9 "(n=m=5000,k=256)" "(sec)" false true iteration 0 "iterations" false 20
 
 ./CaliperResults.R \
   results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
