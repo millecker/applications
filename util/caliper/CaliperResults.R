@@ -28,16 +28,25 @@ lappend <- function (lst, ...) {
 # arg9:     [<OtherXaxisDescription>] ]
 # arg10: [<Speedup_EfficiencyPlot=true|false>]
 # arg11: [ticksIncrement]
+# arg12: [ticksStart]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
   stop("Argument CaliperResult JsonFile is missing! (~/.caliper/results)")
 }
 
+# argument ticksIncrement
 if (is.na(args[11])) {
   ticksIncrement <- 2
 } else {
   ticksIncrement <- as.numeric(args[11]);
+}
+
+# argument ticksStart
+if (is.na(args[12])) {
+  ticksStart <- NA
+} else {
+  ticksStart <- as.numeric(args[12]);
 }
 
 ###############################################################################
@@ -312,7 +321,11 @@ cat(message)
 ###############################################################################
 
 # min and max for Y axis ticks
-minY <- round(min(benchmarkTableAvg$magnitude))
+if (!is.na(ticksStart)) {
+  minY <- ticksStart
+} else {
+  minY <- round(min(benchmarkTableAvg$magnitude))
+}
 maxY <- round(max(benchmarkTableAvg$magnitude)) + ticksIncrement
 
 if (!is.na(args[5]) && args[5]=='true') {
@@ -339,7 +352,11 @@ if (!is.na(args[5]) && args[5]=='true') {
 #str(benchmarkTable)
 
 # min and max for Y axis ticks
-minY <- round(min(benchmarkTable$weighted_magnitude))
+if (!is.na(ticksStart)) {
+  minY <- ticksStart
+} else {
+  minY <- round(min(benchmarkTable$weighted_magnitude))
+}
 maxY <- round(max(benchmarkTable$weighted_magnitude)) + ticksIncrement
 
 ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scenario))) + 
@@ -389,7 +406,11 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
   
   # min and max for Y axis ticks
-  minY <- round(min(benchmarkTableAvgScenarioGroup$magnitude))
+  if (!is.na(ticksStart)) {
+    minY <- ticksStart
+  } else {
+    minY <- round(min(benchmarkTableAvgScenarioGroup$magnitude))
+  }
   # cat(paste("Minimum of magnitude: ", minY, sep=""))
   maxY <- round(max(benchmarkTableAvgScenarioGroup$magnitude)) + ticksIncrement
   # cat(paste(" - Maximum of magnitude: ", maxY, "\n", sep=""))
