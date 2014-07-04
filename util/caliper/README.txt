@@ -47,22 +47,22 @@
 ############################
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
-  9 "(n*1024*14)" "(sec)" true false "" 0 "" true 5
+  9 "(n*1024*14)" "(sec)" true false "" 0 "" true 10
 
 #######################
 # KMeansHybridBenchmark
 #######################
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
-  9 "(n=2000000)" "(sec)" false true k 0 "k" false 5
+  9 "(n=2000000)" "(sec)" false true k 0 "k" false 5 30
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
-  9 "(k=500)" "(sec)" false true n 0 "n" false 5
+  9 "(k=500)" "(sec)" false true n 0 "n" false 5 20
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
-  9 "(n=1000000, k=500)" "(sec)" true false "" 0 "" true 5
+  9 "(n=1000000, k=500)" "(sec)" true false "" 0 "" true 10
 
 #########################
 # OnlineCFHybridBenchmark
@@ -74,6 +74,6 @@
 
 ./CaliperResults.R \
   results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
-  9 "(n=m=5000,k=256)" "(sec)" false true percentNonZeroValues 0 "% of non-zero ratings" false 10
+  9 "(n=m=5000,k=256)" "(sec)" false true percentNonZeroValues 0 "% of non-zero ratings" false 20
 
 ###############################################################################

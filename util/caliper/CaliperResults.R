@@ -500,6 +500,7 @@ if (!is.na(args[10]) && args[10]=='true') {
   # speedupEfficiencyTable <- data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$speedup, type = 'speedup')
   # speedupEfficiencyTable <- rbind(speedupEfficiencyTable, data.frame(bspTaskNum = benchmarkTableAvgScenarioGroup$bspTaskNum, value = benchmarkTableAvgScenarioGroup$efficiency, type = 'efficiency'))
   
+  # Save speedup and efficiency plot 
   # ggplot(speedupEfficiencyTable, aes(x=bspTaskNum,y=value,colour=type,group=type)) + 
   #   geom_point(size=5) + 
   #   geom_line() +
