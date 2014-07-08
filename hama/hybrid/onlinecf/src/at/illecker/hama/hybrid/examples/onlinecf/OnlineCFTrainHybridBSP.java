@@ -1135,22 +1135,22 @@ public class OnlineCFTrainHybridBSP
       Configuration conf, FileSystem fs, Path in, Path preferencesIn)
       throws IOException {
 
-    Preference[] train_prefs = { new Preference<Integer, Integer>(1, 1, 4),
+    Preference[] train_prefs = { new Preference<Integer, Integer>(1, 0, 4),
         new Preference<Integer, Integer>(1, 1, 4),
         new Preference<Integer, Integer>(1, 2, 2.5),
         new Preference<Integer, Integer>(1, 3, 3.5),
 
-        new Preference<Integer, Integer>(2, 1, 4),
-        new Preference<Integer, Integer>(2, 2, 2.5),
-        new Preference<Integer, Integer>(2, 3, 3.5),
-        new Preference<Integer, Integer>(2, 4, 1),
-        new Preference<Integer, Integer>(2, 5, 3.5),
+        new Preference<Integer, Integer>(2, 0, 4),
+        new Preference<Integer, Integer>(2, 1, 2.5),
+        new Preference<Integer, Integer>(2, 2, 3.5),
+        new Preference<Integer, Integer>(2, 3, 1),
+        new Preference<Integer, Integer>(2, 4, 3.5),
 
-        new Preference<Integer, Integer>(3, 1, 4),
-        new Preference<Integer, Integer>(3, 2, 2.5),
-        new Preference<Integer, Integer>(3, 3, 3.5),
-        new Preference<Integer, Integer>(3, 4, 1),
-        new Preference<Integer, Integer>(3, 5, 3.5) };
+        new Preference<Integer, Integer>(3, 0, 4),
+        new Preference<Integer, Integer>(3, 1, 2.5),
+        new Preference<Integer, Integer>(3, 2, 3.5),
+        new Preference<Integer, Integer>(3, 3, 1),
+        new Preference<Integer, Integer>(3, 4, 3.5) };
 
     List<Preference<Long, Long>> test_prefs = new ArrayList<Preference<Long, Long>>();
     test_prefs.add(new Preference<Long, Long>(1l, 1l, 4));

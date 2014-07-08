@@ -268,11 +268,10 @@ public class OnlineCFTrainHybridKernel implements Kernel {
                 }
               }
               String messageStr = message.toString();
-              // System.out.println(messageStr); // might cause an error
-
+              
               // System.out.println("sendItem itemId: " + itemId + " toPeerId: "
-              // + toPeerId + " value: "
-              // + arrayToString(vector) + "\n");
+              //    + toPeerId + " value: "
+              //    + arrayToString(m_itemsMatrix[itemId], m_matrixRank));
 
               HamaPeer.send(m_allPeerNames[toPeerId], messageStr);
 
@@ -294,15 +293,16 @@ public class OnlineCFTrainHybridKernel implements Kernel {
             int itemId = Integer.parseInt(values[1]);
             int dim = values.length - 2;
             for (int d = 0; d < dim; d++) {
-              m_itemsMatrix[itemId][d] = Double.parseDouble(values[d + 2]);
+              m_itemsMatrix[itemId][d] += Double.parseDouble(values[d + 2]);
             }
-
-            // System.out.println("receiveItem itemId: " + itemId
-            // + " fromPeerId: " + senderId + " value: "
-            // + arrayToString(vector) + "\n");
 
             m_counterMap.add(itemId, 1);
             m_senderMap.put(itemId, senderId);
+
+            // System.out.println("receiveItem itemId: " + itemId
+            // + " fromPeerId: " + senderId + " accumulated value: "
+            // + arrayToString(m_itemsMatrix[itemId], dim) + " counter: "
+            // + m_counterMap.get(itemId));
           }
 
         } // RootbeerGpu.getThreadId() == 0
@@ -313,16 +313,14 @@ public class OnlineCFTrainHybridKernel implements Kernel {
         // Step 3)
         // normalize (messages with counters)
         // Loop over all itemsPerBlock
+        // Each thread within a block in parallel
         for (int v = 0; v < itemsPerBlock; v++) {
-
           int itemId = (itemsPerBlock * v) + block_idxx;
-          int counter = m_counterMap.get(itemId);
-          if ((itemId < m_M) && (counter > 1)) {
-            // Each thread within a block
-            if (thread_idxx < m_matrixRank) {
-              m_itemsMatrix[itemId][thread_idxx] = m_itemsMatrix[itemId][thread_idxx]
-                  / counter;
-            }
+          Integer counter = m_counterMap.get(itemId);
+          if ((itemId < m_M) && (counter != null) && (counter > 1)
+              && (thread_idxx < m_matrixRank)) {
+            m_itemsMatrix[itemId][thread_idxx] = m_itemsMatrix[itemId][thread_idxx]
+                / counter;
           }
 
           // Sync all threads within a block
@@ -427,11 +425,14 @@ public class OnlineCFTrainHybridKernel implements Kernel {
     return x;
   }
 
-  private String arrayToString(double[] arr) {
+  private String arrayToString(double[] arr, int dimension) {
     if (arr != null) {
+      if (dimension <= 0) {
+        dimension = arr.length;
+      }
       String result = "";
-      for (int i = 0; i < arr.length; i++) {
-        result += (i + 1 == arr.length) ? arr[i] : (arr[i] + ",");
+      for (int i = 0; i < dimension; i++) {
+        result += (i + 1 == dimension) ? arr[i] : (arr[i] + ",");
       }
       return result;
     }
