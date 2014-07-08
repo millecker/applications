@@ -47,14 +47,20 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   private GpuIntegerMap m_counterMap;
   private GpuIntegerListMap m_senderMap;
 
+  private GpuIntegerMap m_itemColMap;
+  private GpuIntegerMap m_colItemMap;
+
   public OnlineCFTrainHybridKernel(double[][] userItemMatrix,
-      int[][] userHelper, int[][] itemHelper, double[][] usersMatrix,
-      double[][] itemsMatrix, int n, int m, double alpha, int matrixRank,
-      int maxIterations, GpuIntegerMap counterMap, int skipCount,
-      int peerCount, int peerId, String[] allPeerNames) {
+      int[][] userHelper, int[][] itemHelper, GpuIntegerMap itemColMap,
+      GpuIntegerMap colItemMap, double[][] usersMatrix, double[][] itemsMatrix,
+      int n, int m, double alpha, int matrixRank, int maxIterations,
+      GpuIntegerMap counterMap, int skipCount, int peerCount, int peerId,
+      String[] allPeerNames) {
     this.m_userItemMatrix = userItemMatrix;
     this.m_userHelper = userHelper;
     this.m_itemHelper = itemHelper;
+    this.m_itemColMap = itemColMap;
+    this.m_colItemMap = colItemMap;
     this.m_usersMatrix = usersMatrix;
     this.m_itemsMatrix = itemsMatrix;
     this.m_N = n;
@@ -248,7 +254,8 @@ public class OnlineCFTrainHybridKernel implements Kernel {
           // send item matrices to selected peers
           for (int itemId = 0; itemId < m_M; itemId++) {
 
-            int toPeerId = itemId % m_peerCount;
+            int realItemId = m_colItemMap.get(itemId);
+            int toPeerId = realItemId % m_peerCount;
             // don't send item to itself
             if (toPeerId != m_peerId) {
               // init Counter
@@ -259,7 +266,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
               StringBuilder message = new StringBuilder();
               message.append(Integer.toString(m_peerId));
               message.append(",");
-              message.append(Integer.toString(itemId));
+              message.append(Integer.toString(realItemId));
               message.append(",");
               for (int d = 0; d < m_matrixRank; d++) {
                 message.append(Double.toString(m_itemsMatrix[itemId][d]));
@@ -268,10 +275,10 @@ public class OnlineCFTrainHybridKernel implements Kernel {
                 }
               }
               String messageStr = message.toString();
-              
+
               // System.out.println("sendItem itemId: " + itemId + " toPeerId: "
-              //    + toPeerId + " value: "
-              //    + arrayToString(m_itemsMatrix[itemId], m_matrixRank));
+              // + toPeerId + " value: "
+              // + arrayToString(m_itemsMatrix[itemId], m_matrixRank));
 
               HamaPeer.send(m_allPeerNames[toPeerId], messageStr);
 
@@ -290,19 +297,22 @@ public class OnlineCFTrainHybridKernel implements Kernel {
             // ItemMessage (senderId,itemId,itemVector)
             String[] values = msg.split(",");
             int senderId = Integer.parseInt(values[0]);
-            int itemId = Integer.parseInt(values[1]);
-            int dim = values.length - 2;
-            for (int d = 0; d < dim; d++) {
-              m_itemsMatrix[itemId][d] += Double.parseDouble(values[d + 2]);
+            int realItemId = Integer.parseInt(values[1]);
+            Integer itemId = m_itemColMap.get(realItemId);
+            if (itemId != null) {
+              int dim = values.length - 2;
+              for (int d = 0; d < dim; d++) {
+                m_itemsMatrix[itemId][d] += Double.parseDouble(values[d + 2]);
+              }
+
+              m_counterMap.add(itemId, 1);
+              m_senderMap.put(itemId, senderId);
+
+              // System.out.println("receiveItem itemId: " + itemId
+              // + " fromPeerId: " + senderId + " accumulated value: "
+              // + arrayToString(m_itemsMatrix[itemId], dim) + " counter: "
+              // + m_counterMap.get(itemId));
             }
-
-            m_counterMap.add(itemId, 1);
-            m_senderMap.put(itemId, senderId);
-
-            // System.out.println("receiveItem itemId: " + itemId
-            // + " fromPeerId: " + senderId + " accumulated value: "
-            // + arrayToString(m_itemsMatrix[itemId], dim) + " counter: "
-            // + m_counterMap.get(itemId));
           }
 
         } // RootbeerGpu.getThreadId() == 0
@@ -339,7 +349,8 @@ public class OnlineCFTrainHybridKernel implements Kernel {
           for (int itemId = 0; itemId < m_M; itemId++) {
 
             // only send own items
-            if (m_peerId == itemId % m_peerCount) {
+            int realItemId = m_colItemMap.get(itemId);
+            if (m_peerId == realItemId % m_peerCount) {
 
               // ItemMessage (senderId,itemId,itemVector)
               // e.g.,
@@ -347,7 +358,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
               StringBuilder message = new StringBuilder();
               message.append(Integer.toString(m_peerId));
               message.append(",");
-              message.append(Integer.toString(itemId));
+              message.append(Integer.toString(realItemId));
               message.append(",");
               for (int d = 0; d < m_matrixRank; d++) {
                 message.append(Double.toString(m_itemsMatrix[itemId][d]));
@@ -371,8 +382,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
 
                 pair = pair.getNext();
               }
-
-            }
+            } // if (m_peerId == realItemId % m_peerCount)
           }
 
           HamaPeer.sync();
@@ -386,14 +396,16 @@ public class OnlineCFTrainHybridKernel implements Kernel {
             String[] values = msg.split(",");
 
             // don't care about the senderId (values[0])
-            int itemId = Integer.parseInt(values[1]);
-            int dim = values.length - 2;
-            for (int d = 0; d < dim; d++) {
-              m_itemsMatrix[itemId][d] = Double.parseDouble(values[d + 2]);
+            int realItemId = Integer.parseInt(values[1]);
+            Integer itemId = m_itemColMap.get(realItemId);
+            if (itemId != null) {
+              int dim = values.length - 2;
+              for (int d = 0; d < dim; d++) {
+                m_itemsMatrix[itemId][d] = Double.parseDouble(values[d + 2]);
+              }
+              // System.out.println("updateItems itemId: " + itemId + " value: "
+              // + arrayToString(vector) + "\n");
             }
-
-            // System.out.println("updateItems itemId: " + itemId + " value: "
-            // + arrayToString(vector) + "\n");
           }
 
         } // if (RootbeerGpu.getThreadId() == 0)
@@ -442,8 +454,8 @@ public class OnlineCFTrainHybridKernel implements Kernel {
   public static void main(String[] args) {
     // Dummy invocation
     // otherwise Rootbeer will remove constructors and methods
-    new OnlineCFTrainHybridKernel(null, null, null, null, null, 0, 0, 0, 0, 0,
-        null, 0, 0, 0, null);
-    new GpuIntegerMap();
+    new OnlineCFTrainHybridKernel(null, null, null, null, null, null, null, 0,
+        0, 0, 0, 0, null, 0, 0, 0, null);
+    new GpuIntegerMap().getList();
   }
 }

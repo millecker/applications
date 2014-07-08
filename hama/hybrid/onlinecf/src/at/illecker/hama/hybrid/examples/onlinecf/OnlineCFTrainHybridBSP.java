@@ -220,11 +220,6 @@ public class OnlineCFTrainHybridBSP
       }
     }
 
-    // Save Model
-    // TODO why is each task saving all items?
-    // after exchanging items all tasks should have the same items!
-    // -> duplicate saves
-
     // save users
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + m_usersMatrix.size() + " users\n");
@@ -236,8 +231,8 @@ public class OnlineCFTrainHybridBSP
       }
       peer.write(new Text("u" + user.getKey()), user.getValue());
     }
-
     // save items
+    // TODO duplicated item saves, but one item may belong to one task only
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("saving " + m_itemsMatrix.size() + " items\n");
     }
@@ -588,12 +583,17 @@ public class OnlineCFTrainHybridBSP
     Map<Long, Long> sortedItemRatingCount = sortByValues(itemRatingCount);
 
     // Convert preferences to userItemMatrix double[][]
-    // TODO Skip zero rows and cols
     // sortedUserRatingCount.size() x sortedItemRatingCount.size()
     double[][] userItemMatrix = new double[m_usersMatrix.size()][m_itemsMatrix
         .size()];
+
+    // Mappers
     Map<Long, Integer> userItemMatrixUserRowMap = new HashMap<Long, Integer>();
-    Map<Long, Integer> userItemMatrixItemColMap = new HashMap<Long, Integer>();
+    GpuIntegerMap userItemMatrixItemColMap = new GpuIntegerMap(
+        m_itemsMatrix.size() + 1); // +1 because we are starting with 0
+    GpuIntegerMap userItemMatrixColItemMap = new GpuIntegerMap(
+        m_itemsMatrix.size() + 1); // +1 because we are starting with 0
+
     // Create userHelper to int[][]
     // userHelper[userId][0] = userRatingCount
     // userHelper[userId][1] = colId of userItemMatrix
@@ -630,7 +630,8 @@ public class OnlineCFTrainHybridBSP
 
         // Map itemId to colId in userItemMatrixItemColMap
         if (rowId == 0) {
-          userItemMatrixItemColMap.put(itemId, colId);
+          userItemMatrixItemColMap.put(itemId.intValue(), colId);
+          userItemMatrixColItemMap.put(colId, itemId.intValue());
         }
 
         // Setup itemHelper
@@ -730,10 +731,11 @@ public class OnlineCFTrainHybridBSP
     // Run GPU Kernels
     // **********************************************************************
     OnlineCFTrainHybridKernel kernel = new OnlineCFTrainHybridKernel(
-        userItemMatrix, userHelper, itemHelper, userMatrix, itemMatrix,
-        m_usersMatrix.size(), m_itemsMatrix.size(), ALPHA, m_matrixRank,
-        m_maxIterations, counterMap, m_skipCount, peer.getNumPeers(),
-        peer.getPeerIndex(), peer.getAllPeerNames());
+        userItemMatrix, userHelper, itemHelper, userItemMatrixItemColMap,
+        userItemMatrixColItemMap, userMatrix, itemMatrix, m_usersMatrix.size(),
+        m_itemsMatrix.size(), ALPHA, m_matrixRank, m_maxIterations, counterMap,
+        m_skipCount, peer.getNumPeers(), peer.getPeerIndex(),
+        peer.getAllPeerNames());
 
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
@@ -746,10 +748,6 @@ public class OnlineCFTrainHybridBSP
     // Save Model
     // **********************************************************************
     // save users
-    if (m_isDebuggingEnabled) {
-      m_logger.writeChars("saving " + userItemMatrixUserRowMap.size()
-          + " users\n");
-    }
     for (Entry<Long, Integer> userMap : userItemMatrixUserRowMap.entrySet()) {
       if (m_isDebuggingEnabled) {
         m_logger.writeChars("user: " + userMap.getKey() + " vector: "
@@ -758,19 +756,18 @@ public class OnlineCFTrainHybridBSP
       peer.write(new Text("u" + userMap.getKey()), new PipesVectorWritable(
           new DenseDoubleVector(kernel.m_usersMatrix[userMap.getValue()])));
     }
-
+    // TODO duplicated item saves, but one item may belong to one task only
     // save items
-    if (m_isDebuggingEnabled) {
-      m_logger.writeChars("saving " + userItemMatrixItemColMap.size()
-          + " items\n");
-    }
-    for (Entry<Long, Integer> itemMap : userItemMatrixItemColMap.entrySet()) {
-      if (m_isDebuggingEnabled) {
-        m_logger.writeChars("item: " + itemMap.getKey() + " vector: "
-            + Arrays.toString(kernel.m_itemsMatrix[itemMap.getValue()]) + "\n");
+    for (GpuIntIntPair itemMap : userItemMatrixItemColMap.getList()) {
+      if (itemMap != null) {
+        if (m_isDebuggingEnabled) {
+          m_logger.writeChars("item: " + itemMap.getKey() + " vector: "
+              + Arrays.toString(kernel.m_itemsMatrix[itemMap.getValue()])
+              + "\n");
+        }
+        peer.write(new Text("i" + itemMap.getKey()), new PipesVectorWritable(
+            new DenseDoubleVector(kernel.m_itemsMatrix[itemMap.getValue()])));
       }
-      peer.write(new Text("i" + itemMap.getKey()), new PipesVectorWritable(
-          new DenseDoubleVector(kernel.m_itemsMatrix[itemMap.getValue()])));
     }
 
     this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
@@ -1136,9 +1133,8 @@ public class OnlineCFTrainHybridBSP
       throws IOException {
 
     Preference[] train_prefs = { new Preference<Integer, Integer>(1, 0, 4),
-        new Preference<Integer, Integer>(1, 1, 4),
-        new Preference<Integer, Integer>(1, 2, 2.5),
-        new Preference<Integer, Integer>(1, 3, 3.5),
+        new Preference<Integer, Integer>(1, 1, 2.5),
+        new Preference<Integer, Integer>(1, 2, 3.5),
 
         new Preference<Integer, Integer>(2, 0, 4),
         new Preference<Integer, Integer>(2, 1, 2.5),
@@ -1153,11 +1149,11 @@ public class OnlineCFTrainHybridBSP
         new Preference<Integer, Integer>(3, 4, 3.5) };
 
     List<Preference<Long, Long>> test_prefs = new ArrayList<Preference<Long, Long>>();
-    test_prefs.add(new Preference<Long, Long>(1l, 1l, 4));
-    test_prefs.add(new Preference<Long, Long>(1l, 2l, 2.5));
-    test_prefs.add(new Preference<Long, Long>(1l, 3l, 3.5));
-    test_prefs.add(new Preference<Long, Long>(1l, 4l, 1));
-    test_prefs.add(new Preference<Long, Long>(1l, 5l, 3.5));
+    test_prefs.add(new Preference<Long, Long>(1l, 0l, 4));
+    test_prefs.add(new Preference<Long, Long>(1l, 1l, 2.5));
+    test_prefs.add(new Preference<Long, Long>(1l, 2l, 3.5));
+    test_prefs.add(new Preference<Long, Long>(1l, 3l, 1));
+    test_prefs.add(new Preference<Long, Long>(1l, 4l, 3.5));
 
     // Delete input files if already exist
     if (fs.exists(in)) {

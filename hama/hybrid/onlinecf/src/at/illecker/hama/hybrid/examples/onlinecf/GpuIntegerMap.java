@@ -30,6 +30,10 @@ public final class GpuIntegerMap {
     this.m_values = new GpuIntIntPair[size];
   }
 
+  public GpuIntIntPair[] getList() {
+    return m_values;
+  }
+
   public void clear() {
     if (m_used) {
       for (int i = 0; i < m_values.length; i++) {
