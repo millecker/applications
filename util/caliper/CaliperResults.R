@@ -315,6 +315,12 @@ if (is.na(args[13])) {
     theme(legend.position = "none")
 } else {
 
+  barText <- unlist(strsplit(args[13],",",fixed=TRUE))
+  barTextLen <- length(barText)
+  barTextLastElement <- barText[barTextLen]
+  barTextLastElement <- gsub("|", "\n", barTextLastElement, fixed=TRUE)
+  barText[barTextLen] <- ""
+  
   # check for barTextPosition
   if (is.na(args[14])) {
     barTextPosition <- 5
@@ -330,7 +336,8 @@ if (is.na(args[13])) {
 
   ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
     geom_bar(stat="identity",color="black") +
-    geom_text(aes(y=barTextPosition,label=unlist(strsplit(args[13],",",fixed=TRUE))),size=barTextSize,angle=90,position=position_dodge(width=1),hjust=0) +
+    geom_text(aes(y=barTextPosition,label=barText),size=barTextSize,angle=90,hjust=0) +
+    annotate(geom="text",x=barTextLen,y=barTextPosition,label=barTextLastElement,size=barTextSize,angle=90,hjust=0) +
     scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
     xlab(xaxisDesc) +
     ylab(yaxisDesc) +

@@ -50,7 +50,8 @@
 ############################
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
-  9 "(n*1024*14)" "(sec)" true false "" 0 "" true 10
+  9 "(n*1024*14)" "(sec)" true false "" 0 "" true 10 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 Tasks on CPU and|1 Task on GPU" 4 6
 
 #######################
 # KMeansHybridBenchmark
@@ -65,7 +66,8 @@
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
-  9 "(n=1000000, k=500)" "(sec)" true false "" 0 "" true 10
+  9 "(n=1000000, k=500)" "(sec)" true false "" 0 "" true 10 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and|1 Task on GPU" 5 8
 
 #########################
 # OnlineCFHybridBenchmark
