@@ -39,7 +39,7 @@
 ######################
 ./CaliperResults.R \
   results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.*.json \
-  9 "(n*1024*14)" "(sec)" false true n 3 "N (n*1024*14*1000)" false 2
+  9 "(n*1024*14)" "(sec)" false true n 3 "N" false 2
 
 ###############################################################################
 # Hybrid Examples
@@ -51,7 +51,7 @@
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
   9 "(n*1024*14)" "(sec)" true false "" 0 "" true 10 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 Tasks on CPU and|1 Task on GPU" 4 6
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 Tasks on CPU|1 Task on GPU" 4 6
 
 #######################
 # KMeansHybridBenchmark
@@ -67,7 +67,7 @@
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.json \
   9 "(n=1000000, k=500)" "(sec)" true false "" 0 "" true 10 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and|1 Task on GPU" 5 8
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU|1 Task on GPU" 5 8
 
 #########################
 # OnlineCFHybridBenchmark
@@ -84,6 +84,6 @@
 ./CaliperResults.R \
   results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
   9 "(1M MovieLens dataset, k=3, 1 iteration)" "(sec)"  true false "" 0 "" true 10 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and 1 Task on GPU" 4 12
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and 1 Task on GPU" 2 8
 
 ###############################################################################
