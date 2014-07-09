@@ -16,6 +16,8 @@
  */
 package at.illecker.hama.hybrid.examples.onlinecf;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -53,12 +55,15 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
   // Plot 1
   // @Param({ "1", "5", "10", "25", "50" })
-  @Param({ "75", "100", "125", "150" })
-  private int iteration; // amount of iterations
+  // @Param({ "75", "100", "125", "150" })
+  private int iteration = 150; // 1; // plot 3 // amount of iterations
 
   // Plot 2
-  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" })
-  private int percentNonZeroValues = 10;
+  // @Param({ "1", "2", "3", "4", "5" })
+  // TODO
+  @Param({ "6", "7", "8" })
+  // @Param({ "9", "10" })
+  private int percentNonZeroValues; // = 10; // plot 1
 
   @Param
   CalcType type;
@@ -67,12 +72,17 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  // Plot 2
+  // Plot 3
   // maximal 4 cpu tasks and 1 gpu task
   // @Param({ "1", "2", "3", "4", "5" })
   private int bspTaskNum = 1;
+  // - one iteration only
+  // - do not write out results
+  // because each task will write out all items!
+  private boolean m_useInputFile = false;
+  private String m_movieLensInputFile = "/home/martin/Downloads/ml-1m/ratings.dat";
 
-  private int matrixRank = 256;
+  private int matrixRank = 256; // 3; // plot 3
   private int skipCount = 1;
 
   private static final Path CONF_TMP_DIR = new Path(
@@ -140,7 +150,7 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.set(OnlineCFTrainHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
 
     // CPU vs GPU iterations benchmark
-    // Plot 1
+    // Plot 1 and 2
     int numGpuBspTask = 0;
     if (type == CalcType.GPU) {
       bspTaskNum = 1;
@@ -148,7 +158,7 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     }
 
     // CPU + GPU Hybrid benchmark
-    // Plot 2
+    // Plot 3
     // if (bspTaskNum == 5) {
     // numGpuBspTask = 1;
     // } else {
@@ -164,16 +174,31 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.setInt(OnlineCF.CONF_MATRIX_RANK, matrixRank);
     m_conf.setInt(OnlineCF.CONF_SKIP_COUNT, skipCount);
 
-    // Generate input data
     Path preferencesIn = new Path(CONF_INPUT_DIR, "preferences_in.seq");
-    m_testPrefs = generateRandomInputData(m_conf, FileSystem.get(m_conf),
-        CONF_INPUT_DIR, preferencesIn, n, m, percentNonZeroValues,
-        m_maxTestPrefs);
 
+    if (!m_useInputFile) {
+      // Generate random input data
+      m_testPrefs = generateRandomInputData(m_conf, FileSystem.get(m_conf),
+          CONF_INPUT_DIR, preferencesIn, n, m, percentNonZeroValues,
+          m_maxTestPrefs);
+    } else {
+      // Convert MovieLens input data
+      // parse inputFile and return first entries for testing
+      m_testPrefs = convertInputData(m_conf, FileSystem.get(m_conf),
+          CONF_INPUT_DIR, preferencesIn, m_movieLensInputFile, "::",
+          m_maxTestPrefs);
+    }
+
+    // Debug output
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
-    System.out.println("n: " + n + " m: " + m + " matrixRank: " + matrixRank);
-    System.out.println(" iterations: " + iteration + " percentNonZeroValues: "
-        + percentNonZeroValues);
+    if (!m_useInputFile) {
+      System.out.println("n: " + n + " m: " + m);
+      System.out.println("percentNonZeroValues: " + percentNonZeroValues);
+    } else {
+      System.out.println("Use inputFile: " + m_movieLensInputFile);
+    }
+    System.out.println("matrixRank: " + matrixRank);
+    System.out.println("iterations: " + iteration);
     System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
     System.out.println("NumGpuBspTask: "
         + m_conf.getInt("bsp.peers.gpu.num", 0));
@@ -192,6 +217,9 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     // TODO verify results with m_testPrefs
   }
 
+  // **********************************************************************
+  // generateRandomInputData
+  // **********************************************************************
   public static List<double[]> generateRandomInputData(Configuration conf,
       FileSystem fs, Path in, Path preferencesIn, int userCount, int itemCount,
       int percentNonZeroValues, int maxTestPrefs) throws IOException {
@@ -250,6 +278,56 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     return testItems;
   }
 
+  // **********************************************************************
+  // convertInputData (MovieLens input files)
+  // **********************************************************************
+  public static List<double[]> convertInputData(Configuration conf,
+      FileSystem fs, Path in, Path preferencesIn, String inputFile,
+      String separator, int maxTestPrefs) throws IOException {
+
+    List<double[]> testItems = new ArrayList<double[]>();
+
+    // Delete input files if already exist
+    if (fs.exists(in)) {
+      fs.delete(in, true);
+    }
+    if (fs.exists(preferencesIn)) {
+      fs.delete(preferencesIn, true);
+    }
+
+    final SequenceFile.Writer prefWriter = SequenceFile.createWriter(fs, conf,
+        preferencesIn, LongWritable.class, PipesVectorWritable.class,
+        CompressionType.NONE);
+
+    BufferedReader br = new BufferedReader(new FileReader(inputFile));
+    String line;
+    while ((line = br.readLine()) != null) {
+      String[] values = line.split(separator);
+      long userId = Long.parseLong(values[0]);
+      long itemId = Long.parseLong(values[1]);
+      double rating = Double.parseDouble(values[2]);
+      // System.out.println("userId: " + userId + " itemId: " + itemId
+      // + " rating: " + rating);
+
+      double vector[] = new double[2];
+      vector[0] = itemId;
+      vector[1] = rating;
+      prefWriter.append(new LongWritable(userId), new PipesVectorWritable(
+          new DenseDoubleVector(vector)));
+
+      // Add test preferences
+      maxTestPrefs--;
+      if (maxTestPrefs > 0) {
+        testItems.add(new double[] { userId, itemId, rating });
+      }
+
+    }
+    br.close();
+    prefWriter.close();
+
+    return testItems;
+  }
+
   // Microbenchmark
   // Uncomment Macro to use Micro
   // public void timeCalculate(int reps) {
@@ -279,7 +357,6 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
     @Override
     public int run(String[] arg0) throws Exception {
-
       BSPJob job = OnlineCFTrainHybridBSP.createOnlineCFTrainHybridBSPConf(
           m_conf, CONF_INPUT_DIR, CONF_OUTPUT_DIR);
 
@@ -288,7 +365,6 @@ public class OnlineCFHybridBenchmark extends Benchmark {
         System.out.println("Job Finished in "
             + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
       }
-
       return 0;
     }
   }
