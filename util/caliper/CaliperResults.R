@@ -29,6 +29,9 @@ lappend <- function (lst, ...) {
 # arg10: [<Speedup_EfficiencyPlot=true|false>]
 # arg11: [ticksIncrement]
 # arg12: [ticksStart]
+# arg13: [barText]
+# arg14: [barTextPosition]
+# arg14: [barTextSize]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
@@ -302,13 +305,38 @@ if (!is.na(args[2])) {
 minY <- 0 #round(min(benchmarkTableAvg$magnitude))
 maxY <- round(max(benchmarkTableAvg$magnitude)) + ticksIncrement
 
-ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
-  geom_bar(stat="identity",color="black") +
-  scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
-  xlab(xaxisDesc) +
-  ylab(yaxisDesc) +
-  ggtitle(title) +
-  theme(legend.position = "none")
+if (is.na(args[13])) {
+  ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
+    geom_bar(stat="identity",color="black") +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
+    xlab(xaxisDesc) +
+    ylab(yaxisDesc) +
+    ggtitle(title) +
+    theme(legend.position = "none")
+} else {
+
+  # check for barTextPosition
+  if (is.na(args[14])) {
+    barTextPosition <- 5
+  } else {
+    barTextPosition <- as.numeric(args[14]);
+  }
+  # check for barTextSize
+  if (is.na(args[15])) {
+    barTextSize <- 10
+  } else {
+    barTextSize <- as.numeric(args[15]);
+  }
+
+  ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
+    geom_bar(stat="identity",color="black") +
+    geom_text(aes(y=barTextPosition,label=unlist(strsplit(args[13],",",fixed=TRUE))),size=barTextSize,angle=90,position=position_dodge(width=1),hjust=0) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
+    xlab(xaxisDesc) +
+    ylab(yaxisDesc) +
+    ggtitle(title) +
+    theme(legend.position = "none")
+}
 
 outputfile <- paste(caliperJsonFile,"_avg_barplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)

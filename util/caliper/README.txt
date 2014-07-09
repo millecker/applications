@@ -19,6 +19,9 @@
    [<Speedup_EfficiencyPlot=true|false>]
    [ticksIncrement]
    [ticksStart]
+   [barText]
+   [barTextPosition]
+   [barTextSize]
 
 ###############################################################################
 # Rootbeer Examples
@@ -78,6 +81,7 @@
 
 ./CaliperResults.R \
   results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
-  9 "(1M MovieLens dataset,k=3, 1 iteration)" "(sec)"  true false "" 0 "" true 10
+  9 "(1M MovieLens dataset, k=3, 1 iteration)" "(sec)"  true false "" 0 "" true 10 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and 1 Task on GPU" 4 12
 
 ###############################################################################
