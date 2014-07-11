@@ -59,9 +59,8 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   private int iteration = 150; // 1; // plot 3 // amount of iterations
 
   // Plot 2
-  // @Param({ "1", "2", "3", "4", "5" })
-  // TODO
-  @Param({ "6", "7", "8" })
+  @Param({ "1", "2", "3", "4", "5" })
+  // @Param({ "6", "7", "8" })
   // @Param({ "9", "10" })
   private int percentNonZeroValues; // = 10; // plot 1
 
