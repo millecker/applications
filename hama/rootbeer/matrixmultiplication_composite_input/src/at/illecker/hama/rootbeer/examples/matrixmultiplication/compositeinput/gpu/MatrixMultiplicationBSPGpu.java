@@ -53,13 +53,15 @@ import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
 import org.apache.mahout.math.function.Functions;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.util.DistributedRowMatrix;
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.util.MatrixRowMessage;
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class MatrixMultiplicationBSPGpu
     extends
@@ -177,20 +179,21 @@ public class MatrixMultiplicationBSPGpu
             outFragArray));
       }
 
+      // Run GPU Kernels
+      Rootbeer rootbeer = new Rootbeer();
+      Context context = rootbeer.createDefaultContext();
       Stopwatch watch = new Stopwatch();
       watch.start();
-      Rootbeer rootbeer = new Rootbeer();
       // blockSize = rows of Matrix A (multiplier)
       // gridSize = cols of Matrix B (for each row a scalar multiplication
       // has to be made)
-      rootbeer.setThreadConfig(blockSize, gridSize, kernels.size());
-      rootbeer.runAll(kernels);
+      rootbeer.run(kernels,
+          new ThreadConfig(blockSize, gridSize, kernels.size()), context);
       watch.stop();
 
-      List<StatsRow> stats = rootbeer.getStats();
+      List<StatsRow> stats = context.getStats();
       for (StatsRow row : stats) {
         System.out.println("  StatsRow:\n");
-        System.out.println("    init time: " + row.getInitTime() + "\n");
         System.out.println("    serial time: " + row.getSerializationTime()
             + "\n");
         System.out.println("    exec time: " + row.getExecutionTime() + "\n");

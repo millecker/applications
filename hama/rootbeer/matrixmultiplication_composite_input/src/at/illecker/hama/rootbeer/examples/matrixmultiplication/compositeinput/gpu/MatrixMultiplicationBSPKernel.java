@@ -16,8 +16,8 @@
  */
 package at.illecker.hama.rootbeer.examples.matrixmultiplication.compositeinput.gpu;
 
-import edu.syr.pcpratts.rootbeer.runtime.Kernel;
-import edu.syr.pcpratts.rootbeer.runtime.RootbeerGpu;
+import org.trifort.rootbeer.runtime.Kernel;
+import org.trifort.rootbeer.runtime.RootbeerGpu;
 
 public class MatrixMultiplicationBSPKernel implements Kernel {
 

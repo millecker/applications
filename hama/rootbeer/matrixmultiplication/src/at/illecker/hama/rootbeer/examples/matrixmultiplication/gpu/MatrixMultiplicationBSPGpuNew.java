@@ -45,11 +45,13 @@ import org.apache.hama.bsp.sync.SyncException;
 import org.apache.hama.commons.io.VectorWritable;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
+import org.trifort.rootbeer.runtime.Context;
+import org.trifort.rootbeer.runtime.Rootbeer;
+import org.trifort.rootbeer.runtime.StatsRow;
+import org.trifort.rootbeer.runtime.ThreadConfig;
+import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 import at.illecker.hama.rootbeer.examples.matrixmultiplication.util.DistributedRowMatrix;
-import edu.syr.pcpratts.rootbeer.runtime.Rootbeer;
-import edu.syr.pcpratts.rootbeer.runtime.StatsRow;
-import edu.syr.pcpratts.rootbeer.runtime.util.Stopwatch;
 
 public class MatrixMultiplicationBSPGpuNew extends
     BSP<IntWritable, VectorWritable, IntWritable, VectorWritable, NullWritable> {
@@ -198,20 +200,20 @@ public class MatrixMultiplicationBSPGpuNew extends
     // Setup GPU Kernel
     MatrixMultiplicationBSPKernel kernel = new MatrixMultiplicationBSPKernel(
         matrixAArr, m_matrixBArr, m_threadSliceSize, m_blockSliceSize);
-    Rootbeer rootbeer = new Rootbeer();
-    rootbeer.setThreadConfig(m_blockSize, m_gridSize, m_blockSize * m_gridSize);
 
     // Run GPU Kernels
+    Rootbeer rootbeer = new Rootbeer();
+    Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.runAll(kernel);
+    rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize, m_blockSize
+        * m_gridSize), context);
     watch.stop();
 
     // DEBUG information of GPU run
-    List<StatsRow> stats = rootbeer.getStats();
+    List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
       System.out.println("  StatsRow:\n");
-      System.out.println("    init time: " + row.getInitTime() + "\n");
       System.out.println("    serial time: " + row.getSerializationTime()
           + "\n");
       System.out.println("    exec time: " + row.getExecutionTime() + "\n");
