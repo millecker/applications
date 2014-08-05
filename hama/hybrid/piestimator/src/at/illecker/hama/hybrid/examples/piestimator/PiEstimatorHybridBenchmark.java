@@ -47,7 +47,7 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
   private final int maxBspTaskNum = 9;
 
   // GPU percentage of the input data
-  @Param({ "12", "50", "70", "90", "95", "99" })
+  @Param({ "12", "50", "60", "70", "80", "90", "95", "99" })
   private int GPUPercentage;
 
   private static final String OUTPUT_DIR = "output/hama/rootbeer/examples/piestimator/bench";
@@ -110,8 +110,9 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     m_totalIterations = (long) m_blockSize * (long) m_gridSize * n;
 
     System.out.println("Benchmark PiEstimatorHybridBSP[blockSize="
-        + m_blockSize + ",gridSize=" + m_gridSize + "] n=" + n + "bspTaskNum="
-        + bspTaskNum + ", totalSamples=" + m_totalIterations);
+        + m_blockSize + ",gridSize=" + m_gridSize + "] n=" + n + ",bspTaskNum="
+        + bspTaskNum + ",GPUPercentage=" + GPUPercentage + ",totalSamples="
+        + m_totalIterations);
   }
 
   @Override

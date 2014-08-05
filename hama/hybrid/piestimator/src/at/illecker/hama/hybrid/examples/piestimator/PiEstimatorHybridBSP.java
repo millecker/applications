@@ -114,29 +114,20 @@ public class PiEstimatorHybridBSP extends
     }
 
     // Compute work distributions
-    // for GPU
     long iterationsPerGPUTask = (m_iterations * m_GPUPercentage) / 100;
-    m_iterationsPerGPUThread = iterationsPerGPUTask
-        / (m_blockSize * m_gridSize);
-
-    // for CPU
     long iterationsPerCPU = m_iterations - iterationsPerGPUTask;
     int cpuTaskNum = totalTaskNum - m_conf.getInt("bsp.peers.gpu.num", 0);
     m_iterationsPerCPUTask = iterationsPerCPU / cpuTaskNum;
 
     // DEBUG
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("PiEstimatorHybrid,cpuTaskNum=" + cpuTaskNum + "\n");
       m_logger.writeChars("PiEstimatorHybrid,GPUPercentage=" + m_GPUPercentage
           + "\n");
-      m_logger.writeChars("PiEstimatorHybrid,CPUPercentage="
-          + (100 - m_GPUPercentage) + "\n");
+      m_logger.writeChars("PiEstimatorHybrid,cpuTaskNum=" + cpuTaskNum + "\n");
+      m_logger.writeChars("PiEstimatorHybrid,iterationsPerCPU="
+          + iterationsPerCPU + "\n");
       m_logger.writeChars("PiEstimatorHybrid,iterationsPerCPUTask="
           + m_iterationsPerCPUTask + "\n");
-      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUTask="
-          + iterationsPerGPUTask + "\n");
-      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUThread="
-          + m_iterationsPerGPUThread + "\n");
     }
   }
 
@@ -170,34 +161,26 @@ public class PiEstimatorHybridBSP extends
 
     // MasterTask writes out results
     if (peer.getPeerName().equals(m_masterTask)) {
-
-      int numMessages = peer.getNumCurrentMessages();
-
       long totalHits = 0;
       LongWritable received;
       while ((received = peer.getCurrentMessage()) != null) {
         totalHits += received.get();
       }
 
-      double pi = 4.0 * totalHits / (m_iterationsPerCPUTask * numMessages);
+      double pi = 4.0 * totalHits / m_iterations;
 
       // DEBUG
       if (m_isDebuggingEnabled) {
-        m_logger.writeChars("BSP=PiEstimatorHybrid,Iterations=" + m_iterations
+        m_logger.writeChars("PiEstimatorHybrid,Iterations=" + m_iterations
             + "\n");
-        m_logger.writeChars("totalHits: " + totalHits + "\n");
-        m_logger.writeChars("numMessages: " + numMessages + "\n");
-        m_logger.writeChars("m_iterationsPerCPUTask: " + m_iterationsPerCPUTask
-            + "\n");
-        m_logger.writeChars("calculationsTotal: "
-            + (m_iterationsPerCPUTask * numMessages) + "\n");
+        m_logger.writeChars("PiEstimatorHybrid,numMessages: "
+            + peer.getNumCurrentMessages() + "\n");
+        m_logger.writeChars("PiEstimatorHybrid,totalHits: " + totalHits + "\n");
         m_logger.close();
       }
 
       peer.write(new Text("Estimated value of PI(3,14159265) using "
-          + (m_iterationsPerCPUTask * numMessages)
-          // + (peer.getNumPeers() * m_threadCount * m_iterations)
-          + " points is"), new DoubleWritable(pi));
+          + m_iterations + " iterations is"), new DoubleWritable(pi));
     }
   }
 
@@ -207,8 +190,46 @@ public class PiEstimatorHybridBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
-    // Same cleanup as CPU
-    setup(peer);
+    m_conf = peer.getConfiguration();
+    int totalTaskNum = peer.getNumPeers();
+
+    // Choose one as a master
+    this.m_masterTask = peer.getPeerName(totalTaskNum / 2);
+    this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
+    this.m_iterations = Long.parseLong(m_conf.get(CONF_ITERATIONS));
+    // default equally distributed
+    this.m_GPUPercentage = Integer.parseInt(m_conf.get(CONF_GPU_PERCENTAGE));
+    this.m_blockSize = Integer.parseInt(m_conf.get(CONF_BLOCKSIZE));
+    this.m_gridSize = Integer.parseInt(m_conf.get(CONF_GRIDSIZE));
+
+    // Init logging
+    if (m_isDebuggingEnabled) {
+      try {
+        FileSystem fs = FileSystem.get(m_conf);
+        m_logger = fs.create(new Path(FileOutputFormat
+            .getOutputPath(new BSPJob((HamaConfiguration) m_conf))
+            + "/BSP_"
+            + peer.getTaskId() + ".log"));
+
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    // Compute work distributions
+    long iterationsPerGPUTask = (m_iterations * m_GPUPercentage) / 100;
+    m_iterationsPerGPUThread = iterationsPerGPUTask
+        / (m_blockSize * m_gridSize);
+
+    // DEBUG
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("PiEstimatorHybrid,GPUPercentage=" + m_GPUPercentage
+          + "\n");
+      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUTask="
+          + iterationsPerGPUTask + "\n");
+      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUThread="
+          + m_iterationsPerGPUThread + "\n");
+    }
   }
 
   @Override
