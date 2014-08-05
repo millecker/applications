@@ -41,10 +41,14 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
   private long n;
 
   // maximal 8 cpu tasks and 1 gpu task
-  @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-  private int bspTaskNum;
+  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+  private int bspTaskNum = 9;
 
   private final int maxBspTaskNum = 9;
+
+  // GPU percentage of the input data
+  @Param({ "12", "50", "70", "90", "95", "99" })
+  private int GPUPercentage;
 
   private static final String OUTPUT_DIR = "output/hama/rootbeer/examples/piestimator/bench";
 
@@ -172,6 +176,7 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
       job.set(PiEstimatorHybridBSP.CONF_BLOCKSIZE, "" + m_blockSize);
       job.set(PiEstimatorHybridBSP.CONF_GRIDSIZE, "" + m_gridSize);
       job.set(PiEstimatorHybridBSP.CONF_ITERATIONS, "" + m_totalIterations);
+      job.set(PiEstimatorHybridBSP.CONF_GPU_PERCENTAGE, "" + GPUPercentage);
       job.setBoolean(PiEstimatorHybridBSP.CONF_DEBUG, false);
 
       job.setNumBspTask(bspTaskNum);

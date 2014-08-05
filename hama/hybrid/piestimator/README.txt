@@ -11,7 +11,7 @@ ant clean
 ant jar-gpu
 
 # Submit Hybrid Task to Hama
-ant run-gpu [-DnumBspTask=9 -DnumBspGpuTask=1 -Diterations=1433600000]
+ant run-gpu [-DnumBspTask=9 -DnumBspGpuTask=1 -Diterations=1433600000 -DGPUPercentage=12]
 
 # Build and run GPU Kernel
 ant run-kernel
