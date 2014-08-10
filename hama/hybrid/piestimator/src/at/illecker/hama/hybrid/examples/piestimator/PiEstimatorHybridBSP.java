@@ -57,27 +57,31 @@ public class PiEstimatorHybridBSP extends
           + System.currentTimeMillis());
 
   public static final String CONF_DEBUG = "piestimator.hybrid.debug";
+  public static final String CONF_TIME = "piestimator.hybrid.time";
   public static final String CONF_ITERATIONS = "piestimator.hybrid.iterations";
   public static final String CONF_GPU_PERCENTAGE = "piestimator.hybrid.percentage";
   public static final String CONF_BLOCKSIZE = "piestimator.hybrid.blockSize";
   public static final String CONF_GRIDSIZE = "piestimator.hybrid.gridSize";
 
   // gridSize = amount of blocks and multiprocessors
-  public static final int gridSize = 14;
+  public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int blockSize = 1024;
+  public static final int BLOCK_SIZE = 1024;
 
-  private static final long totalIterations = 100000 * blockSize * gridSize;
+  public static final long N = 500000;
+
+  private static final long TOTAL_ITERATIONS = N * BLOCK_SIZE * GRID_SIZE;
 
   private Configuration m_conf;
-  private boolean m_isDebuggingEnabled;
+  private boolean m_isDebuggingEnabled = false;
   private FSDataOutputStream m_logger;
+  private boolean m_timeMeasurement = false;
 
   private String m_masterTask;
   private long m_iterations;
-  private int m_GPUPercentage; // percentage of input data 0 to 100
-  private long m_iterationsPerCPUTask; // for CPU tasks
-  private long m_iterationsPerGPUThread; // for GPU threads
+  private int m_GPUPercentage; // percentage of input data between 0 and 100
+  private long m_iterationsPerCPUTask; // for CPU tasks only
+  private long m_iterationsPerGPUThread; // for GPU threads only
   private int m_gridSize;
   private int m_blockSize;
 
@@ -88,16 +92,8 @@ public class PiEstimatorHybridBSP extends
       throws IOException {
 
     m_conf = peer.getConfiguration();
-    int totalTaskNum = peer.getNumPeers();
-
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(totalTaskNum / 2);
+    this.m_timeMeasurement = m_conf.getBoolean(CONF_TIME, false);
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
-    this.m_iterations = Long.parseLong(m_conf.get(CONF_ITERATIONS));
-    // default equally distributed
-    this.m_GPUPercentage = Integer.parseInt(m_conf.get(CONF_GPU_PERCENTAGE));
-    this.m_blockSize = Integer.parseInt(m_conf.get(CONF_BLOCKSIZE));
-    this.m_gridSize = Integer.parseInt(m_conf.get(CONF_GRIDSIZE));
 
     // Init logging
     if (m_isDebuggingEnabled) {
@@ -113,11 +109,40 @@ public class PiEstimatorHybridBSP extends
       }
     }
 
-    // Compute work distributions
-    long iterationsPerGPUTask = (m_iterations * m_GPUPercentage) / 100;
-    long iterationsPerCPU = m_iterations - iterationsPerGPUTask;
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
+    }
+
+    int totalTaskNum = peer.getNumPeers();
     int cpuTaskNum = totalTaskNum - m_conf.getInt("bsp.peers.gpu.num", 0);
+
+    // Choose one as a master
+    this.m_masterTask = peer.getPeerName(totalTaskNum / 2);
+
+    this.m_iterations = Long.parseLong(m_conf.get(CONF_ITERATIONS));
+    this.m_GPUPercentage = Integer.parseInt(m_conf.get(CONF_GPU_PERCENTAGE));
+    this.m_blockSize = Integer.parseInt(m_conf.get(CONF_BLOCKSIZE));
+    this.m_gridSize = Integer.parseInt(m_conf.get(CONF_GRIDSIZE));
+
+    // Compute work distributions
+    long iterationsPerGPUTask = 0;
+    long iterationsPerCPU = 0;
+    if ((m_GPUPercentage > 0) && (m_GPUPercentage <= 100)) {
+      iterationsPerGPUTask = (m_iterations * m_GPUPercentage) / 100;
+      iterationsPerCPU = m_iterations - iterationsPerGPUTask;
+    } else {
+      iterationsPerCPU = m_iterations;
+    }
     m_iterationsPerCPUTask = iterationsPerCPU / cpuTaskNum;
+    m_iterationsPerGPUThread = iterationsPerGPUTask
+        / (m_blockSize * m_gridSize);
+
+    long stopTime = 0;
+    if (m_timeMeasurement) {
+      stopTime = System.currentTimeMillis();
+      LOG.info("# setupTime: " + ((stopTime - startTime) / 1000.0) + " sec");
+    }
 
     // DEBUG
     if (m_isDebuggingEnabled) {
@@ -128,13 +153,27 @@ public class PiEstimatorHybridBSP extends
           + iterationsPerCPU + "\n");
       m_logger.writeChars("PiEstimatorHybrid,iterationsPerCPUTask="
           + m_iterationsPerCPUTask + "\n");
+      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUTask="
+          + iterationsPerGPUTask + "\n");
+      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUThread="
+          + m_iterationsPerGPUThread + "\n");
+      if (m_timeMeasurement) {
+        m_logger.writeChars("PiEstimatorHybrid,setupTime: "
+            + ((stopTime - startTime) / 1000.0) + " sec\n\n");
+      }
     }
+
   }
 
   @Override
   public void bsp(
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException, SyncException, InterruptedException {
+
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
+    }
 
     long seed = System.currentTimeMillis();
     LinearCongruentialRandomGenerator lcrg = new LinearCongruentialRandomGenerator(
@@ -149,15 +188,37 @@ public class PiEstimatorHybridBSP extends
       }
     }
 
+    long syncTime = 0;
+    if (m_timeMeasurement) {
+      syncTime = System.currentTimeMillis();
+    }
+
     // Send result to MasterTask
     peer.send(m_masterTask, new LongWritable(hits));
     peer.sync();
+
+    if (m_timeMeasurement) {
+      long stopTime = System.currentTimeMillis();
+      LOG.info("# bspGpuTime: " + ((syncTime - startTime) / 1000.0) + " sec");
+      LOG.info("# syncTime: " + ((stopTime - syncTime) / 1000.0) + " sec");
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("PiEstimatorHybrid,bspTime: "
+            + ((syncTime - startTime) / 1000.0) + " sec\n");
+        m_logger.writeChars("PiEstimatorHybrid,syncTime: "
+            + ((stopTime - syncTime) / 1000.0) + " sec\n\n");
+      }
+    }
   }
 
   @Override
   public void cleanup(
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException {
+
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
+    }
 
     // MasterTask writes out results
     if (peer.getPeerName().equals(m_masterTask)) {
@@ -176,11 +237,22 @@ public class PiEstimatorHybridBSP extends
         m_logger.writeChars("PiEstimatorHybrid,numMessages: "
             + peer.getNumCurrentMessages() + "\n");
         m_logger.writeChars("PiEstimatorHybrid,totalHits: " + totalHits + "\n");
-        m_logger.close();
       }
 
       peer.write(new Text("Estimated value of PI(3,14159265) using "
           + m_iterations + " iterations is"), new DoubleWritable(pi));
+    }
+
+    long stopTime = 0;
+    if (m_timeMeasurement) {
+      stopTime = System.currentTimeMillis();
+      LOG.info("# cleanupTime: " + ((stopTime - startTime) / 1000.0) + " sec");
+    }
+
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("PiEstimatorHybrid,cleanupTime: "
+          + ((stopTime - startTime) / 1000.0) + " sec\n");
+      m_logger.close();
     }
   }
 
@@ -190,46 +262,8 @@ public class PiEstimatorHybridBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer)
       throws IOException, SyncException, InterruptedException {
 
-    m_conf = peer.getConfiguration();
-    int totalTaskNum = peer.getNumPeers();
-
-    // Choose one as a master
-    this.m_masterTask = peer.getPeerName(totalTaskNum / 2);
-    this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
-    this.m_iterations = Long.parseLong(m_conf.get(CONF_ITERATIONS));
-    // default equally distributed
-    this.m_GPUPercentage = Integer.parseInt(m_conf.get(CONF_GPU_PERCENTAGE));
-    this.m_blockSize = Integer.parseInt(m_conf.get(CONF_BLOCKSIZE));
-    this.m_gridSize = Integer.parseInt(m_conf.get(CONF_GRIDSIZE));
-
-    // Init logging
-    if (m_isDebuggingEnabled) {
-      try {
-        FileSystem fs = FileSystem.get(m_conf);
-        m_logger = fs.create(new Path(FileOutputFormat
-            .getOutputPath(new BSPJob((HamaConfiguration) m_conf))
-            + "/BSP_"
-            + peer.getTaskId() + ".log"));
-
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    // Compute work distributions
-    long iterationsPerGPUTask = (m_iterations * m_GPUPercentage) / 100;
-    m_iterationsPerGPUThread = iterationsPerGPUTask
-        / (m_blockSize * m_gridSize);
-
-    // DEBUG
-    if (m_isDebuggingEnabled) {
-      m_logger.writeChars("PiEstimatorHybrid,GPUPercentage=" + m_GPUPercentage
-          + "\n");
-      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUTask="
-          + iterationsPerGPUTask + "\n");
-      m_logger.writeChars("PiEstimatorHybrid,iterationsPerGPUThread="
-          + m_iterationsPerGPUThread + "\n");
-    }
+    // Same setup as CPU
+    this.setup(peer);
   }
 
   @Override
@@ -237,6 +271,11 @@ public class PiEstimatorHybridBSP extends
       BSPPeer<NullWritable, NullWritable, Text, DoubleWritable, LongWritable> peer,
       Rootbeer rootbeer) throws IOException, SyncException,
       InterruptedException {
+
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
+    }
 
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_iterationsPerGPUThread,
         System.currentTimeMillis());
@@ -278,14 +317,29 @@ public class PiEstimatorHybridBSP extends
       m_logger.writeChars("totalHits: " + totalHits + "\n");
       m_logger.writeChars("iterationsPerGPUThread: " + m_iterationsPerGPUThread
           + "\n");
-      m_logger.writeChars("TotalIterationsOnGPU: " + m_iterationsPerGPUThread
+      m_logger.writeChars("totalIterationsOnGPU: " + m_iterationsPerGPUThread
           * m_blockSize * m_gridSize + "\n");
-      m_logger.close();
     }
 
+    long syncTime = 0;
+    if (m_timeMeasurement) {
+      syncTime = System.currentTimeMillis();
+    }
     // Send result to MasterTask
     peer.send(m_masterTask, new LongWritable(totalHits));
     peer.sync();
+
+    if (m_timeMeasurement) {
+      long stopTime = System.currentTimeMillis();
+      LOG.info("# bspGpuTime: " + ((syncTime - startTime) / 1000.0) + " sec");
+      LOG.info("# syncTime: " + ((stopTime - syncTime) / 1000.0) + " sec");
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("PiEstimatorHybrid,bspGpuTime: "
+            + ((syncTime - startTime) / 1000.0) + " sec\n");
+        m_logger.writeChars("PiEstimatorHybrid,syncTime: "
+            + ((stopTime - syncTime) / 1000.0) + " sec\n\n");
+      }
+    }
   }
 
   @Override
@@ -336,44 +390,51 @@ public class PiEstimatorHybridBSP extends
     ClusterStatus cluster = jobClient.getClusterStatus(true);
 
     if (args.length > 0) {
-      if (args.length == 4) {
+      if (args.length == 6) {
         job.setNumBspTask(Integer.parseInt(args[0]));
         job.setNumBspGpuTask(Integer.parseInt(args[1]));
         job.set(CONF_ITERATIONS, args[2]);
         job.set(CONF_GPU_PERCENTAGE, args[3]);
+        job.setBoolean(CONF_DEBUG, Boolean.parseBoolean(args[5]));
+        job.setBoolean(CONF_TIME, Boolean.parseBoolean(args[4]));
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
         System.out.println("    Argument2=numBspGpuTask");
         System.out.println("    Argument3=totalIterations ("
-            + PiEstimatorHybridBSP.totalIterations + ")");
+            + PiEstimatorHybridBSP.TOTAL_ITERATIONS + ")");
         System.out.println("    Argument4=GPUPercentage (percentage of input)");
+        System.out.println("    Argument5=isDebugging (true|false)");
+        System.out.println("    Argument6=timeMeasurement (true|false)");
         return;
       }
     } else {
-      job.setNumBspTask(cluster.getMaxTasks());
+      job.setNumBspTask(cluster.getMaxTasks() - 1);
       // Enable one GPU task
       job.setNumBspGpuTask(1);
-      job.set(CONF_ITERATIONS, "" + PiEstimatorHybridBSP.totalIterations);
+      job.set(CONF_ITERATIONS, "" + PiEstimatorHybridBSP.TOTAL_ITERATIONS);
       job.set(CONF_GPU_PERCENTAGE, "12");
+      job.setBoolean(CONF_DEBUG, true);
+      job.setBoolean(CONF_TIME, true);
     }
-
-    LOG.info("TotalIterations: " + job.get(CONF_ITERATIONS));
-    LOG.info("GPUPercentage: " + job.get(CONF_GPU_PERCENTAGE));
-    LOG.info("BlockSize: " + blockSize);
-    LOG.info("GridSize: " + gridSize);
-
-    job.set(CONF_BLOCKSIZE, "" + blockSize);
-    job.set(CONF_GRIDSIZE, "" + gridSize);
-    job.setBoolean(CONF_DEBUG, true);
 
     LOG.info("NumBspTask: " + job.getNumBspTask());
     LOG.info("NumBspGpuTask: " + job.getNumBspGpuTask());
 
+    LOG.info("TotalIterations: " + job.get(CONF_ITERATIONS));
+    LOG.info("GPUPercentage: " + job.get(CONF_GPU_PERCENTAGE));
+    LOG.info("isDebugging: " + job.get(CONF_DEBUG));
+    LOG.info("timeMeasurement: " + job.get(CONF_TIME));
+
+    LOG.info("BlockSize: " + BLOCK_SIZE);
+    LOG.info("GridSize: " + GRID_SIZE);
+    job.set(CONF_BLOCKSIZE, "" + BLOCK_SIZE);
+    job.set(CONF_GRIDSIZE, "" + GRID_SIZE);
+
     long startTime = System.currentTimeMillis();
     if (job.waitForCompletion(true)) {
       System.out.println("Job Finished in "
-          + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
+          + (System.currentTimeMillis() - startTime) / 1000.0 + " sec");
 
       printOutput(job);
     }

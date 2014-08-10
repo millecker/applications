@@ -105,8 +105,8 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
         + System.currentTimeMillis());
     System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
 
-    m_blockSize = PiEstimatorHybridBSP.blockSize;
-    m_gridSize = PiEstimatorHybridBSP.gridSize;
+    m_blockSize = PiEstimatorHybridBSP.BLOCK_SIZE;
+    m_gridSize = PiEstimatorHybridBSP.GRID_SIZE;
     m_totalIterations = (long) m_blockSize * (long) m_gridSize * n;
 
     System.out.println("Benchmark PiEstimatorHybridBSP[blockSize="
