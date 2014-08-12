@@ -129,6 +129,7 @@ public class PiEstimatorKernel implements Kernel {
     Rootbeer rootbeer = new Rootbeer();
 
     // Run GPU Kernels
+    long startTime = System.currentTimeMillis();
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
@@ -136,21 +137,19 @@ public class PiEstimatorKernel implements Kernel {
         * gridSize), context);
     watch.stop();
 
+    System.out.println("PiEstimatorKernel,TotalTime: "
+        + ((System.currentTimeMillis() - startTime) / 1000.0) + " sec");
     System.out.println("PiEstimatorKernel,GPUTime=" + watch.elapsedTimeMillis()
         + "ms");
-    System.out.println("PiEstimatorKernel,Samples=" + calculationsPerThread
-        * blockSize * gridSize);
 
     List<StatsRow> stats = context.getStats();
     for (StatsRow row : stats) {
-      System.out.println("  StatsRow:\n");
-      System.out.println("    serial time: " + row.getSerializationTime()
-          + "\n");
-      System.out.println("    exec time: " + row.getExecutionTime() + "\n");
-      System.out.println("    deserial time: " + row.getDeserializationTime()
-          + "\n");
-      System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
-      System.out.println("    num threads: " + row.getNumThreads() + "\n");
+      System.out.println("  StatsRow:");
+      System.out.println("    serial time: " + row.getSerializationTime());
+      System.out.println("    exec time: " + row.getExecutionTime());
+      System.out.println("    deserial time: " + row.getDeserializationTime());
+      System.out.println("    num blocks: " + row.getNumBlocks());
+      System.out.println("    num threads: " + row.getNumThreads());
     }
 
     // Get GPU results
