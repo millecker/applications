@@ -468,7 +468,8 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
                        labels=c("8 CPU tasks", "1 GPU task")) + 
     ggtitle(title) +
     theme(legend.position = "bottom",
-          axis.title.x = element_text(face="bold", vjust=-1, size=20),
+          legend.text=element_text(size=16),
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=20),
           axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
           axis.title.y = element_text(face="bold", vjust=1, size=20),
           axis.text.y  = element_text(vjust=0.5, size=16))
