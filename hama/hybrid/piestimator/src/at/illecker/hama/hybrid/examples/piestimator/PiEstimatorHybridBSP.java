@@ -134,7 +134,9 @@ public class PiEstimatorHybridBSP extends
     } else {
       iterationsPerCPU = m_iterations;
     }
-    m_iterationsPerCPUTask = iterationsPerCPU / cpuTaskNum;
+    if (cpuTaskNum > 0) {
+      m_iterationsPerCPUTask = iterationsPerCPU / cpuTaskNum;
+    }
     m_iterationsPerGPUThread = iterationsPerGPUTask
         / (m_blockSize * m_gridSize);
 
@@ -409,7 +411,7 @@ public class PiEstimatorHybridBSP extends
         return;
       }
     } else {
-      job.setNumBspTask(cluster.getMaxTasks() - 1);
+      job.setNumBspTask(cluster.getMaxTasks());
       // Enable one GPU task
       job.setNumBspGpuTask(1);
       job.set(CONF_ITERATIONS, "" + PiEstimatorHybridBSP.TOTAL_ITERATIONS);

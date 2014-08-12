@@ -29,5 +29,10 @@ ant run-bench -DbenchTimeLimit='--time-limit 2400s' \
   -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
   -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'
   [-DbenchTrials='--trials 1']
-  
+
+ant run-bench -DbenchTimeLimit='--time-limit 2400s' \
+  -DbenchInstrument='--instrument arbitrary' \
+  -DbenchMacroMeasurements='-Cinstrument.arbitrary.options.gcBeforeEach=false' \
+  -DbenchTrials='--trials 5'
+
 ###############################################################################

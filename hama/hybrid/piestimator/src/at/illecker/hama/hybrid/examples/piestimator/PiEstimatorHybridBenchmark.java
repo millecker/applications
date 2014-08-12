@@ -33,31 +33,46 @@ import org.apache.hama.bsp.BSPJob;
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
+import com.google.caliper.model.ArbitraryMeasurement;
 import com.google.caliper.runner.CaliperMain;
 
 public class PiEstimatorHybridBenchmark extends Benchmark {
 
+  // Plot 1 - 8 CPU tasks versus GPU comparison
+  // Step 1
+  // @Param({ "10000", "20000", "40000", "60000", "80000", "100000", "120000",
+  // "140000", "160000", "180000", "200000", "220000", "240000", "260000",
+  // "280000", "300000" })
+  // Step 2
+  // @Param({ "300000", "320000", "340000", "360000", "380000", "400000",
+  // "420000", "440000", "460000", "480000", "500000" })
   @Param({ "500000" })
   private long n;
 
-  // maximal 8 cpu tasks and 1 gpu task
-  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-  private int bspTaskNum = 9;
-
+  // maximal 8 CPU tasks and 1 GPU task
   private final int maxBspTaskNum = 9;
+  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
+  private int bspTaskNum = 8; // Plot 1
 
   // GPU percentage of the input data
-  @Param({ "12", "50", "60", "70", "80", "90", "95", "99" })
-  private int GPUPercentage;
+  // @Param({ "12", "50", "60", "70", "80", "90", "95", "99" })
+  private int GPUPercentage = 0; // Plot 1
 
-  private static final String OUTPUT_DIR = "output/hama/rootbeer/examples/piestimator/bench";
+  // Used for Plot 1 CPU vs GPU comparison only
+  @Param
+  CalcType type;
 
+  public enum CalcType {
+    CPU, GPU
+  };
+
+  private static final String OUTPUT_DIR = "output/hama/hybrid/examples/piestimator/bench";
   private Path m_OUTPUT_DIR_PATH;
   private Configuration m_conf = null;
   private boolean m_runLocally = false;
 
-  private int m_blockSize;
-  private int m_gridSize;
+  private static final int m_blockSize = PiEstimatorHybridBSP.BLOCK_SIZE;
+  private static final int m_gridSize = PiEstimatorHybridBSP.GRID_SIZE;
   private long m_totalIterations;
 
   @Override
@@ -103,16 +118,43 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     // Setup outputs
     m_OUTPUT_DIR_PATH = new Path(OUTPUT_DIR + "/bench_"
         + System.currentTimeMillis());
-    System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
 
-    m_blockSize = PiEstimatorHybridBSP.BLOCK_SIZE;
-    m_gridSize = PiEstimatorHybridBSP.GRID_SIZE;
     m_totalIterations = (long) m_blockSize * (long) m_gridSize * n;
 
+    // Plot 1 - 8 CPU tasks versus GPU comparison
+    int numGpuBspTask = 0;
+    if (type == CalcType.GPU) {
+      bspTaskNum = 1;
+      numGpuBspTask = 1;
+      GPUPercentage = 100;
+    }
+
+    // CPU + GPU Hybrid benchmark
+    // Plot 2
+    // if (bspTaskNum == maxBspTaskNum) {
+    // numGpuBspTask = 1;
+    // } else {
+    // numGpuBspTask = 0;
+    // }
+
+    // Set CPU tasks
+    m_conf.setInt("bsp.peers.num", bspTaskNum);
+    // Set GPU tasks
+    m_conf.setInt("bsp.peers.gpu.num", numGpuBspTask);
+
+    m_conf.setInt(PiEstimatorHybridBSP.CONF_BLOCKSIZE, m_blockSize);
+    m_conf.setInt(PiEstimatorHybridBSP.CONF_GRIDSIZE, m_gridSize);
+    m_conf.setLong(PiEstimatorHybridBSP.CONF_ITERATIONS, m_totalIterations);
+    m_conf.setInt(PiEstimatorHybridBSP.CONF_GPU_PERCENTAGE, GPUPercentage);
+    m_conf.setBoolean(PiEstimatorHybridBSP.CONF_DEBUG, false);
+    m_conf.setBoolean(PiEstimatorHybridBSP.CONF_TIME, false);
+
+    // Debug output
+    System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
     System.out.println("Benchmark PiEstimatorHybridBSP[blockSize="
         + m_blockSize + ",gridSize=" + m_gridSize + "] n=" + n + ",bspTaskNum="
-        + bspTaskNum + ",GPUPercentage=" + GPUPercentage + ",totalSamples="
-        + m_totalIterations);
+        + bspTaskNum + ",GpuBspTaskNum=" + numGpuBspTask + ",GPUPercentage="
+        + GPUPercentage + ",totalSamples=" + m_totalIterations);
   }
 
   @Override
@@ -144,64 +186,57 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  // Microbenchmark
-  // Uncomment Macro to use Micro
-  public void timeCalculate(int reps) {
-    int sum = 0;
-    for (int rep = 0; rep < reps; rep++) {
-      sum = doBenchmark(sum);
-    }
-    System.out.println(sum);
-  }
-
   @Macrobenchmark
   public void timeCalculate() {
-    doBenchmark(0);
+    timePiBenchmark();
   }
 
-  public int doBenchmark(int sum) {
-    return piEstimatorHybrid(sum);
+  @ArbitraryMeasurement
+  public double arbitraryBenchmark() {
+    return arbitaryPiBenchmark();
+  }
+
+  private void timePiBenchmark() {
+    try {
+      ToolRunner.run(new PiEstimatorHybrid(), null);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private double arbitaryPiBenchmark() {
+    try {
+      PiEstimatorHybrid piEstimatorHybrid = new PiEstimatorHybrid();
+      ToolRunner.run(piEstimatorHybrid, null);
+      return piEstimatorHybrid.time;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return 0;
   }
 
   private class PiEstimatorHybrid extends Configured implements Tool {
+    public double time = 0;
 
     public PiEstimatorHybrid() {
     }
 
     @Override
     public int run(String[] arg0) throws Exception {
-
       BSPJob job = PiEstimatorHybridBSP.createPiEstimatorHybridConf(
           new HamaConfiguration(m_conf), m_OUTPUT_DIR_PATH);
 
-      job.set(PiEstimatorHybridBSP.CONF_BLOCKSIZE, "" + m_blockSize);
-      job.set(PiEstimatorHybridBSP.CONF_GRIDSIZE, "" + m_gridSize);
-      job.set(PiEstimatorHybridBSP.CONF_ITERATIONS, "" + m_totalIterations);
-      job.set(PiEstimatorHybridBSP.CONF_GPU_PERCENTAGE, "" + GPUPercentage);
-      job.setBoolean(PiEstimatorHybridBSP.CONF_DEBUG, false);
-
-      job.setNumBspTask(bspTaskNum);
-      if (bspTaskNum == maxBspTaskNum) {
-        job.setNumBspGpuTask(1);
-      } else {
-        job.setNumBspGpuTask(0);
+      long startTime = System.currentTimeMillis();
+      if (job.waitForCompletion(true)) {
+        time = System.currentTimeMillis() - startTime;
+        System.out.println("Time: " + ((time / 1000.0)) + " sec");
+        return 1; // true
       }
-
-      return (job.waitForCompletion(true) ? 1 : 0);
+      return 0; // false
     }
-  }
-
-  private int piEstimatorHybrid(int sum) {
-    try {
-      sum += ToolRunner.run(new PiEstimatorHybrid(), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
   }
 
   public static void main(String[] args) {
     CaliperMain.main(PiEstimatorHybridBenchmark.class, args);
   }
-
 }
