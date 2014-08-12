@@ -454,15 +454,24 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   #benchmarkTableAvgScenarioGroup
   # str(benchmarkTableAvgScenarioGroup)
   #benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, iterations <- n * constant)
-  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",colour="type",group="type")) + 
+  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type")) + 
     geom_point(size=5) + 
     geom_line() +
 #    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
     scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
     xlab(xaxisdescription) +
     ylab(paste("Time",args[4])) +
+#    labs(colour = "Type") +
+    scale_color_manual(name="",
+                       values=c("#BE1621", "#006532"),
+                       breaks=c("CPU", "GPU"),
+                       labels=c("8 CPU tasks", "1 GPU task")) + 
     ggtitle(title) +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom",
+          axis.title.x = element_text(face="bold", vjust=-1, size=20),
+          axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
+          axis.title.y = element_text(face="bold", vjust=1, size=20),
+          axis.text.y  = element_text(vjust=0.5, size=16))
   
   outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
