@@ -4,6 +4,8 @@ library(reshape2)
 suppressPackageStartupMessages(library(sqldf))
 library(ggplot2)
 library(scales) # percentage for efficiency plot
+library(extrafont) # extra font "LM Roman"
+library(stringr) # str_locate
 
 ###############################################################################
 # List append function
@@ -420,6 +422,16 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   } else {
     xaxisdescription <- as.character(args[3])
   }
+  # parse math environment
+  math_loc <- str_locate_all(xaxisdescription, "'")[[1]]
+  if (nrow(math_loc) == 2) {
+    xaxisdescriptionMath <- str_sub(xaxisdescription, math_loc[1,"start"]+1, math_loc[2,"end"]-1)
+    xaxisdescriptionMath <- parse(text=xaxisdescriptionMath)
+    xaxisdescriptionMath <- xaxisdescriptionMath[[1]]
+    text_loc <- invert_match(math_loc)
+    xaxisdescription <- str_sub(xaxisdescription, text_loc[1,"start"], text_loc[1,"end"]-1);
+  }
+
   # debug message
   #cat(paste("Generate geom_line plot and normalize magnitude with 10^",magnitudeNormalizer,"\n",sep=""))
   
@@ -459,7 +471,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     geom_line() +
 #    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
     scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
-    xlab(xaxisdescription) +
+    xlab(bquote(bold(.(xaxisdescription)) ~ .(xaxisdescriptionMath) )) +
     ylab(paste("Time",args[4])) +
 #    labs(colour = "Type") +
     scale_color_manual(name="",
@@ -467,16 +479,20 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
                        breaks=c("CPU", "GPU"),
                        labels=c("8 CPU tasks", "1 GPU task")) + 
     ggtitle(title) +
-    theme(legend.position = "bottom",
+    theme(text=element_text(family="LM Roman 12"),
+          legend.position = "bottom",
           legend.text=element_text(size=16),
           axis.title.x = element_text(face="bold", vjust=-0.5, size=20),
           axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
           axis.title.y = element_text(face="bold", vjust=1, size=20),
           axis.text.y  = element_text(vjust=0.5, size=16))
   
-  outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
+  outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line_not_embeded_fonts.pdf", sep="")
+  outputfileEmbeded <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
+  embed_fonts(outputfile, outfile=outputfileEmbeded)
+  file.remove(outputfile)
+  message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfileEmbeded," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
 }
 
