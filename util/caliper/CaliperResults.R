@@ -560,7 +560,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     scale_color_manual(name="",
                        values=c("#BE1621", "#006532"),
                        breaks=c("CPU", "GPU"),
-                       labels=c("8 CPU tasks", "1 GPU task")) + 
+                       labels=c("one sequential CPU task", "one sequential GPU task")) + 
     ggtitle(title) +
     theme(text=element_text(family="LM Roman 12"),
           legend.position = "bottom",
