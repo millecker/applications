@@ -494,6 +494,89 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   file.remove(outputfile)
   message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfileEmbeded," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
+
+  # Linear Regression
+  as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+  # of CPU
+  benchmarkTableAvgCPU <- fn$sqldf('SELECT * FROM benchmarkTableAvgScenarioGroup WHERE type = "CPU"')
+  benchmarkTableAvgCPU[, customVariable] <- sapply(benchmarkTableAvgCPU[, customVariable], as.numeric.factor)
+  xMean <- mean(benchmarkTableAvgCPU[,customVariable])
+  yMean <- mean(benchmarkTableAvgCPU$magnitude)
+  benchmarkTableAvgCPU <- within(benchmarkTableAvgCPU, xdev <- benchmarkTableAvgCPU[, customVariable] - xMean)
+  benchmarkTableAvgCPU <- within(benchmarkTableAvgCPU, ydev <- magnitude - yMean)
+  benchmarkTableAvgCPU <- within(benchmarkTableAvgCPU, xdevydev <- ((benchmarkTableAvgCPU[, customVariable] - xMean)*(magnitude - yMean)) )
+  benchmarkTableAvgCPU <- within(benchmarkTableAvgCPU, xdev2 <- (benchmarkTableAvgCPU[, customVariable] - xMean)^2)
+  benchmarkTableAvgCPU <- within(benchmarkTableAvgCPU, ydev2 <- (magnitude - yMean)^2)
+  n <- nrow(benchmarkTableAvgCPU)
+  Sxy <- sum(benchmarkTableAvgCPU$xdevydev) / n
+  Sxx <- sum(benchmarkTableAvgCPU$xdev2) / n
+  Syy <- sum(benchmarkTableAvgCPU$ydev2) / n
+  Sx <- sqrt(Sxx)
+  Sy <- sqrt(Syy)
+  Rxy <- Sxy / (Sx * Sy)
+  bCPU <- Rxy * Sy / Sx
+  aCPU <- yMean - bCPU * xMean
+  cat(paste("CPU function: y =",aCPU,"+",bCPU,"* x\n",sep = " "))
+  fCPU <- function(x) aCPU+bCPU*x
+
+  # of GPU
+  benchmarkTableAvgGPU <- fn$sqldf('SELECT * FROM benchmarkTableAvgScenarioGroup WHERE type = "GPU"')
+  benchmarkTableAvgGPU[, customVariable] <- sapply(benchmarkTableAvgGPU[, customVariable], as.numeric.factor)
+  xMean <- mean(benchmarkTableAvgGPU[,customVariable])
+  yMean <- mean(benchmarkTableAvgGPU$magnitude)
+  benchmarkTableAvgGPU <- within(benchmarkTableAvgGPU, xdev <- benchmarkTableAvgGPU[, customVariable] - xMean)
+  benchmarkTableAvgGPU <- within(benchmarkTableAvgGPU, ydev <- magnitude - yMean)
+  benchmarkTableAvgGPU <- within(benchmarkTableAvgGPU, xdevydev <- ((benchmarkTableAvgGPU[, customVariable] - xMean)*(magnitude - yMean)) )
+  benchmarkTableAvgGPU <- within(benchmarkTableAvgGPU, xdev2 <- (benchmarkTableAvgGPU[, customVariable] - xMean)^2)
+  benchmarkTableAvgGPU <- within(benchmarkTableAvgGPU, ydev2 <- (magnitude - yMean)^2)
+  n <- nrow(benchmarkTableAvgGPU)
+  Sxy <- sum(benchmarkTableAvgGPU$xdevydev) / n
+  Sxx <- sum(benchmarkTableAvgGPU$xdev2) / n
+  Syy <- sum(benchmarkTableAvgGPU$ydev2) / n
+  Sx <- sqrt(Sxx)
+  Sy <- sqrt(Syy)
+  Rxy <- Sxy / (Sx * Sy)
+  bGPU <- Rxy * Sy / Sx
+  aGPU <- yMean - bGPU * xMean
+  cat(paste("GPU function: y =",aGPU,"+",bGPU,"* x\n",sep = " "))
+  fGPU <- function(x) aGPU+bGPU*x
+
+  # convert variable to numeric
+  benchmarkTableAvgScenarioGroup[, customVariable] <- sapply(benchmarkTableAvgScenarioGroup[, customVariable], as.numeric.factor)
+  minX <- min(benchmarkTableAvgScenarioGroup[,customVariable])
+  # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
+  maxX <- max(benchmarkTableAvgScenarioGroup[,customVariable])
+  # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
+
+  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type")) + 
+    geom_point(size=4) +
+    stat_function(fun=fCPU, colour="#BE1621", linetype="dashed") +
+    stat_function(fun=fGPU, colour="#006532", linetype="dashed") +
+#    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
+    xlab(bquote(bold(.(xaxisdescription)) ~ .(xaxisdescriptionMath) )) +
+    ylab(paste("Time",args[4])) +
+#    labs(colour = "Type") +
+    scale_color_manual(name="",
+                       values=c("#BE1621", "#006532"),
+                       breaks=c("CPU", "GPU"),
+                       labels=c("8 CPU tasks", "1 GPU task")) + 
+    ggtitle(title) +
+    theme(text=element_text(family="LM Roman 12"),
+          legend.position = "bottom",
+          legend.text=element_text(size=18),
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=20),
+          axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
+          axis.title.y = element_text(face="bold", vjust=1, size=20),
+          axis.text.y  = element_text(vjust=0.5, size=16))
+  
+  outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_linear_regression_not_embeded_fonts.pdf", sep="")
+  outputfileEmbeded <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_linear_regression.pdf", sep="")
+  ggsave(file=outputfile, scale=1.5)
+  embed_fonts(outputfile, outfile=outputfileEmbeded)
+  file.remove(outputfile)
+  message <- paste("Info: Saved CPU+GPU GeomLine Plot in ",outputfileEmbeded," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
+  cat(message)
 }
 
 ###############################################################################
