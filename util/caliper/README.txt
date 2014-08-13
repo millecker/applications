@@ -50,7 +50,7 @@
 ############################
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.CPU.vs.GPU.json \
-  9 "(*1000*1024*14)" "(sec)" false true n 3 "Number of Iterations (N*1000*1024*14)" false 5 5
+  9 "(*1000*1024*14)" "(sec)" false true n 3 "Number of Iterations '(italic(N)%.%italic(1000)%.%1024%.%14)'" false 5 5
 
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \

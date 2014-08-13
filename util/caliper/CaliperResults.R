@@ -481,7 +481,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     ggtitle(title) +
     theme(text=element_text(family="LM Roman 12"),
           legend.position = "bottom",
-          legend.text=element_text(size=16),
+          legend.text=element_text(size=18),
           axis.title.x = element_text(face="bold", vjust=-0.5, size=20),
           axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
           axis.title.y = element_text(face="bold", vjust=1, size=20),
