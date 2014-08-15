@@ -15,10 +15,14 @@
       <Variable=ParameterOnX>
       <VariableNormalizer=PowerOf10>
       [<OtherXaxisDescription>]
+      [<OtherLegendDescription>]
+      [<XaxisCPUGPUTextAngle>]
    ]
    [<Speedup_EfficiencyPlot=true|false>]
-   [ticksIncrement]
-   [ticksStart]
+   [YticksStart]
+   [YticksIncrement]
+   [XticksStart]
+   [XticksIncrement]
    [barText]
    [barTextPosition]
    [barTextSize]
@@ -32,14 +36,14 @@
 ###############################
 ./CaliperResults.R \
   results/hama/rootbeer/matrixmultiplication/at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.*.json \
-  6 "(n=matrixSize)" "(ms)" false true n 0 "" false 2
+  6 "(n=matrixSize)" "(ms)" false true n 0 "" "" "90,90" false 2
 
 ######################
 # PiEstimatorBenchmark
 ######################
 ./CaliperResults.R \
   results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.*.json \
-  9 "(n*1024*14)" "(sec)" false true n 3 "N" false 2
+  9 "(n*1024*14)" "(sec)" false true n 3 "N" "" "90,90" false 2
 
 ###############################################################################
 # Hybrid Examples
@@ -48,13 +52,26 @@
 ############################
 # PiEstimatorHybridBenchmark
 ############################
+
+# 8 CPU tasks and full GPU power
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.CPU.vs.GPU.json \
-  9 "(*1000*1024*14)" "(sec)" false true n 3 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" false 5 5
+  9 "8 CPU tasks and 1 full GPU task '(italic(n)%.%1024%.%14)'" "(sec)" false true \
+  n 3 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" "8 CPU tasks,1 GPU task" "90,0" false 5 5 20 40
 
+# 1 sequential CPU thread and 1 sequential GPU block with one thread
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPU.vs.GPU.sequential.json \
-  9 "(*1000*1024*14)" "(sec)" false true n 3 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" false 50 10
+  9 "Sequential tasks '(italic(n)%.%1024%.%14)'" "(sec)" false true \
+  n 3 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" "one sequential CPU task,one sequential GPU task" "0,0" false 10 50 2 2
+
+# 1 sequential CPU thread and 1 full GPU core
+./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.CPU.vs.GPU.oneGPUcore.json \
+  9 "1 sequential CPU task and 1 GPU core '(italic(n)%.%1024%.%14)'" "(sec)" false true \
+  n 3 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" "one sequential CPU task,one GPU core" "90,0" false 10 20 20 40
+
+TODO -> parameters
 
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
@@ -63,10 +80,19 @@
 
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage.json \
-  9 "(n*1024*14)" "(sec)" true false "" 0 "" false 5 0 \
+  9 "Percentage of GPU Workload" "(sec)" true false "" 0 "" false 5 0 \
   "12% on 1 GPU and 88% on 8 CPU tasks,50% on 1 GPU and 50% on 8 CPU tasks,60% on 1 GPU and 40% on 8 CPU tasks,\
 70% on 1 GPU and 30% on 8 CPU tasks,80% on 1 GPU and 20% on 8 CPU tasks,90% on 1 GPU and 10% on 8 CPU tasks,\
 99% on 1 GPU and 1% on 8 CPU tasks" 1.5 8
+
+./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-08-14T08\:52\:03Z.GPUPercentage.json  \
+  9 "Percentage of GPU Workload" "(sec)" true false "" 0 "" false 5 0 \
+"12% on 1 GPU and 88% on 8 CPU tasks,50% on 1 GPU and 50% on 8 CPU tasks,60% on 1 GPU and 40% on 8 CPU tasks,\
+70% on 1 GPU and 30% on 8 CPU tasks,80% on 1 GPU and 20% on 8 CPU tasks,82% on 1 GPU and 18% on 8 CPU tasks,\
+85% on 1 GPU and 15% on 8 CPU tasks,90% on 1 GPU and 10% on 8 CPU tasks,95% on 1 GPU and 15% on 8 CPU tasks,\
+99% on 1 GPU and 1% on 8 CPU tasks" 1.5 8
+
 
 #######################
 # KMeansHybridBenchmark

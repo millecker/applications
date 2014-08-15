@@ -8,6 +8,20 @@ library(extrafont) # extra font "LM Roman"
 library(stringr) # str_locate
 
 ###############################################################################
+# Defaults
+###############################################################################
+
+# font type and sizes
+fontType <- "LM Roman 12"
+legendFontSize <- 20
+axisTitleFontSize <- 22
+axisTicksFontSize <- 18
+
+# colors
+CPUColor <- "#BE1621"
+GPUColor <- "#006532"
+
+###############################################################################
 # List append function
 ###############################################################################
 lappend <- function (lst, ...) {
@@ -27,31 +41,62 @@ lappend <- function (lst, ...) {
 # arg6: [<GenerateGeoLinePlot_CPU_GPU=true|false>
 # arg7:     <Variable=ParameterOnX>
 # arg8:     <VariableNormalizer=PowerOf10>
-# arg9:     [<OtherXaxisDescription>] ]
-# arg10: [<Speedup_EfficiencyPlot=true|false>]
-# arg11: [ticksIncrement]
-# arg12: [ticksStart]
-# arg13: [barText]
-# arg14: [barTextPosition]
-# arg14: [barTextSize]
+# arg9:     [<OtherXaxisDescription>] 
+# arg10:    [<OtherLegendDescription>]
+# arg11:    [<XaxisCPUGPUTextAngle>]]
+# arg12: [<Speedup_EfficiencyPlot=true|false>]
+# arg13: [YticksStart]
+# arg14: [YticksIncrement]
+# arg15: [XticksStart]
+# arg16: [XticksIncrement]
+# arg17: [barText]
+# arg18: [barTextPosition]
+# arg19: [barTextSize]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
   stop("Argument CaliperResult JsonFile is missing! (~/.caliper/results)")
 }
 
-# argument ticksIncrement
-if (is.na(args[11])) {
-  ticksIncrement <- 2
+# argument YticksStart
+if (is.na(args[13])) {
+  YticksStart <- NA
 } else {
-  ticksIncrement <- as.numeric(args[11]);
+  YticksStart <- as.numeric(args[13]);
 }
 
-# argument ticksStart
-if (is.na(args[12])) {
-  ticksStart <- NA
+# argument YticksIncrement
+if (is.na(args[14])) {
+  YticksIncrement <- 2
 } else {
-  ticksStart <- as.numeric(args[12]);
+  YticksIncrement <- as.numeric(args[14]);
+}
+
+# argument XticksStart
+if (is.na(args[15])) {
+  XticksStart <- NA
+} else {
+  XticksStart <- as.numeric(args[15]);
+}
+
+# argument YticksIncrement
+if (is.na(args[16])) {
+  XticksIncrement <- 2
+} else {
+  XticksIncrement <- as.numeric(args[16]);
+}
+
+# argument xAxisTextAngle
+defaultXAxisTextAngle <- 90
+
+if (is.na(args[11])) {
+  XAxisCPUGPUTextAngle <- defaultXAxisTextAngle
+  XAxisCPUGPURegressionTextAngle <- defaultXAxisTextAngle
+} else {
+  angles <- unlist(strsplit(args[11],",",fixed=TRUE))
+  XAxisCPUGPUTextAngle <- as.numeric(angles[1]);
+  XAxisCPUGPURegressionTextAngle <- as.numeric(angles[2]);
+  rm(angles)
 }
 
 ###############################################################################
@@ -275,7 +320,16 @@ title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
 
 xaxisDesc <- paste("Parameter", sep="")
 if (!is.na(args[3])) {
-  xaxisDesc <- paste("Parameter", args[3])
+  xaxisDesc <- as.character(args[3])
+  # parse math environment
+  math_loc <- str_locate_all(xaxisDesc, "'")[[1]]
+  if (nrow(math_loc) == 2) {
+    xaxisDescMath <- str_sub(xaxisDesc, math_loc[1,"start"]+1, math_loc[2,"end"]-1)
+    xaxisDescMath <- parse(text=xaxisDescMath)
+    xaxisDescMath <- xaxisDescMath[[1]]
+    text_loc <- invert_match(math_loc)
+    xaxisDesc <- str_sub(xaxisDesc, text_loc[1,"start"], text_loc[1,"end"]-1);
+  }
 }
 
 if (is.na(args[2])) {
@@ -305,50 +359,66 @@ if (!is.na(args[2])) {
 
 # min and max for Y axis ticks
 minY <- 0 #round(min(benchmarkTableAvg$magnitude))
-maxY <- round(max(benchmarkTableAvg$magnitude)) + ticksIncrement
+maxY <- round(max(benchmarkTableAvg$magnitude)) + YticksIncrement
 
-if (is.na(args[13])) {
+if (is.na(args[17])) { # if no barText was specified
   ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
     geom_bar(stat="identity",color="black") +
-    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
-    xlab(xaxisDesc) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
+    xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
     ylab(yaxisDesc) +
     ggtitle(title) +
-    theme(legend.position = "none")
-} else {
+    theme(text=element_text(family=fontType),
+          legend.position = "none",
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 
-  barText <- unlist(strsplit(args[13],",",fixed=TRUE))
+} else {
+  # barText was specified by parameter
+  barText <- unlist(strsplit(args[17],",",fixed=TRUE))
   barTextLen <- length(barText)
   barTextLastElement <- barText[barTextLen]
   barTextLastElement <- gsub("|", "\n", barTextLastElement, fixed=TRUE)
   barText[barTextLen] <- ""
   
   # check for barTextPosition
-  if (is.na(args[14])) {
+  if (is.na(args[18])) {
     barTextPosition <- 5
   } else {
-    barTextPosition <- as.numeric(args[14]);
+    barTextPosition <- as.numeric(args[18]);
   }
   # check for barTextSize
-  if (is.na(args[15])) {
+  if (is.na(args[19])) {
     barTextSize <- 10
   } else {
-    barTextSize <- as.numeric(args[15]);
+    barTextSize <- as.numeric(args[19]);
   }
 
-  ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude,fill=factor(scenario))) + 
+  ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude)) + 
     geom_bar(stat="identity",color="black") +
     geom_text(aes(y=barTextPosition,label=barText),size=barTextSize,angle=90,hjust=0) +
     annotate(geom="text",x=barTextLen,y=barTextPosition,label=barTextLastElement,size=barTextSize,angle=90,hjust=0) +
-    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
-    xlab(xaxisDesc) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
+    xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
     ylab(yaxisDesc) +
+#    ylab(paste("Time",args[4])) +
     ggtitle(title) +
-    theme(legend.position = "none")
+    theme(text=element_text(family=fontType),
+          legend.position = "none",
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 }
 
-outputfile <- paste(caliperJsonFile,"_avg_barplot.pdf", sep="")
+
+outputfile <- paste(caliperJsonFile, "_avg_barplot_not_embeded_fonts.pdf", sep="")
+outputfileEmbeded <- paste(caliperJsonFile, "_avg_barplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
+embed_fonts(outputfile, outfile=outputfileEmbeded)
+file.remove(outputfile)
 
 message <- paste("Info: Saved Barplot in",outputfile,"\n")
 cat(message)
@@ -358,25 +428,33 @@ cat(message)
 ###############################################################################
 
 # min and max for Y axis ticks
-if (!is.na(ticksStart)) {
-  minY <- ticksStart
+if (!is.na(YticksStart)) {
+  minY <- YticksStart
 } else {
   minY <- round(min(benchmarkTableAvg$magnitude))
 }
-maxY <- round(max(benchmarkTableAvg$magnitude)) + ticksIncrement
+maxY <- round(max(benchmarkTableAvg$magnitude)) + YticksIncrement
 
 if (!is.na(args[5]) && args[5]=='true') {
   ggplot(benchmarkTableAvg, aes(x=AllParameters,y=magnitude,color="red",group=unit)) + 
     geom_point(size=5) + 
     geom_line() +
-    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
-    xlab(xaxisDesc) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
+    xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
     ylab(yaxisDesc) +
     ggtitle(title) +
-    theme(legend.position = "none")
+    theme(text=element_text(family=fontType),
+          legend.position = "none",
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 
-  outputfile <- paste(caliperJsonFile,"_geom_line.pdf", sep="")
+  outputfile <- paste(caliperJsonFile, "_geom_line_not_embeded_fonts.pdf", sep="")
+  outputfileEmbeded <- paste(caliperJsonFile, "_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=2)
+  embed_fonts(outputfile, outfile=outputfileEmbeded)
+  file.remove(outputfile)
 
   message <- paste("Info: Saved GeomLine Plot in ",outputfile,"\n",sep="")
   cat(message)
@@ -389,23 +467,31 @@ if (!is.na(args[5]) && args[5]=='true') {
 #str(benchmarkTable)
 
 # min and max for Y axis ticks
-if (!is.na(ticksStart)) {
-  minY <- ticksStart
+if (!is.na(YticksStart)) {
+  minY <- YticksStart
 } else {
   minY <- round(min(benchmarkTable$weighted_magnitude))
 }
-maxY <- round(max(benchmarkTable$weighted_magnitude)) + ticksIncrement
+maxY <- round(max(benchmarkTable$weighted_magnitude)) + YticksIncrement
 
 ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scenario))) + 
   geom_boxplot(outlier.colour = "red", outlier.size = 5) +
-  scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
-  xlab(xaxisDesc) +
+  scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
+  xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
   ylab(yaxisDesc) +
   ggtitle(title) +
-  theme(legend.position = "none")
+  theme(text=element_text(family=fontType),
+        legend.position = "none",
+        axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+        axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+        axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+        axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 
-outputfile <- paste(caliperJsonFile,"_boxplot.pdf", sep="")
+outputfile <- paste(caliperJsonFile, "_boxplot_not_embeded_fonts.pdf", sep="")
+outputfileEmbeded <- paste(caliperJsonFile, "_boxplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
+embed_fonts(outputfile, outfile=outputfileEmbeded)
+file.remove(outputfile)
 
 message <- paste("Info: Saved Boxplot in",outputfile,"\n")
 cat(message)
@@ -414,10 +500,13 @@ cat(message)
 # generate CPU + GPU plot
 ###############################################################################
 if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
+
   magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
   customVariable <- as.character(args[7]) # variable on X
   customVariableNormalizer<- as.numeric(args[8]) # powerOf10
-  if (!is.na(args[10]) && !is.na(args[9])) { # description of X axis
+
+  # description of X axis
+  if (!is.na(args[9])) {
     xaxisdescription <- as.character(args[9])
   } else {
     xaxisdescription <- as.character(args[3])
@@ -430,6 +519,14 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     xaxisdescriptionMath <- xaxisdescriptionMath[[1]]
     text_loc <- invert_match(math_loc)
     xaxisdescription <- str_sub(xaxisdescription, text_loc[1,"start"], text_loc[1,"end"]-1);
+  }
+
+  # parse description of legend
+  if (!is.na(args[10])) {
+    legendText <- unlist(strsplit(args[10],",",fixed=TRUE))
+  }
+  if (length(legendText) != 2) {
+    legendText <- c("CPU","GPU")
   }
 
   # debug message
@@ -453,13 +550,13 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
   
   # min and max for Y axis ticks
-  if (!is.na(ticksStart)) {
-    minY <- ticksStart
+  if (!is.na(YticksStart)) {
+    minY <- YticksStart
   } else {
     minY <- round(min(benchmarkTableAvgScenarioGroup$magnitude))
   }
   # cat(paste("Minimum of magnitude: ", minY, sep=""))
-  maxY <- round(max(benchmarkTableAvgScenarioGroup$magnitude)) + ticksIncrement
+  maxY <- round(max(benchmarkTableAvgScenarioGroup$magnitude)) + YticksIncrement
   # cat(paste(" - Maximum of magnitude: ", maxY, "\n", sep=""))
   
   #benchmarkTableAvgScenarioGroup <- transform(benchmarkTableAvgScenarioGroup,customVariable = as.numeric(as.character(benchmarkTableAvgScenarioGroup$customVariable)))
@@ -470,22 +567,22 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     geom_point(size=5) + 
     geom_line() +
 #    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
-    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
     xlab(bquote(bold(.(xaxisdescription)) ~ .(xaxisdescriptionMath) )) +
     ylab(paste("Time",args[4])) +
 #    labs(colour = "Type") +
     scale_color_manual(name="",
-                       values=c("#BE1621", "#006532"),
-                       breaks=c("CPU", "GPU"),
-                       labels=c("8 CPU tasks", "1 GPU task")) + 
+                       values=c(CPUColor,GPUColor),
+                       breaks=c("CPU","GPU"),
+                       labels=legendText) + 
     ggtitle(title) +
-    theme(text=element_text(family="LM Roman 12"),
+    theme(text=element_text(family=fontType),
           legend.position = "bottom",
-          legend.text=element_text(size=18),
-          axis.title.x = element_text(face="bold", vjust=-0.5, size=20),
-          axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
-          axis.title.y = element_text(face="bold", vjust=1, size=20),
-          axis.text.y  = element_text(vjust=0.5, size=16))
+          legend.text=element_text(size=legendFontSize),
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=XAxisCPUGPUTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
   
   outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
@@ -543,33 +640,40 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
 
   # convert variable to numeric
   benchmarkTableAvgScenarioGroup[, customVariable] <- sapply(benchmarkTableAvgScenarioGroup[, customVariable], as.numeric.factor)
-  minX <- min(benchmarkTableAvgScenarioGroup[,customVariable])
-  # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
+  
+  # min and max for X axis ticks
+  if (!is.na(YticksStart)) {
+    minX <- XticksStart
+  } else {
+    minX <- min(benchmarkTableAvgScenarioGroup[,customVariable])
+  }
   maxX <- max(benchmarkTableAvgScenarioGroup[,customVariable])
+  # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
   # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
 
   ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type")) + 
     geom_point(size=4) +
-    stat_function(fun=fCPU, colour="#BE1621", linetype="dashed") +
-    stat_function(fun=fGPU, colour="#006532", linetype="dashed") +
+    stat_function(fun=fCPU, colour=CPUColor, linetype="dashed") +
+    stat_function(fun=fGPU, colour=GPUColor, linetype="dashed") +
+    scale_x_continuous(breaks = round(seq(minX, maxX, by = XticksIncrement), 1)) +
 #    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
-    scale_y_continuous(breaks = round(seq(minY, maxY, by = ticksIncrement), 1)) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
     xlab(bquote(bold(.(xaxisdescription)) ~ .(xaxisdescriptionMath) )) +
     ylab(paste("Time",args[4])) +
 #    labs(colour = "Type") +
     scale_color_manual(name="",
-                       values=c("#BE1621", "#006532"),
-                       breaks=c("CPU", "GPU"),
-                       labels=c("one sequential CPU task", "one sequential GPU task")) + 
+                       values=c(CPUColor,GPUColor),
+                       breaks=c("CPU","GPU"),
+                       labels=legendText) + 
     ggtitle(title) +
-    theme(text=element_text(family="LM Roman 12"),
+    theme(text=element_text(family=fontType),
           legend.position = "bottom",
-          legend.text=element_text(size=18),
-          axis.title.x = element_text(face="bold", vjust=-0.5, size=20),
-          axis.text.x  = element_text(angle=90, vjust=0.5, size=16),
-          axis.title.y = element_text(face="bold", vjust=1, size=20),
-          axis.text.y  = element_text(vjust=0.5, size=16))
-  
+          legend.text=element_text(size=legendFontSize),
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=XAxisCPUGPURegressionTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+
   outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_linear_regression_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_linear_regression.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
@@ -582,7 +686,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
 ###############################################################################
 # generate Speedup and Efficiency plot
 ###############################################################################
-if (!is.na(args[10]) && args[10]=='true') {
+if (!is.na(args[12]) && args[12]=='true') {
   magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
   
   benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,bspTaskNum FROM benchmarkTable GROUP BY scenario')
