@@ -18,8 +18,21 @@ axisTitleFontSize <- 22
 axisTicksFontSize <- 18
 
 # colors
-CPUColor <- "#BE1621"
-GPUColor <- "#006532"
+CPUColor <- "#BE1621" # red
+GPUColor <- "#006532" # green
+
+defaultBarColor <- "gray"
+
+defaultGeomLineColor <- "#BE1621"
+
+#BE1621 red
+#E6332A red_light
+#006532 green
+#5C9630 green_light
+#302683 blue
+#1D70B7 blue_light
+#F39200 orange
+#F9B233 orange_light
 
 ###############################################################################
 # List append function
@@ -52,6 +65,9 @@ lappend <- function (lst, ...) {
 # arg17: [barText]
 # arg18: [barTextPosition]
 # arg19: [barTextSize]
+# arg20: [barColors]
+# arg21: [XticksText]
+# arg22: [XAxisBarTextAngle]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
@@ -97,6 +113,19 @@ if (is.na(args[11])) {
   XAxisCPUGPUTextAngle <- as.numeric(angles[1]);
   XAxisCPUGPURegressionTextAngle <- as.numeric(angles[2]);
   rm(angles)
+}
+
+# argument XticksText
+ticksText <- ""
+if (!is.na(args[21])) {
+  ticksText <- unlist(strsplit(args[21],",",fixed=TRUE))
+}
+
+# argument XAxisBarTextAngle
+if (is.na(args[22])) {
+  XAxisBarTextAngle <- defaultXAxisTextAngle
+} else {
+  XAxisBarTextAngle <- as.numeric(args[22]);
 }
 
 ###############################################################################
@@ -319,6 +348,8 @@ title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
                " measurements ", sep="")
 
 xaxisDesc <- paste("Parameter", sep="")
+xaxisDescMath <- ""
+
 if (!is.na(args[3])) {
   xaxisDesc <- as.character(args[3])
   # parse math environment
@@ -346,6 +377,12 @@ if (is.na(args[2])) {
 ###############################################################################
 if (!is.na(args[2])) {
   magnitudeNormalizer <- as.numeric(args[2]) # powerOf10
+  if (is.na(magnitudeNormalizer)) {
+    msg <- paste("magnitudeNormalizer parameter '",args[2],"' has become NA!\n",
+                 "If you see a file path here maybe you are using a '*' in your first file parameter!\n", sep="")
+    stop(msg);
+  }
+
   benchmarkTableAvgAligned <- within(benchmarkTableAvg, magnitude <- magnitude / 10^magnitudeNormalizer)
   benchmarkTableAvg <- benchmarkTableAvgAligned
   
@@ -395,11 +432,22 @@ if (is.na(args[17])) { # if no barText was specified
   } else {
     barTextSize <- as.numeric(args[19]);
   }
+  # check for barColors
+  if (is.na(args[20])) {
+    barColors <- c(rep(defaultBarColor,barTextLen))
+  } else {
+    barColors <- unlist(strsplit(args[20],",",fixed=TRUE))
+  }
+  # check tick labels length
+  if (length(ticksText) != length(benchmarkTableAvg$AllParameters)) {
+    ticksText <- benchmarkTableAvg$AllParameters
+  }
 
   ggplot(benchmarkTableAvg,aes(x=AllParameters,y=magnitude)) + 
-    geom_bar(stat="identity",color="black") +
-    geom_text(aes(y=barTextPosition,label=barText),size=barTextSize,angle=90,hjust=0) +
-    annotate(geom="text",x=barTextLen,y=barTextPosition,label=barTextLastElement,size=barTextSize,angle=90,hjust=0) +
+    geom_bar(stat="identity",color="black",fill=barColors) +
+    geom_text(aes(y=barTextPosition,label=barText),family=fontType,size=barTextSize,angle=90,hjust=0) +
+    annotate(geom="text",x=barTextLen,y=barTextPosition,label=barTextLastElement,family=fontType,size=barTextSize,angle=90,hjust=0) +
+    scale_x_discrete(breaks=benchmarkTableAvg$AllParameters, labels=ticksText) +
     scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
     xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
     ylab(yaxisDesc) +
@@ -408,7 +456,7 @@ if (is.na(args[17])) { # if no barText was specified
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
           axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 }
@@ -420,7 +468,7 @@ ggsave(file=outputfile, scale=2)
 embed_fonts(outputfile, outfile=outputfileEmbeded)
 file.remove(outputfile)
 
-message <- paste("Info: Saved Barplot in",outputfile,"\n")
+message <- paste("Info: Saved Barplot in",outputfileEmbeded,"\n")
 cat(message)
 
 ###############################################################################
@@ -435,18 +483,24 @@ if (!is.na(YticksStart)) {
 }
 maxY <- round(max(benchmarkTableAvg$magnitude)) + YticksIncrement
 
+# check tick labels length
+if (length(ticksText) != length(benchmarkTableAvg$AllParameters)) {
+  ticksText <- benchmarkTableAvg$AllParameters
+}
+
 if (!is.na(args[5]) && args[5]=='true') {
-  ggplot(benchmarkTableAvg, aes(x=AllParameters,y=magnitude,color="red",group=unit)) + 
-    geom_point(size=5) + 
-    geom_line() +
+  ggplot(benchmarkTableAvg, aes(x=AllParameters,y=magnitude,group=unit)) + 
+    geom_point(size=5,color=defaultGeomLineColor) +
+    geom_line(color=defaultGeomLineColor) +
     scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
+    scale_x_discrete(breaks=benchmarkTableAvg$AllParameters, labels=ticksText) +
     xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
     ylab(yaxisDesc) +
     ggtitle(title) +
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
           axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 
@@ -456,7 +510,7 @@ if (!is.na(args[5]) && args[5]=='true') {
   embed_fonts(outputfile, outfile=outputfileEmbeded)
   file.remove(outputfile)
 
-  message <- paste("Info: Saved GeomLine Plot in ",outputfile,"\n",sep="")
+  message <- paste("Info: Saved GeomLine Plot in ",outputfileEmbeded,"\n",sep="")
   cat(message)
 }
 
@@ -474,16 +528,27 @@ if (!is.na(YticksStart)) {
 }
 maxY <- round(max(benchmarkTable$weighted_magnitude)) + YticksIncrement
 
-ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude,fill=factor(scenario))) + 
-  geom_boxplot(outlier.colour = "red", outlier.size = 5) +
+# check barColors length
+if (length(barColors) != length(benchmarkTableAvg$AllParameters)) {
+  barColors <- c(rep(defaultBarColor,length(benchmarkTableAvg$AllParameters)))
+}
+
+# check tick labels length
+if (length(ticksText) != length(benchmarkTableAvg$AllParameters)) {
+  ticksText <- benchmarkTableAvg$AllParameters
+}
+
+ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude)) + 
+  geom_boxplot(outlier.colour = "red", outlier.size = 5,fill=barColors) +
   scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
+  scale_x_discrete(breaks=benchmarkTableAvg$AllParameters, labels=ticksText) +
   xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
   ylab(yaxisDesc) +
   ggtitle(title) +
   theme(text=element_text(family=fontType),
         legend.position = "none",
         axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-        axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+        axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
         axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
         axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
 
@@ -493,7 +558,7 @@ ggsave(file=outputfile, scale=2)
 embed_fonts(outputfile, outfile=outputfileEmbeded)
 file.remove(outputfile)
 
-message <- paste("Info: Saved Boxplot in",outputfile,"\n")
+message <- paste("Info: Saved Boxplot in",outputfileEmbeded,"\n")
 cat(message)
 
 ###############################################################################
@@ -521,14 +586,6 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     xaxisdescription <- str_sub(xaxisdescription, text_loc[1,"start"], text_loc[1,"end"]-1);
   }
 
-  # parse description of legend
-  if (!is.na(args[10])) {
-    legendText <- unlist(strsplit(args[10],",",fixed=TRUE))
-  }
-  if (length(legendText) != 2) {
-    legendText <- c("CPU","GPU")
-  }
-
   # debug message
   #cat(paste("Generate geom_line plot and normalize magnitude with 10^",magnitudeNormalizer,"\n",sep=""))
   
@@ -543,6 +600,14 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   cat("BenchmarkTable Average Execution Time grouped by Scenarios\n")
   print(benchmarkTableAvgScenarioGroup)
   # str(benchmarkTableAvgScenarioGroup) # type infos
+
+  # parse description of legend
+  if (!is.na(args[10])) {
+    legendText <- unlist(strsplit(args[10],",",fixed=TRUE))
+  }
+  if (length(legendText) != 2) {
+    legendText <- benchmarkTableAvgScenarioGroup$type
+  }
   
   # minX <- min(benchmarkTableAvgScenarioGroup[,customVariable])
   # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
@@ -573,7 +638,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
 #    labs(colour = "Type") +
     scale_color_manual(name="",
                        values=c(CPUColor,GPUColor),
-                       breaks=c("CPU","GPU"),
+                       breaks=benchmarkTableAvgScenarioGroup$type,
                        labels=legendText) + 
     ggtitle(title) +
     theme(text=element_text(family=fontType),
@@ -663,7 +728,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
 #    labs(colour = "Type") +
     scale_color_manual(name="",
                        values=c(CPUColor,GPUColor),
-                       breaks=c("CPU","GPU"),
+                       breaks=benchmarkTableAvgScenarioGroup$type,
                        labels=legendText) + 
     ggtitle(title) +
     theme(text=element_text(family=fontType),
