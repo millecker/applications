@@ -26,6 +26,8 @@
    [barText]
    [barTextPosition]
    [barTextSize]
+   [XticksText]
+   [XAxisBarTextAngle]
 
 ###############################################################################
 # Rootbeer Examples
@@ -71,19 +73,14 @@
   9 "1 sequential CPU task and 1 GPU core '(italic(n)%.%1024%.%14)'" "(sec)" false true \
   n 3 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" "one sequential CPU task,one GPU core" "90,0" false 10 20 20 40
 
-TODO -> parameters
-
-./CaliperResults.R \
-  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
-  9 "(n*1024*14)" "(sec)" true false "" 0 "" true 10 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 Tasks on CPU|1 Task on GPU" 4 6
-
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage.json \
-  9 "Percentage of GPU Workload" "(sec)" true false "" 0 "" false 5 0 \
+  9 "Percentage of GPU workload" "(sec)" true false "" 0 "" "" "" false 0 5 0 0\
   "12% on 1 GPU and 88% on 8 CPU tasks,50% on 1 GPU and 50% on 8 CPU tasks,60% on 1 GPU and 40% on 8 CPU tasks,\
 70% on 1 GPU and 30% on 8 CPU tasks,80% on 1 GPU and 20% on 8 CPU tasks,90% on 1 GPU and 10% on 8 CPU tasks,\
-99% on 1 GPU and 1% on 8 CPU tasks" 1.5 8
+99% on 1 GPU and 1% on 8 CPU tasks" 1.5 8 "gray,gray,gray,gray,#F39200,gray,gray" "12%,50%,60%,70%,80%,90%,99%" 0
+
+TODO -> parameters
 
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-08-14T08\:52\:03Z.GPUPercentage.json  \
@@ -93,6 +90,10 @@ TODO -> parameters
 85% on 1 GPU and 15% on 8 CPU tasks,90% on 1 GPU and 10% on 8 CPU tasks,95% on 1 GPU and 15% on 8 CPU tasks,\
 99% on 1 GPU and 1% on 8 CPU tasks" 1.5 8
 
+./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.json \
+  9 "'(italic(n)%.%1024%.%14)'" "(sec)" true false "" 0 "" true 10 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 Tasks on CPU|1 Task on GPU" 4 6
 
 #######################
 # KMeansHybridBenchmark
