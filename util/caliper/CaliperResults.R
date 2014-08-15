@@ -115,6 +115,13 @@ if (is.na(args[11])) {
   rm(angles)
 }
 
+# argument barColors
+if (is.na(args[20])) {
+  barColors <- NA
+} else {
+  barColors <- unlist(strsplit(args[20],",",fixed=TRUE))
+}
+
 # argument XticksText
 ticksText <- ""
 if (!is.na(args[21])) {
@@ -433,10 +440,8 @@ if (is.na(args[17])) { # if no barText was specified
     barTextSize <- as.numeric(args[19]);
   }
   # check for barColors
-  if (is.na(args[20])) {
+  if ((is.na(barColors)) || (length(barColors) != length(benchmarkTableAvg$AllParameters))) {
     barColors <- c(rep(defaultBarColor,barTextLen))
-  } else {
-    barColors <- unlist(strsplit(args[20],",",fixed=TRUE))
   }
   # check tick labels length
   if (length(ticksText) != length(benchmarkTableAvg$AllParameters)) {
@@ -528,8 +533,8 @@ if (!is.na(YticksStart)) {
 }
 maxY <- round(max(benchmarkTable$weighted_magnitude)) + YticksIncrement
 
-# check barColors length
-if (length(barColors) != length(benchmarkTableAvg$AllParameters)) {
+# check barColors
+if ((is.na(barColors)) || (length(barColors) != length(benchmarkTableAvg$AllParameters))) {
   barColors <- c(rep(defaultBarColor,length(benchmarkTableAvg$AllParameters)))
 }
 
