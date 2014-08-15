@@ -22,8 +22,9 @@ CPUColor <- "#BE1621" # red
 GPUColor <- "#006532" # green
 
 defaultBarColor <- "gray"
-
 defaultGeomLineColor <- "#BE1621"
+defaultSpeedupGeomLineColor <- "#302683"
+defaultEfficiencyGeomLineColor <- "#F39200"
 
 #BE1621 red
 #E6332A red_light
@@ -472,7 +473,6 @@ outputfileEmbeded <- paste(caliperJsonFile, "_avg_barplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
 embed_fonts(outputfile, outfile=outputfileEmbeded)
 file.remove(outputfile)
-
 message <- paste("Info: Saved Barplot in",outputfileEmbeded,"\n")
 cat(message)
 
@@ -514,7 +514,6 @@ if (!is.na(args[5]) && args[5]=='true') {
   ggsave(file=outputfile, scale=2)
   embed_fonts(outputfile, outfile=outputfileEmbeded)
   file.remove(outputfile)
-
   message <- paste("Info: Saved GeomLine Plot in ",outputfileEmbeded,"\n",sep="")
   cat(message)
 }
@@ -562,7 +561,6 @@ outputfileEmbeded <- paste(caliperJsonFile, "_boxplot.pdf", sep="")
 ggsave(file=outputfile, scale=2)
 embed_fonts(outputfile, outfile=outputfileEmbeded)
 file.remove(outputfile)
-
 message <- paste("Info: Saved Boxplot in",outputfileEmbeded,"\n")
 cat(message)
 
@@ -784,34 +782,50 @@ if (!is.na(args[12]) && args[12]=='true') {
   
   # Save speedup plot 
   ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=speedup,colour=type,group=type)) + 
-     geom_point(size=5) + 
-     geom_line() +
-     scale_x_continuous(breaks = round(seq(minX, maxX, by = 1), 1)) +
-     scale_y_continuous(breaks = round(seq(minY, maxY, by = 0.5), 1)) +
-     xlab(paste("bspTaskNum")) +
-     ylab(paste("speedup")) +
-     ggtitle(title) +
-     theme(legend.position = "none")
+    geom_point(size=5,color=defaultSpeedupGeomLineColor) +
+    geom_line(color=defaultSpeedupGeomLineColor) +
+    scale_x_continuous(breaks = round(seq(minX, maxX, by = 1), 1)) +
+    scale_y_continuous(breaks = round(seq(minY, maxY, by = 1), 1)) +
+    xlab(paste("Number of Tasks")) +
+    ylab(paste("Speedup")) +
+    ggtitle(title) +
+    theme(text=element_text(family=fontType),
+          legend.position = "none",
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
   
-  outputfile <- paste(caliperJsonFile,"_speedup_geom_line.pdf", sep="")
+  outputfile <- paste(caliperJsonFile, "_speedup_geom_line_not_embeded_fonts.pdf", sep="")
+  outputfileEmbeded <- paste(caliperJsonFile, "_speedup_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved Speedup GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
+  embed_fonts(outputfile, outfile=outputfileEmbeded)
+  file.remove(outputfile)
+  message <- paste("Info: Saved Speedup GeomLine Plot in ",outputfileEmbeded," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
-  
+
   # Save efficiency plot 
   ggplot(benchmarkTableAvgScenarioGroup, aes(x=bspTaskNum,y=efficiency,colour=type,group=type)) + 
-    geom_point(size=5) + 
-    geom_line() +
+    geom_point(size=5,color=defaultEfficiencyGeomLineColor) +
+    geom_line(color=defaultEfficiencyGeomLineColor) +
     scale_x_continuous(breaks = round(seq(minX, maxX, by = 1), 1)) +
     scale_y_continuous(labels  = percent) +
-    xlab(paste("bspTaskNum")) +
-    ylab(paste("efficiency")) +
+    xlab(paste("Number of Tasks")) +
+    ylab(paste("Efficiency")) +
     ggtitle(title) +
-    theme(legend.position = "none")
-  
-  outputfile <- paste(caliperJsonFile,"_efficiency_geom_line.pdf", sep="")
+    theme(text=element_text(family=fontType),
+          legend.position = "none",
+          axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+
+  outputfile <- paste(caliperJsonFile, "_efficiency_geom_line_not_embeded_fonts.pdf", sep="")
+  outputfileEmbeded <- paste(caliperJsonFile, "_efficiency_geom_line.pdf", sep="")
   ggsave(file=outputfile, scale=1.5)
-  message <- paste("Info: Saved Efficiency GeomLine Plot in ",outputfile," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
+  embed_fonts(outputfile, outfile=outputfileEmbeded)
+  file.remove(outputfile)
+  message <- paste("Info: Saved Efficiency GeomLine Plot in ",outputfileEmbeded," (normalized magnitude 10^",magnitudeNormalizer,")\n",sep="")
   cat(message)
   
   # prepare data for plot speedup and efficiency together
