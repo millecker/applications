@@ -81,6 +81,14 @@
 99% on 1 GPU and 1% on 8 CPU tasks" 1.5 8 "gray,gray,gray,gray,#F39200,gray,gray" "12%,50%,60%,70%,80%,90%,99%" 0
 
 ./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage.2.json \
+  9 "Percentage of GPU workload" "(sec)" true false "" 0 "" "" "" false 0 5 0 0\
+  "12% on 1 GPU and 88% on 8 CPU tasks,50% on 1 GPU and 50% on 8 CPU tasks,60% on 1 GPU and 40% on 8 CPU tasks,\
+70% on 1 GPU and 30% on 8 CPU tasks,80% on 1 GPU and 20% on 8 CPU tasks,85% on 1 GPU and 15% on 8 CPU tasks,\
+90% on 1 GPU and 10% on 8 CPU tasks,99% on 1 GPU and 1% on 8 CPU tasks" \
+  1.5 8 "gray,gray,gray,gray,#F39200,gray,gray,gray" "12%,50%,60%,70%,80%,85%,90%,99%" 0
+
+./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage80.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
   "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 CPUs|1 GPU" 4 7 \
