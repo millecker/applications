@@ -1,0 +1,168 @@
+BenchmarkTable Execution Times
+Loading required package: tcltk
+    scenario    magnitude unit weight weighted_magnitude   AllParameters
+1          1  27887539458   ns      1        27887539458  k=50\ntype=CPU
+2          1  28498018977   ns      1        28498018977  k=50\ntype=CPU
+3          1  30143802444   ns      1        30143802444  k=50\ntype=CPU
+4          1  28804715668   ns      1        28804715668  k=50\ntype=CPU
+5          1  30369235985   ns      1        30369235985  k=50\ntype=CPU
+6          2  29856937488   ns      1        29856937488  k=50\ntype=GPU
+7          2  30355175701   ns      1        30355175701  k=50\ntype=GPU
+8          2  29958373829   ns      1        29958373829  k=50\ntype=GPU
+9          2  29958582113   ns      1        29958582113  k=50\ntype=GPU
+10         2  29895167124   ns      1        29895167124  k=50\ntype=GPU
+11         3  48005908547   ns      1        48005908547 k=100\ntype=CPU
+12         3  48172260429   ns      1        48172260429 k=100\ntype=CPU
+13         3  48442771289   ns      1        48442771289 k=100\ntype=CPU
+14         3  45925571700   ns      1        45925571700 k=100\ntype=CPU
+15         3  47968331277   ns      1        47968331277 k=100\ntype=CPU
+16         4  31936142326   ns      1        31936142326 k=100\ntype=GPU
+17         4  31992088229   ns      1        31992088229 k=100\ntype=GPU
+18         4  31431159978   ns      1        31431159978 k=100\ntype=GPU
+19         4  32061823551   ns      1        32061823551 k=100\ntype=GPU
+20         4  31907317279   ns      1        31907317279 k=100\ntype=GPU
+21         5  71097316302   ns      1        71097316302 k=150\ntype=CPU
+22         5  64071641642   ns      1        64071641642 k=150\ntype=CPU
+23         5  64401957624   ns      1        64401957624 k=150\ntype=CPU
+24         5  64020198387   ns      1        64020198387 k=150\ntype=CPU
+25         5  63101511476   ns      1        63101511476 k=150\ntype=CPU
+26         6  33969855206   ns      1        33969855206 k=150\ntype=GPU
+27         6  33932345069   ns      1        33932345069 k=150\ntype=GPU
+28         6  33982726159   ns      1        33982726159 k=150\ntype=GPU
+29         6  34372909418   ns      1        34372909418 k=150\ntype=GPU
+30         6  34374711242   ns      1        34374711242 k=150\ntype=GPU
+31         7  81915820552   ns      1        81915820552 k=200\ntype=CPU
+32         7  82189349821   ns      1        82189349821 k=200\ntype=CPU
+33         7  82132614849   ns      1        82132614849 k=200\ntype=CPU
+34         7  81642641071   ns      1        81642641071 k=200\ntype=CPU
+35         7  82378042659   ns      1        82378042659 k=200\ntype=CPU
+36         8  35956563807   ns      1        35956563807 k=200\ntype=GPU
+37         8  35880986638   ns      1        35880986638 k=200\ntype=GPU
+38         8  35991698866   ns      1        35991698866 k=200\ntype=GPU
+39         8  35946190542   ns      1        35946190542 k=200\ntype=GPU
+40         8  36436509643   ns      1        36436509643 k=200\ntype=GPU
+41         9 102023053555   ns      1       102023053555 k=250\ntype=CPU
+42         9 100179034627   ns      1       100179034627 k=250\ntype=CPU
+43         9 100301253197   ns      1       100301253197 k=250\ntype=CPU
+44         9  99772431771   ns      1        99772431771 k=250\ntype=CPU
+45         9 102236089654   ns      1       102236089654 k=250\ntype=CPU
+46        10  38023825671   ns      1        38023825671 k=250\ntype=GPU
+47        10  37623210829   ns      1        37623210829 k=250\ntype=GPU
+48        10  38428065094   ns      1        38428065094 k=250\ntype=GPU
+49        10  37941649000   ns      1        37941649000 k=250\ntype=GPU
+50        10  37912320794   ns      1        37912320794 k=250\ntype=GPU
+51        11 124509759542   ns      1       124509759542 k=300\ntype=CPU
+52        11 116179781061   ns      1       116179781061 k=300\ntype=CPU
+53        11 122191375997   ns      1       122191375997 k=300\ntype=CPU
+54        11 118031310113   ns      1       118031310113 k=300\ntype=CPU
+55        11 116296134352   ns      1       116296134352 k=300\ntype=CPU
+56        12  40000422247   ns      1        40000422247 k=300\ntype=GPU
+57        12  39903227115   ns      1        39903227115 k=300\ntype=GPU
+58        12  40422956295   ns      1        40422956295 k=300\ntype=GPU
+59        12  39987280328   ns      1        39987280328 k=300\ntype=GPU
+60        12  39911309953   ns      1        39911309953 k=300\ntype=GPU
+61        13 136360709440   ns      1       136360709440 k=350\ntype=CPU
+62        13 135871435955   ns      1       135871435955 k=350\ntype=CPU
+63        13 134237123568   ns      1       134237123568 k=350\ntype=CPU
+64        13 136196593367   ns      1       136196593367 k=350\ntype=CPU
+65        13 136246545114   ns      1       136246545114 k=350\ntype=CPU
+66        14  40401630175   ns      1        40401630175 k=350\ntype=GPU
+67        14  41875759188   ns      1        41875759188 k=350\ntype=GPU
+68        14  41938475131   ns      1        41938475131 k=350\ntype=GPU
+69        14  41880342259   ns      1        41880342259 k=350\ntype=GPU
+70        14  42436001258   ns      1        42436001258 k=350\ntype=GPU
+71        15 158088370121   ns      1       158088370121 k=400\ntype=CPU
+72        15 157926748929   ns      1       157926748929 k=400\ntype=CPU
+73        15 156223090691   ns      1       156223090691 k=400\ntype=CPU
+74        15 156563463893   ns      1       156563463893 k=400\ntype=CPU
+75        15 156258112811   ns      1       156258112811 k=400\ntype=CPU
+76        16  44018302845   ns      1        44018302845 k=400\ntype=GPU
+77        16  43891508927   ns      1        43891508927 k=400\ntype=GPU
+78        16  43931824224   ns      1        43931824224 k=400\ntype=GPU
+79        16  44161428761   ns      1        44161428761 k=400\ntype=GPU
+80        16  44411390095   ns      1        44411390095 k=400\ntype=GPU
+81        17 174027015808   ns      1       174027015808 k=450\ntype=CPU
+82        17 176207645351   ns      1       176207645351 k=450\ntype=CPU
+83        17 173748723372   ns      1       173748723372 k=450\ntype=CPU
+84        17 176034351126   ns      1       176034351126 k=450\ntype=CPU
+85        17 174471678585   ns      1       174471678585 k=450\ntype=CPU
+86        18  46026301186   ns      1        46026301186 k=450\ntype=GPU
+87        18  45993090698   ns      1        45993090698 k=450\ntype=GPU
+88        18  46300396598   ns      1        46300396598 k=450\ntype=GPU
+89        18  45925731703   ns      1        45925731703 k=450\ntype=GPU
+90        18  45883635927   ns      1        45883635927 k=450\ntype=GPU
+91        19 192740395775   ns      1       192740395775 k=500\ntype=CPU
+92        19 192336195066   ns      1       192336195066 k=500\ntype=CPU
+93        19 192095409620   ns      1       192095409620 k=500\ntype=CPU
+94        19 190255890784   ns      1       190255890784 k=500\ntype=CPU
+95        19 192302273855   ns      1       192302273855 k=500\ntype=CPU
+96        20  47987019860   ns      1        47987019860 k=500\ntype=GPU
+97        20  47947064873   ns      1        47947064873 k=500\ntype=GPU
+98        20  48029756059   ns      1        48029756059 k=500\ntype=GPU
+99        20  48012295013   ns      1        48012295013 k=500\ntype=GPU
+100       20  45926229097   ns      1        45926229097 k=500\ntype=GPU
+BenchmarkTable Average Execution Time avg(magnitude/weight)
+   scenario    magnitude unit   AllParameters
+1         1  29140662506   ns  k=50\ntype=CPU
+2         2  30004847251   ns  k=50\ntype=GPU
+3         3  47702968648   ns k=100\ntype=CPU
+4         4  31865706273   ns k=100\ntype=GPU
+5         5  65338525086   ns k=150\ntype=CPU
+6         6  34126509419   ns k=150\ntype=GPU
+7         7  82051693790   ns k=200\ntype=CPU
+8         8  36042389899   ns k=200\ntype=GPU
+9         9 100902372561   ns k=250\ntype=CPU
+10       10  37985814278   ns k=250\ntype=GPU
+11       11 119441672213   ns k=300\ntype=CPU
+12       12  40045039188   ns k=300\ntype=GPU
+13       13 135782481489   ns k=350\ntype=CPU
+14       14  41706441602   ns k=350\ntype=GPU
+15       15 157011957289   ns k=400\ntype=CPU
+16       16  44082890970   ns k=400\ntype=GPU
+17       17 174897882848   ns k=450\ntype=CPU
+18       18  46025831222   ns k=450\ntype=GPU
+19       19 191946033020   ns k=500\ntype=CPU
+20       20  47580472980   ns k=500\ntype=GPU
+Warnmeldungen:
+1: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+2: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+3: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+4: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Barplot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-06-24T17:13:30Z.CPU.vs.GPU.k.json_avg_barplot.pdf 
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Boxplot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-06-24T17:13:30Z.CPU.vs.GPU.k.json_boxplot.pdf 
+BenchmarkTable Average Execution Time grouped by Scenarios
+   scenario   k magnitude type
+1         1  50  29.14066  CPU
+2         2  50  30.00485  GPU
+3         3 100  47.70297  CPU
+4         4 100  31.86571  GPU
+5         5 150  65.33853  CPU
+6         6 150  34.12651  GPU
+7         7 200  82.05169  CPU
+8         8 200  36.04239  GPU
+9         9 250 100.90237  CPU
+10       10 250  37.98581  GPU
+11       11 300 119.44167  CPU
+12       12 300  40.04504  GPU
+13       13 350 135.78248  CPU
+14       14 350  41.70644  GPU
+15       15 400 157.01196  CPU
+16       16 400  44.08289  GPU
+17       17 450 174.89788  CPU
+18       18 450  46.02583  GPU
+19       19 500 191.94603  CPU
+20       20 500  47.58047  GPU
+Saving 10.5 x 10.5 in image
+Info: Saved CPU+GPU GeomLine Plot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-06-24T17:13:30Z.CPU.vs.GPU.k.json_k_cpu_gpu_geom_line.pdf (normalized magnitude 10^9)
+CPU function: y = 10.63123968568 + 0.362874128216218 * x
+GPU function: y = 28.0754345085467 + 0.0395314901806303 * x
+Saving 10.5 x 10.5 in image
+Info: Saved CPU+GPU GeomLine Plot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-06-24T17:13:30Z.CPU.vs.GPU.k.json_k_cpu_gpu_linear_regression.pdf (normalized magnitude 10^9)
