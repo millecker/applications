@@ -15,7 +15,8 @@ library(stringr) # str_locate
 fontType <- "LM Roman 12"
 legendFontSize <- 20
 axisTitleFontSize <- 22
-axisTicksFontSize <- 18
+axisTicksFontSize <- 20
+axisTicksFontColor <- "black"
 
 # colors
 CPUColor <- "#BE1621" # red
@@ -69,6 +70,7 @@ lappend <- function (lst, ...) {
 # arg20: [barColors]
 # arg21: [XticksText]
 # arg22: [XAxisBarTextAngle]
+# arg23: [EfficiencyValue]
 
 args <- commandArgs(trailingOnly = TRUE)
 if (is.na(args[1])) {
@@ -134,6 +136,13 @@ if (is.na(args[22])) {
   XAxisBarTextAngle <- defaultXAxisTextAngle
 } else {
   XAxisBarTextAngle <- as.numeric(args[22]);
+}
+
+# argument EfficiencyValue
+if (is.na(args[23])) {
+  EfficiencyValue <- NA
+} else {
+  EfficiencyValue <- as.numeric(args[23]);
 }
 
 ###############################################################################
@@ -416,9 +425,9 @@ if (is.na(args[17])) { # if no barText was specified
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=defaultXAxisTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
 
 } else {
   # barText was specified by parameter
@@ -462,9 +471,9 @@ if (is.na(args[17])) { # if no barText was specified
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
 }
 
 
@@ -505,9 +514,9 @@ if (!is.na(args[5]) && args[5]=='true') {
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
 
   outputfile <- paste(caliperJsonFile, "_geom_line_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_geom_line.pdf", sep="")
@@ -543,7 +552,7 @@ if (length(ticksText) != length(benchmarkTableAvg$AllParameters)) {
 }
 
 ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude)) + 
-  geom_boxplot(outlier.colour = "red", outlier.size = 5,fill=barColors) +
+  geom_boxplot(outlier.colour = "red", outlier.size = 5, fill=barColors) +
   scale_y_continuous(breaks = round(seq(minY, maxY, by = YticksIncrement), 1)) +
   scale_x_discrete(breaks=benchmarkTableAvg$AllParameters, labels=ticksText) +
   xlab(bquote(bold(.(xaxisDesc)) ~ .(xaxisDescMath) )) +
@@ -552,9 +561,9 @@ ggplot(benchmarkTable, aes(x=AllParameters,y=weighted_magnitude)) +
   theme(text=element_text(family=fontType),
         legend.position = "none",
         axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-        axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+        axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
         axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-        axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+        axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
 
 outputfile <- paste(caliperJsonFile, "_boxplot_not_embeded_fonts.pdf", sep="")
 outputfileEmbeded <- paste(caliperJsonFile, "_boxplot.pdf", sep="")
@@ -648,9 +657,9 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
           legend.position = "bottom",
           legend.text=element_text(size=legendFontSize),
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=XAxisCPUGPUTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisCPUGPUTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
   
   outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_geom_line.pdf", sep="")
@@ -738,9 +747,9 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
           legend.position = "bottom",
           legend.text=element_text(size=legendFontSize),
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=XAxisCPUGPURegressionTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisCPUGPURegressionTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
 
   outputfile <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_linear_regression_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_", customVariable, "_cpu_gpu_linear_regression.pdf", sep="")
@@ -769,6 +778,10 @@ if (!is.na(args[12]) && args[12]=='true') {
   benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, speedup <- seq_magnitude / magnitude)
   # add efficiency column
   benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, efficiency <- speedup / bspTaskNum)
+  # set last efficiency value manually
+  if (!is.na(EfficiencyValue)) {
+    benchmarkTableAvgScenarioGroup$efficiency[9] <- EfficiencyValue
+  }
   # add group column
   benchmarkTableAvgScenarioGroup$type <- 1
   
@@ -792,9 +805,9 @@ if (!is.na(args[12]) && args[12]=='true') {
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
   
   outputfile <- paste(caliperJsonFile, "_speedup_geom_line_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_speedup_geom_line.pdf", sep="")
@@ -816,9 +829,9 @@ if (!is.na(args[12]) && args[12]=='true') {
     theme(text=element_text(family=fontType),
           legend.position = "none",
           axis.title.x = element_text(face="bold", vjust=-0.5, size=axisTitleFontSize),
-          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize),
+          axis.text.x  = element_text(angle=XAxisBarTextAngle, vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor),
           axis.title.y = element_text(face="bold", vjust=1, size=axisTitleFontSize),
-          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize))
+          axis.text.y  = element_text(vjust=0.5, size=axisTicksFontSize, colour=axisTicksFontColor))
 
   outputfile <- paste(caliperJsonFile, "_efficiency_geom_line_not_embeded_fonts.pdf", sep="")
   outputfileEmbeded <- paste(caliperJsonFile, "_efficiency_geom_line.pdf", sep="")
