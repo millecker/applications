@@ -36,6 +36,10 @@ public class KMeansHybridBenchmark extends Benchmark {
   // "1750000", "2000000" })
   // private long n = 2000000;
 
+  // Plot 1 and Plot 2 support 2 threads only,
+  // because more threads would consume more than 16G RAM
+  private long n = 1000000;
+
   // Plot 2
   // @Param({ "50", "100", "150", "200", "250", "300", "350", "400", "450",
   // "500" })
@@ -49,12 +53,14 @@ public class KMeansHybridBenchmark extends Benchmark {
   };
 
   // Plot 3
-  // maximal 4 cpu tasks and 1 gpu task
+  // maximal 4 CPU tasks and 1 GPU task
   @Param({ "1", "2", "3", "4", "5" })
-  private int bspTaskNum; // = 2;
-  // Plot 1 and Plot 2 support 2 threads only,
-  // because more threads would consume more than 16G RAM
-  private long n = 1000000;
+  private int bspTaskNum; // = 5; // = 2;
+  private final int maxTaskNum = 5;
+
+  // GPU percentage of the input data
+  // @Param({ "20", "30", "40", "50", "60", "70", "75", "80", "90" })
+  private int GPUWorkload = 0;
 
   private int vectorDimension = 3;
   private int maxIteration = 10;
@@ -116,6 +122,7 @@ public class KMeansHybridBenchmark extends Benchmark {
     // Setup KMeans config variables
     m_conf.setBoolean(KMeansHybridBSP.CONF_DEBUG, false);
     m_conf.setBoolean("hama.pipes.logging", false);
+    m_conf.setBoolean(KMeansHybridBSP.CONF_TIME, false);
 
     // Set GPU blockSize and gridSize
     m_conf.set(KMeansHybridBSP.CONF_BLOCKSIZE, "" + BLOCK_SIZE);
@@ -124,6 +131,8 @@ public class KMeansHybridBenchmark extends Benchmark {
     m_conf.setInt(KMeansHybridBSP.CONF_MAX_ITERATIONS, maxIteration);
     // Set n for KMeans
     m_conf.setLong(KMeansHybridBSP.CONF_N, n);
+    // Set GPUPercentage
+    m_conf.setInt(KMeansHybridBSP.CONF_GPU_PERCENTAGE, GPUWorkload);
 
     Path centerIn = new Path(CONF_CENTER_DIR, "center_in.seq");
     Path centerOut = new Path(CONF_CENTER_DIR, "center_out.seq");
@@ -136,12 +145,14 @@ public class KMeansHybridBenchmark extends Benchmark {
     // if (type == CalcType.GPU) {
     // bspTaskNum = 1;
     // numGpuBspTask = 1;
+    // GPUWorkload = 100;
     // }
 
     // CPU + GPU Hybrid benchmark
     // Plot 3
-    if (bspTaskNum == 5) {
+    if (bspTaskNum == maxTaskNum) {
       numGpuBspTask = 1;
+      GPUWorkload = 75;
     } else {
       numGpuBspTask = 0;
     }
@@ -153,15 +164,17 @@ public class KMeansHybridBenchmark extends Benchmark {
 
     // Generate input data
     KMeansHybridBSP.prepareInputData(m_conf, FileSystem.get(m_conf),
-        CONF_INPUT_DIR, centerIn, bspTaskNum, n, k, vectorDimension, null);
+        CONF_INPUT_DIR, centerIn, bspTaskNum, numGpuBspTask, n, k,
+        vectorDimension, null, GPUWorkload);
 
+    // Debug output
     // System.out.println("CalcType: " + type);
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
+    System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0)
+        + " NumGpuBspTask: " + m_conf.getInt("bsp.peers.gpu.num", 0));
     System.out.println("n: " + n + " k: " + k + " vectorDimension: "
-        + vectorDimension);
-    System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
-    System.out.println("NumGpuBspTask: "
-        + m_conf.getInt("bsp.peers.gpu.num", 0));
+        + vectorDimension + " maxIteration: " + maxIteration + " GPUWorkload: "
+        + GPUWorkload + "%");
   }
 
   @Override
