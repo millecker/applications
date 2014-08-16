@@ -31,7 +31,6 @@ import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
 
 import com.google.caliper.Benchmark;
-import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
 import com.google.caliper.model.ArbitraryMeasurement;
 import com.google.caliper.runner.CaliperMain;
@@ -46,25 +45,24 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
   // Step 2
   // @Param({ "300000", "320000", "340000", "360000", "380000", "400000",
   // "420000", "440000", "460000", "480000", "500000" })
-  @Param({ "500000" })
-  private long n;
+  private long n = 500000;
 
   // maximal 8 CPU tasks and 1 GPU task
   private final int maxBspTaskNum = 9;
   // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-  private int bspTaskNum = 8; // Plot 1
+  private int bspTaskNum = 9; // = 1; Plot 1
 
   // GPU percentage of the input data
-  // @Param({ "12", "50", "60", "70", "80", "90", "95", "99" })
-  private int GPUPercentage = 0; // Plot 1
+  // @Param({ "12", "50", "60", "70", "80" })
+  // @Param({ "82", "85", "90", "95", "99" })
+  private int GPUWorkload = 0; // = 0;
 
-  // Used for Plot 1 CPU vs GPU comparison only
-  @Param
-  CalcType type;
-
-  public enum CalcType {
-    CPU, GPU
-  };
+  // Used for Plot 1 and 2 CPU vs GPU comparison
+  // @Param
+  // CalcType type;
+  // public enum CalcType {
+  // CPU, GPU
+  // };
 
   private static final String OUTPUT_DIR = "output/hama/hybrid/examples/piestimator/bench";
   private Path m_OUTPUT_DIR_PATH;
@@ -121,21 +119,23 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
 
     m_totalIterations = (long) m_blockSize * (long) m_gridSize * n;
 
-    // Plot 1 - 8 CPU tasks versus GPU comparison
     int numGpuBspTask = 0;
-    if (type == CalcType.GPU) {
-      bspTaskNum = 1;
-      numGpuBspTask = 1;
-      GPUPercentage = 100;
-    }
+
+    // Plot 1 and 2 - CPU tasks versus GPU comparison
+    // if (type == CalcType.GPU) {
+    // bspTaskNum = 1;
+    // numGpuBspTask = 1;
+    // GPUWorkload = 100;
+    // }
 
     // CPU + GPU Hybrid benchmark
     // Plot 2
-    // if (bspTaskNum == maxBspTaskNum) {
-    // numGpuBspTask = 1;
-    // } else {
-    // numGpuBspTask = 0;
-    // }
+    if (bspTaskNum == maxBspTaskNum) {
+      numGpuBspTask = 1;
+      GPUWorkload = 80;
+    } else {
+      numGpuBspTask = 0;
+    }
 
     // Set CPU tasks
     m_conf.setInt("bsp.peers.num", bspTaskNum);
@@ -145,7 +145,7 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     m_conf.setInt(PiEstimatorHybridBSP.CONF_BLOCKSIZE, m_blockSize);
     m_conf.setInt(PiEstimatorHybridBSP.CONF_GRIDSIZE, m_gridSize);
     m_conf.setLong(PiEstimatorHybridBSP.CONF_ITERATIONS, m_totalIterations);
-    m_conf.setInt(PiEstimatorHybridBSP.CONF_GPU_PERCENTAGE, GPUPercentage);
+    m_conf.setInt(PiEstimatorHybridBSP.CONF_GPU_PERCENTAGE, GPUWorkload);
     m_conf.setBoolean(PiEstimatorHybridBSP.CONF_DEBUG, false);
     m_conf.setBoolean(PiEstimatorHybridBSP.CONF_TIME, false);
 
@@ -153,8 +153,8 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
     System.out.println("Benchmark PiEstimatorHybridBSP[blockSize="
         + m_blockSize + ",gridSize=" + m_gridSize + "] n=" + n + ",bspTaskNum="
-        + bspTaskNum + ",GpuBspTaskNum=" + numGpuBspTask + ",GPUPercentage="
-        + GPUPercentage + ",totalSamples=" + m_totalIterations);
+        + bspTaskNum + ",GpuBspTaskNum=" + numGpuBspTask + ",GPUWorkload="
+        + GPUWorkload + ",totalSamples=" + m_totalIterations);
   }
 
   @Override
