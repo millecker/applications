@@ -11,6 +11,8 @@ library(stringr) # str_locate
 # Defaults
 ###############################################################################
 
+printTitle <- TRUE
+
 # font type and sizes
 fontType <- "LM Roman 10"
 legendFontSize <- 20
@@ -359,10 +361,15 @@ benchmarkTableAvg
 ###############################################################################
 # generate Figures
 ###############################################################################
-title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
-               #".", benchmarkTable$MethodName[1],
-               " with ", benchmarkTable$Measurements[1],
-               " measurements ", sep="")
+
+if (isTRUE(printTitle)) {
+  title <- paste("Benchmark of ", benchmarkTable$ClassName[1],
+                 #".", benchmarkTable$MethodName[1],
+                 " with ", benchmarkTable$Measurements[1],
+                 " measurements ", sep="")
+} else {
+  title <- ""
+}
 
 xaxisDesc <- paste("Parameter", sep="")
 xaxisDescMath <- ""
