@@ -38,9 +38,7 @@ import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.Writable;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
@@ -63,11 +61,12 @@ public class KMeansHybridBSP
 
   private static final Log LOG = LogFactory.getLog(KMeansHybridBSP.class);
 
-  public static final String CONF_DEBUG = "kmeans.is.debugging";
-  public static final String CONF_MAX_ITERATIONS = "kmeans.max.iterations";
-  public static final String CONF_N = "kmeans.n";
-  public static final String CONF_CENTER_IN_PATH = "kmeans.center.in.path";
-  public static final String CONF_CENTER_OUT_PATH = "kmeans.center.out.path";
+  public static final String CONF_DEBUG = "kmeans.hybrid.debug";
+  public static final String CONF_TIME = "piestimator.hybrid.time";
+  public static final String CONF_MAX_ITERATIONS = "kmeans.hybrid.max.iterations";
+  public static final String CONF_N = "kmeans.hybrid.n";
+  public static final String CONF_CENTER_IN_PATH = "kmeans.hybrid.center.in.path";
+  public static final String CONF_CENTER_OUT_PATH = "kmeans.hybrid.center.out.path";
 
   private static final Path CONF_TMP_DIR = new Path(
       "output/hama/hybrid/examples/kmeans/hybrid-" + System.currentTimeMillis());
@@ -75,20 +74,17 @@ public class KMeansHybridBSP
   private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
   private static final Path CONF_CENTER_DIR = new Path(CONF_TMP_DIR, "centers");
 
+  public static final String CONF_GPU_PERCENTAGE = "kmeans.hybrid.percentage";
   public static final String CONF_BLOCKSIZE = "kmeans.hybrid.blockSize";
   public static final String CONF_GRIDSIZE = "kmeans.hybrid.gridSize";
 
   // gridSize = amount of blocks and multiprocessors
   public static final int GRID_SIZE = 14;
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 1024;
-
-  public long m_setupTimeCpu = 0;
-  public long m_setupTimeGpu = 0;
-  public long m_bspTimeCpu = 0;
-  public long m_bspTimeGpu = 0;
+  public static final int BLOCK_SIZE = 384; // 1024;
 
   private boolean m_isDebuggingEnabled;
+  private boolean m_timeMeasurement = false;
   private FSDataOutputStream m_logger;
 
   // a task local copy of our cluster centers
@@ -112,9 +108,8 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException {
 
-    long startTime = System.currentTimeMillis();
-
     this.m_conf = peer.getConfiguration();
+    this.m_timeMeasurement = m_conf.getBoolean(CONF_TIME, false);
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
     this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS, -1);
 
@@ -130,6 +125,11 @@ public class KMeansHybridBSP
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
     }
 
     // Init center vectors
@@ -159,7 +159,15 @@ public class KMeansHybridBSP
 
     this.m_centers_cpu = centers.toArray(new DoubleVector[centers.size()]);
 
-    this.m_setupTimeCpu = System.currentTimeMillis() - startTime;
+    long stopTime = 0;
+    if (m_timeMeasurement) {
+      stopTime = System.currentTimeMillis();
+      LOG.info("# setupTime: " + ((stopTime - startTime) / 1000.0) + " sec");
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("PiEstimatorHybrid,setupTime: "
+            + ((stopTime - startTime) / 1000.0) + " sec\n");
+      }
+    }
   }
 
   @Override
@@ -167,13 +175,26 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    long startTime = System.currentTimeMillis();
+    long startTime = 0;
+    long totalSyncTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
+    }
 
     long converged;
     while (true) {
       assignCenters(peer);
 
+      long syncTime = 0;
+      if (m_timeMeasurement) {
+        syncTime = System.currentTimeMillis();
+      }
+
       peer.sync();
+
+      if (m_timeMeasurement) {
+        totalSyncTime += System.currentTimeMillis() - syncTime;
+      }
 
       converged = updateCenters(peer);
 
@@ -195,17 +216,21 @@ public class KMeansHybridBSP
 
     recalculateAssignmentsAndWrite(peer);
 
-    this.m_bspTimeCpu = System.currentTimeMillis() - startTime;
+    long stopTime = System.currentTimeMillis();
+    if (m_timeMeasurement) {
+      LOG.info("# bspGpuTime: " + ((stopTime - startTime) / 1000.0) + " sec");
+      LOG.info("# syncTime: " + (totalSyncTime / 1000.0) + " sec");
 
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("PiEstimatorHybrid,bspTime: "
+            + ((stopTime - startTime) / 1000.0) + " sec\n");
+        m_logger.writeChars("PiEstimatorHybrid,syncTime: "
+            + (totalSyncTime / 1000.0) + " sec\n\n");
+      }
+    }
+
+    // Logging
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("KMeansHybrid,setupTimeCpu=" + this.m_setupTimeCpu
-          + " ms\n");
-      m_logger.writeChars("KMeansHybrid,setupTimeCpu="
-          + (this.m_setupTimeCpu / 1000.0) + " seconds\n");
-      m_logger.writeChars("KMeansHybrid,bspTimeCpu=" + this.m_bspTimeCpu
-          + " ms\n");
-      m_logger.writeChars("KMeansHybrid,bspTimeCpu="
-          + (this.m_bspTimeCpu / 1000.0) + " seconds\n");
       m_logger.close();
     }
   }
@@ -418,12 +443,10 @@ public class KMeansHybridBSP
       BSPPeer<PipesVectorWritable, NullWritable, IntWritable, PipesVectorWritable, CenterMessage> peer)
       throws IOException, SyncException, InterruptedException {
 
-    long startTime = System.currentTimeMillis();
-
     this.m_conf = peer.getConfiguration();
+    this.m_timeMeasurement = m_conf.getBoolean(CONF_TIME, false);
     this.m_isDebuggingEnabled = m_conf.getBoolean(CONF_DEBUG, false);
     this.m_maxIterations = m_conf.getInt(CONF_MAX_ITERATIONS, -1);
-
     this.m_blockSize = Integer.parseInt(this.m_conf.get(CONF_BLOCKSIZE));
     this.m_gridSize = Integer.parseInt(this.m_conf.get(CONF_GRIDSIZE));
 
@@ -439,6 +462,11 @@ public class KMeansHybridBSP
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
     }
 
     // Init center vectors
@@ -474,7 +502,15 @@ public class KMeansHybridBSP
       }
     }
 
-    this.m_setupTimeGpu = System.currentTimeMillis() - startTime;
+    long stopTime = 0;
+    if (m_timeMeasurement) {
+      stopTime = System.currentTimeMillis();
+      LOG.info("# setupGpuTime: " + ((stopTime - startTime) / 1000.0) + " sec");
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("PiEstimatorHybrid,setupGpuTime: "
+            + ((stopTime - startTime) / 1000.0) + " sec\n");
+      }
+    }
   }
 
   @Override
@@ -483,7 +519,10 @@ public class KMeansHybridBSP
       Rootbeer rootbeer) throws IOException, SyncException,
       InterruptedException {
 
-    long startTime = System.currentTimeMillis();
+    long startTime = 0;
+    if (m_timeMeasurement) {
+      startTime = System.currentTimeMillis();
+    }
 
     // Fetch inputs
     final List<DoubleVector> inputs = new ArrayList<DoubleVector>();
@@ -546,19 +585,18 @@ public class KMeansHybridBSP
       }
     }
 
-    this.m_bspTimeGpu = System.currentTimeMillis() - startTime;
+    long stopTime = System.currentTimeMillis();
+    if (m_timeMeasurement) {
+      LOG.info("# bspGpuTime: " + ((stopTime - startTime) / 1000.0) + " sec");
+
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("PiEstimatorHybrid,bspGpuTime: "
+            + ((stopTime - startTime) / 1000.0) + " sec\n");
+      }
+    }
 
     // Logging
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("KMeansHybrid,setupTimeGpu=" + this.m_setupTimeGpu
-          + " ms\n");
-      m_logger.writeChars("KMeansHybrid,setupTimeGpu="
-          + (this.m_setupTimeGpu / 1000.0) + " seconds\n");
-      m_logger.writeChars("KMeansHybrid,bspTimeGpu=" + this.m_bspTimeGpu
-          + " ms\n");
-      m_logger.writeChars("KMeansHybrid,bspTimeGpu="
-          + (this.m_bspTimeGpu / 1000.0) + " seconds\n");
-
       List<StatsRow> stats = context.getStats();
       for (StatsRow row : stats) {
         m_logger.writeChars("  StatsRow:\n");
@@ -623,17 +661,19 @@ public class KMeansHybridBSP
     int maxIteration = 10;
     boolean useTestExampleInput = false;
     boolean isDebugging = false;
+    boolean timeMeasurement = false;
+    int GPUPercentage = 80;
 
     Configuration conf = new HamaConfiguration();
     FileSystem fs = FileSystem.get(conf);
 
     // Set numBspTask to maxTasks
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
-    numBspTask = cluster.getMaxTasks();
+    // BSPJobClient jobClient = new BSPJobClient(conf);
+    // ClusterStatus cluster = jobClient.getClusterStatus(true);
+    // numBspTask = cluster.getMaxTasks();
 
     if (args.length > 0) {
-      if (args.length == 10) {
+      if (args.length == 12) {
         numBspTask = Integer.parseInt(args[0]);
         numGpuBspTask = Integer.parseInt(args[1]);
         blockSize = Integer.parseInt(args[2]);
@@ -643,7 +683,9 @@ public class KMeansHybridBSP
         vectorDimension = Integer.parseInt(args[6]);
         maxIteration = Integer.parseInt(args[7]);
         useTestExampleInput = Boolean.parseBoolean(args[8]);
-        isDebugging = Boolean.parseBoolean(args[9]);
+        GPUPercentage = Integer.parseInt(args[9]);
+        isDebugging = Boolean.parseBoolean(args[10]);
+        timeMeasurement = Boolean.parseBoolean(args[11]);
 
       } else {
         System.out.println("Wrong argument size!");
@@ -664,7 +706,10 @@ public class KMeansHybridBSP
         System.out
             .println("    Argument9=testExample | Use testExample input (true|false=default)");
         System.out
-            .println("    Argument10=debug | Enable debugging (true|false=default)");
+            .println("    Argument10=GPUPercentage (percentage of input)");
+        System.out.println("    Argument11=isDebugging (true|false=defaul)");
+        System.out
+            .println("    Argument12=timeMeasurement (true|false=defaul)");
         return;
       }
     }
@@ -672,6 +717,8 @@ public class KMeansHybridBSP
     // Set config variables
     conf.setBoolean(CONF_DEBUG, isDebugging);
     conf.setBoolean("hama.pipes.logging", false);
+    conf.setBoolean(CONF_TIME, timeMeasurement);
+
     // Set CPU tasks
     conf.setInt("bsp.peers.num", numBspTask);
     // Set GPU tasks
@@ -683,13 +730,17 @@ public class KMeansHybridBSP
     conf.setInt(CONF_MAX_ITERATIONS, maxIteration);
     // Set n for KMeans
     conf.setLong(CONF_N, n);
+    // Set GPU workload
+    conf.setInt(CONF_GPU_PERCENTAGE, GPUPercentage);
 
     LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
     LOG.info("NumGpuBspTask: " + conf.getInt("bsp.peers.gpu.num", 0));
     LOG.info("bsp.tasks.maximum: " + conf.get("bsp.tasks.maximum"));
+    LOG.info("GPUPercentage: " + conf.get(CONF_GPU_PERCENTAGE));
     LOG.info("BlockSize: " + conf.get(CONF_BLOCKSIZE));
     LOG.info("GridSize: " + conf.get(CONF_GRIDSIZE));
-    LOG.info("isDebugging: " + isDebugging);
+    LOG.info("isDebugging: " + conf.get(CONF_DEBUG));
+    LOG.info("timeMeasurement: " + conf.get(CONF_TIME));
     LOG.info("useTestExampleInput: " + useTestExampleInput);
     LOG.info("inputPath: " + CONF_INPUT_DIR);
     LOG.info("centersPath: " + CONF_CENTER_DIR);
@@ -707,11 +758,12 @@ public class KMeansHybridBSP
     // prepare Input
     if (useTestExampleInput) {
       // prepareTestInput(conf, fs, input, centerIn);
-      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask, n, k,
-          vectorDimension, null);
+      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask,
+          numGpuBspTask, n, k, vectorDimension, null, GPUPercentage);
     } else {
-      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask, n, k,
-          vectorDimension, new Random(3337L));
+      prepareInputData(conf, fs, CONF_INPUT_DIR, centerIn, numBspTask,
+          numGpuBspTask, n, k, vectorDimension, new Random(3337L),
+          GPUPercentage);
     }
 
     BSPJob job = createKMeansHybridBSPConf(conf, CONF_INPUT_DIR,
@@ -721,14 +773,19 @@ public class KMeansHybridBSP
     if (job.waitForCompletion(true)) {
       LOG.info("Job Finished in " + (System.currentTimeMillis() - startTime)
           / 1000.0 + " seconds");
+
       if (isDebugging) {
+        printFile(conf, fs, centerOut, new PipesVectorWritable(),
+            NullWritable.get());
         printOutput(conf, fs, ".log", new IntWritable(),
             new PipesVectorWritable());
       }
-      printFile(conf, fs, centerOut, new PipesVectorWritable(),
-          NullWritable.get());
-    }
 
+      if (k < 50) {
+        printFile(conf, fs, centerOut, new PipesVectorWritable(),
+            NullWritable.get());
+      }
+    }
   }
 
   /**
@@ -736,8 +793,8 @@ public class KMeansHybridBSP
    * 
    */
   public static void prepareInputData(Configuration conf, FileSystem fs,
-      Path in, Path centerIn, int numBspTask, long n, int k,
-      int vectorDimension, Random rand) throws IOException {
+      Path in, Path centerIn, int numBspTask, int numGPUBspTask, long n, int k,
+      int vectorDimension, Random rand, int GPUPercentage) throws IOException {
 
     // Delete input files if already exist
     if (fs.exists(in)) {
@@ -752,9 +809,23 @@ public class KMeansHybridBSP
         conf, centerIn, PipesVectorWritable.class, NullWritable.class,
         CompressionType.NONE);
 
-    long totalNumberOfPoints = n;
-    long interval = totalNumberOfPoints / numBspTask;
-    int centers = 0;
+    // Compute work distributions
+    int cpuTaskNum = numBspTask - numGPUBspTask;
+    long inputVectorsPerGPUTask = 0;
+    long inputVectorsPerCPU = 0;
+    long inputVectorsPerCPUTask = 0;
+    if ((numGPUBspTask > 0) && (GPUPercentage > 0) && (GPUPercentage <= 100)) {
+      inputVectorsPerGPUTask = (n * GPUPercentage) / 100;
+      inputVectorsPerCPU = n - inputVectorsPerGPUTask;
+    } else {
+      inputVectorsPerCPU = n;
+    }
+    if (cpuTaskNum > 0) {
+      inputVectorsPerCPUTask = inputVectorsPerCPU / cpuTaskNum;
+    }
+
+    // long interval = totalNumberOfPoints / numBspTask;
+    long centers = 0;
 
     for (int part = 0; part < numBspTask; part++) {
       Path partIn = new Path(in, "part" + part + ".seq");
@@ -762,15 +833,20 @@ public class KMeansHybridBSP
           conf, partIn, PipesVectorWritable.class, NullWritable.class,
           CompressionType.NONE);
 
+      long interval = 0;
+      if (part > cpuTaskNum) {
+        interval = inputVectorsPerGPUTask;
+      } else {
+        interval = inputVectorsPerCPUTask;
+      }
       long start = interval * part;
       long end = start + interval - 1;
       if ((numBspTask - 1) == part) {
-        end = totalNumberOfPoints;
+        end = n; // set to totalNumberOfPoints
       }
       LOG.info("Partition " + part + ": from " + start + " to " + end);
 
       for (long i = start; i <= end; i++) {
-
         double[] arr = new double[vectorDimension];
         for (int j = 0; j < vectorDimension; j++) {
           if (rand != null) {

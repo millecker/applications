@@ -17,7 +17,7 @@
 	<property name="bench.class" value="at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask numGpuBspTask blockSize gridSize n k vectorDimension maxIterations testExample debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="application.args" value="numBspTask numGpuBspTask blockSize gridSize n k vectorDimension maxIterations testExample GPUPercentage debug timeMeasurement benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>
