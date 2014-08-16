@@ -1,0 +1,74 @@
+BenchmarkTable Execution Times
+Loading required package: tcltk
+   scenario    magnitude unit weight weighted_magnitude AllParameters
+1         1 179911475693   ns      1       179911475693  bspTaskNum=1
+2         1 180411995776   ns      1       180411995776  bspTaskNum=1
+3         1 179707510642   ns      1       179707510642  bspTaskNum=1
+4         1 180224101761   ns      1       180224101761  bspTaskNum=1
+5         1 180197042704   ns      1       180197042704  bspTaskNum=1
+6         1 181729730929   ns      1       181729730929  bspTaskNum=1
+7         1 182214417742   ns      1       182214417742  bspTaskNum=1
+8         1 184226150936   ns      1       184226150936  bspTaskNum=1
+9         1 180136224922   ns      1       180136224922  bspTaskNum=1
+10        1 180116387578   ns      1       180116387578  bspTaskNum=1
+11        2 100322134229   ns      1       100322134229  bspTaskNum=2
+12        2  99677284829   ns      1        99677284829  bspTaskNum=2
+13        2 100033419321   ns      1       100033419321  bspTaskNum=2
+14        2 100079913100   ns      1       100079913100  bspTaskNum=2
+15        2 101076720158   ns      1       101076720158  bspTaskNum=2
+16        2 100048151668   ns      1       100048151668  bspTaskNum=2
+17        2 100069005279   ns      1       100069005279  bspTaskNum=2
+18        2  98032695994   ns      1        98032695994  bspTaskNum=2
+19        2  99992473878   ns      1        99992473878  bspTaskNum=2
+20        2 100048973970   ns      1       100048973970  bspTaskNum=2
+21        3  71867351681   ns      1        71867351681  bspTaskNum=3
+22        3  74269429764   ns      1        74269429764  bspTaskNum=3
+23        3  72005074727   ns      1        72005074727  bspTaskNum=3
+24        3  71997096357   ns      1        71997096357  bspTaskNum=3
+25        3  73967500054   ns      1        73967500054  bspTaskNum=3
+26        3  72012115130   ns      1        72012115130  bspTaskNum=3
+27        3  76116480154   ns      1        76116480154  bspTaskNum=3
+28        3  73952719587   ns      1        73952719587  bspTaskNum=3
+29        3  71897162244   ns      1        71897162244  bspTaskNum=3
+30        3  72524006393   ns      1        72524006393  bspTaskNum=3
+31        4  62096704938   ns      1        62096704938  bspTaskNum=4
+32        4  60145814426   ns      1        60145814426  bspTaskNum=4
+33        4  60068714733   ns      1        60068714733  bspTaskNum=4
+34        4  63675382256   ns      1        63675382256  bspTaskNum=4
+35        4  59984853830   ns      1        59984853830  bspTaskNum=4
+36        4  60684374724   ns      1        60684374724  bspTaskNum=4
+37        4  62079954216   ns      1        62079954216  bspTaskNum=4
+38        4  60412454302   ns      1        60412454302  bspTaskNum=4
+39        5  32729970689   ns      1        32729970689  bspTaskNum=5
+40        5  30470683940   ns      1        30470683940  bspTaskNum=5
+41        5  30442860971   ns      1        30442860971  bspTaskNum=5
+42        5  33187187324   ns      1        33187187324  bspTaskNum=5
+43        5  30087435116   ns      1        30087435116  bspTaskNum=5
+BenchmarkTable Average Execution Time avg(magnitude/weight)
+  scenario    magnitude unit AllParameters
+1        1 180887503868   ns  bspTaskNum=1
+2        2  99938077243   ns  bspTaskNum=2
+3        3  73060893609   ns  bspTaskNum=3
+4        4  61143531678   ns  bspTaskNum=4
+5        5  31383627608   ns  bspTaskNum=5
+Warnmeldungen:
+1: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+2: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+3: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+4: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Barplot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T20:34:23Z.GPUPercentage75.json_avg_barplot.pdf 
+Saving 14 x 14 in image
+Info: Saved GeomLine Plot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T20:34:23Z.GPUPercentage75.json_geom_line.pdf
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Boxplot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T20:34:23Z.GPUPercentage75.json_boxplot.pdf 
+Saving 10.5 x 10.5 in image
+Info: Saved Speedup GeomLine Plot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T20:34:23Z.GPUPercentage75.json_speedup_geom_line.pdf (normalized magnitude 10^9)
+Saving 10.5 x 10.5 in image
+Info: Saved Efficiency GeomLine Plot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T20:34:23Z.GPUPercentage75.json_efficiency_geom_line.pdf (normalized magnitude 10^9)
