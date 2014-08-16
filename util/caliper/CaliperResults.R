@@ -12,7 +12,7 @@ library(stringr) # str_locate
 ###############################################################################
 
 # font type and sizes
-fontType <- "LM Roman 12"
+fontType <- "LM Roman 10"
 legendFontSize <- 20
 axisTitleFontSize <- 22
 axisTicksFontSize <- 20
@@ -583,6 +583,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   customVariableNormalizer<- as.numeric(args[8]) # powerOf10
 
   # description of X axis
+  xaxisdescriptionMath <- ""
   if (!is.na(args[9])) {
     xaxisdescription <- as.character(args[9])
   } else {
