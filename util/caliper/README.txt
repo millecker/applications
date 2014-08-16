@@ -115,12 +115,17 @@
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.GPUPercentage.json \
   9 "Percentage of GPU workload" "(sec)" true false "" 0 "" "" "" false 0 5 0 0\
-  "20% on 1 GPU and 80% on 2 CPU tasks,30% on 1 GPU and 70% on 2 CPU tasks,40% on 1 GPU and 60% on 2 CPU tasks,\
-50% on 1 GPU and 50% on 2 CPU tasks,60% on 1 GPU and 40% on 2 CPU tasks,70% on 1 GPU and 30% on 2 CPU tasks,\
-75% on 1 GPU and 25% on 2 CPU tasks,80% on 1 GPU and 20% on 2 CPU tasks,90% on 1 GPU and 10% on 2 CPU tasks" 1.5 8 \
+  "20% on 1 GPU and 80% on 4 CPU tasks,30% on 1 GPU and 70% on 4 CPU tasks,40% on 1 GPU and 60% on 4 CPU tasks,\
+50% on 1 GPU and 50% on 4 CPU tasks,60% on 4 GPU and 40% on 4 CPU tasks,70% on 1 GPU and 30% on 4 CPU tasks,\
+75% on 1 GPU and 25% on 4 CPU tasks,80% on 4 GPU and 20% on 4 CPU tasks,90% on 1 GPU and 10% on 4 CPU tasks" 1.5 8 \
 "gray,gray,gray,gray,gray,gray,#F39200,gray,gray" "20%,30%,40%,50%,60%,70%,75%,80%,90%" 0
 
-# n=1000000,k=500
+./CaliperResults.R \
+  results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.GPUPercentage75.json \
+  9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 CPUs|1 GPU" 5 10 \
+  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0
+
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*Z.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
