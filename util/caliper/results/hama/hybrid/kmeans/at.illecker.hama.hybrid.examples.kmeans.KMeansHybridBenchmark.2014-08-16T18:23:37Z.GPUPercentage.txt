@@ -1,0 +1,112 @@
+BenchmarkTable Execution Times
+Loading required package: tcltk
+   scenario   magnitude unit weight weighted_magnitude  AllParameters
+1         1 59748009723   ns      1        59748009723 GPUWorkload=20
+2         1 60981218172   ns      1        60981218172 GPUWorkload=20
+3         1 58815497632   ns      1        58815497632 GPUWorkload=20
+4         1 59811061182   ns      1        59811061182 GPUWorkload=20
+5         1 60798741220   ns      1        60798741220 GPUWorkload=20
+6         1 60361728832   ns      1        60361728832 GPUWorkload=20
+7         1 58392693674   ns      1        58392693674 GPUWorkload=20
+8         1 60014324743   ns      1        60014324743 GPUWorkload=20
+9         2 56292981284   ns      1        56292981284 GPUWorkload=30
+10        2 54058629031   ns      1        54058629031 GPUWorkload=30
+11        2 56052435132   ns      1        56052435132 GPUWorkload=30
+12        2 55958420331   ns      1        55958420331 GPUWorkload=30
+13        2 56050390788   ns      1        56050390788 GPUWorkload=30
+14        2 56016667213   ns      1        56016667213 GPUWorkload=30
+15        2 54465833567   ns      1        54465833567 GPUWorkload=30
+16        2 56005709483   ns      1        56005709483 GPUWorkload=30
+17        2 56584703095   ns      1        56584703095 GPUWorkload=30
+18        2 55977912956   ns      1        55977912956 GPUWorkload=30
+19        3 52116975052   ns      1        52116975052 GPUWorkload=40
+20        3 49692350477   ns      1        49692350477 GPUWorkload=40
+21        3 52153364399   ns      1        52153364399 GPUWorkload=40
+22        3 51990245018   ns      1        51990245018 GPUWorkload=40
+23        3 50308185392   ns      1        50308185392 GPUWorkload=40
+24        3 52040742060   ns      1        52040742060 GPUWorkload=40
+25        3 49980926785   ns      1        49980926785 GPUWorkload=40
+26        3 49932985664   ns      1        49932985664 GPUWorkload=40
+27        3 52100029063   ns      1        52100029063 GPUWorkload=40
+28        3 50023618945   ns      1        50023618945 GPUWorkload=40
+29        4 44213283966   ns      1        44213283966 GPUWorkload=50
+30        4 43993475286   ns      1        43993475286 GPUWorkload=50
+31        4 46135565761   ns      1        46135565761 GPUWorkload=50
+32        4 46144121470   ns      1        46144121470 GPUWorkload=50
+33        4 44459119607   ns      1        44459119607 GPUWorkload=50
+34        4 45984218403   ns      1        45984218403 GPUWorkload=50
+35        4 45984664426   ns      1        45984664426 GPUWorkload=50
+36        4 46433403868   ns      1        46433403868 GPUWorkload=50
+37        4 46003327689   ns      1        46003327689 GPUWorkload=50
+38        5 39987676350   ns      1        39987676350 GPUWorkload=60
+39        5 41995861876   ns      1        41995861876 GPUWorkload=60
+40        5 39984541380   ns      1        39984541380 GPUWorkload=60
+41        5 40054047972   ns      1        40054047972 GPUWorkload=60
+42        5 40191298285   ns      1        40191298285 GPUWorkload=60
+43        5 42254894933   ns      1        42254894933 GPUWorkload=60
+44        5 39911318446   ns      1        39911318446 GPUWorkload=60
+45        6 32136619695   ns      1        32136619695 GPUWorkload=70
+46        6 40403154614   ns      1        40403154614 GPUWorkload=70
+47        6 35183257835   ns      1        35183257835 GPUWorkload=70
+48        6 42011916504   ns      1        42011916504 GPUWorkload=70
+49        6 36022233584   ns      1        36022233584 GPUWorkload=70
+50        6 32211449178   ns      1        32211449178 GPUWorkload=70
+51        6 43194967808   ns      1        43194967808 GPUWorkload=70
+52        6 36032091917   ns      1        36032091917 GPUWorkload=70
+53        6 33892690170   ns      1        33892690170 GPUWorkload=70
+54        7 35835152937   ns      1        35835152937 GPUWorkload=75
+55        7 35968912932   ns      1        35968912932 GPUWorkload=75
+56        7 32492211235   ns      1        32492211235 GPUWorkload=75
+57        7 37946927700   ns      1        37946927700 GPUWorkload=75
+58        7 36012973114   ns      1        36012973114 GPUWorkload=75
+59        7 31877999615   ns      1        31877999615 GPUWorkload=75
+60        7 38296808888   ns      1        38296808888 GPUWorkload=75
+61        7 37880396301   ns      1        37880396301 GPUWorkload=75
+62        8 40086018993   ns      1        40086018993 GPUWorkload=80
+63        8 39960899820   ns      1        39960899820 GPUWorkload=80
+64        8 39918803301   ns      1        39918803301 GPUWorkload=80
+65        8 38093837875   ns      1        38093837875 GPUWorkload=80
+66        8 35702941651   ns      1        35702941651 GPUWorkload=80
+67        8 38007967073   ns      1        38007967073 GPUWorkload=80
+68        8 36033488279   ns      1        36033488279 GPUWorkload=80
+69        8 36370220419   ns      1        36370220419 GPUWorkload=80
+70        8 33952275450   ns      1        33952275450 GPUWorkload=80
+71        8 49957706440   ns      1        49957706440 GPUWorkload=80
+72        9 35957526010   ns      1        35957526010 GPUWorkload=90
+73        9 44416259583   ns      1        44416259583 GPUWorkload=90
+74        9 36002262843   ns      1        36002262843 GPUWorkload=90
+75        9 38426542028   ns      1        38426542028 GPUWorkload=90
+76        9 35988740710   ns      1        35988740710 GPUWorkload=90
+77        9 37874724514   ns      1        37874724514 GPUWorkload=90
+78        9 52747606008   ns      1        52747606008 GPUWorkload=90
+79        9 32371512273   ns      1        32371512273 GPUWorkload=90
+80        9 44902154908   ns      1        44902154908 GPUWorkload=90
+81        9 40201774998   ns      1        40201774998 GPUWorkload=90
+BenchmarkTable Average Execution Time avg(magnitude/weight)
+  scenario   magnitude unit  AllParameters
+1        1 59865409397   ns GPUWorkload=20
+2        2 55746368288   ns GPUWorkload=30
+3        3 51033942286   ns GPUWorkload=40
+4        4 45483464497   ns GPUWorkload=50
+5        5 40625662749   ns GPUWorkload=60
+6        6 36787597923   ns GPUWorkload=70
+7        7 35788922840   ns GPUWorkload=75
+8        8 38808415930   ns GPUWorkload=80
+9        9 39888910388   ns GPUWorkload=90
+Warnmeldungen:
+1: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+2: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+3: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+4: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Barplot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T18:23:37Z.GPUPercentage.json_avg_barplot.pdf 
+Saving 14 x 14 in image
+Info: Saved GeomLine Plot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T18:23:37Z.GPUPercentage.json_geom_line.pdf
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Boxplot in results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.2014-08-16T18:23:37Z.GPUPercentage.json_boxplot.pdf 
