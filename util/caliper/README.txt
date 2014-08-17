@@ -124,7 +124,7 @@
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.GPUPercentage75.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
   "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 CPUs|1 GPU" 5 10 \
-  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0
+  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.331
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*Z.json \
