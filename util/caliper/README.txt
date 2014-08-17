@@ -106,11 +106,13 @@
 #######################
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.CPU.vs.GPU.k.json \
-  9 "(n=2000000)" "(sec)" false true k 0 "Number of Centroids 'bolditalic(k)'" "2 CPU tasks,1 GPU task" "90,0" false 30 20 50 50
+  9 "(n=2000000)" "(sec)" false true k 0 "Number of Centroids 'bolditalic(k)'" \
+  "2 CPU tasks,1 GPU task" "90,0" false 30 20 50 50
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.CPU.vs.GPU.n.json \
-  9 "(k=500)" "(sec)" false true n 0 "Number of Input Vectors 'bolditalic(n)'" "2 CPU tasks,1 GPU task" "90,0" false 20 20 250000 250000
+  9 "(k=500)" "(sec)" false true n 0 "Number of Input Vectors 'bolditalic(n)'" \
+  "2 CPU tasks,1 GPU task" "90,0" false 20 20 250000 250000
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.GPUPercentage.json \
@@ -142,16 +144,19 @@
 #########################
 
 ./CaliperResults.R \
-  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
-  9 "(n=m=5000,k=256)" "(sec)" false true iteration 0 "iterations" false 50 50
+  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.CPU.vs.GPU.iteration.json \
+  9 "(n=m=5000,k=256)" "(sec)" false true iteration 0 "Number of Iterations 'bolditalic(i)'" \
+  "1 CPU task,1 GPU task" "0,0" false 50 100 0 25
 
 ./CaliperResults.R \
-  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
-  9 "(n=m=5000,k=256)" "(sec)" false true percentNonZeroValues 0 "% of non-zero ratings" false 50 50
+  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.CPU.vs.GPU.percentNonZeroValues.json \
+  9 "(n=m=5000,k=256)" "(sec)" false true percentNonZeroValues 0 "Percentage of non-zero Ratings" \
+  "1 CPU task,1 GPU task" "0,0" false 50 100 1 1
 
 ./CaliperResults.R \
-  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*.json \
-  9 "(1M MovieLens dataset, k=3, 1 iteration)" "(sec)"  true false "" 0 "" true 10 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and 1 Task on GPU" 2 8
+  results/hama/hybrid/onlinecf/at.illecker.hama.hybrid.examples.onlinecf.OnlineCFHybridBenchmark.*Z.json \
+  9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU and 1 Task on GPU" 2 8 \
+  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0
 
 ###############################################################################
