@@ -788,7 +788,7 @@ if (!is.na(args[12]) && args[12]=='true') {
   benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, efficiency <- speedup / bspTaskNum)
   # set last efficiency value manually
   if (!is.na(EfficiencyValue)) {
-    benchmarkTableAvgScenarioGroup$efficiency[9] <- EfficiencyValue
+    benchmarkTableAvgScenarioGroup$efficiency[length(benchmarkTableAvgScenarioGroup$efficiency)] <- EfficiencyValue
   }
   # add group column
   benchmarkTableAvgScenarioGroup$type <- 1
