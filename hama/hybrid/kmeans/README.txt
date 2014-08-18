@@ -17,14 +17,14 @@ ant jar-cpu
 ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
  -DblockSize=1 -DgridSize=1 \
  -Dn=10 -Dk=3 -DvectorDimension=2 -DmaxIterations=10 \
- -DtestExample=false -GPUPercentage=100 \
+ -DtestExample=false -DGPUPercentage=100 \
  -Ddebug=false -DtimeMeasurement=false]
 
 # Run GPU Testcase to Hama
 ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1  \
  -DblockSize=1 -DgridSize=1 \
  -Dn=100 -Dk=1 -DvectorDimension=2 -DmaxIterations=10 \
- -DtestExample=true -GPUPercentage=100 \
+ -DtestExample=true -DGPUPercentage=100 \
  -Ddebug=false -DtimeMeasurement=false]
 
 # Run precompiled KMeans-GPU.jar
@@ -36,14 +36,14 @@ hama jar KMeans-GPU.jar 1 1 384 14 1000000 1 3 10 true 100 false false
 ant run-cpu [-DnumBspTask=2 -DnumGpuBspTask=0  \
  -DblockSize=0 -DgridSize=0 \
  -Dn=10 -Dk=3 -DvectorDimension=2 -DmaxIterations=10 \
- -DtestExample=false -GPUPercentage=0 \
+ -DtestExample=false -DGPUPercentage=0 \
  -Ddebug=false -DtimeMeasurement=false]
 
 # Run CPU Testcase to Hama
 ant run-cpu [-DnumBspTask=2 -DnumGpuBspTask=0  \
  -DblockSize=0 -DgridSize=0 \
  -Dn=100 -Dk=1 -DvectorDimension=2 -DmaxIterations=10 \
- -DtestExample=true -GPUPercentage=0 \
+ -DtestExample=true -DGPUPercentage=0 \
  -Ddebug=false -DtimeMeasurement=false]
 
 # Run Benchmark
