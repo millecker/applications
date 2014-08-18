@@ -51,12 +51,10 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hama.Constants;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
 import org.apache.hama.bsp.BSPPeer;
 import org.apache.hama.bsp.FileOutputFormat;
-import org.apache.hama.bsp.HashPartitioner;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
 import org.apache.hama.bsp.gpu.HybridBSP;
@@ -179,6 +177,9 @@ public class OnlineCFTrainHybridBSP
     // Fetch inputs
     collectInput(peer);
 
+    // Sync tasks after input has been collected
+    peer.sync();
+    
     // DEBUG
     if (m_isDebuggingEnabled) {
       m_logger.writeChars("collected: " + this.m_usersMatrix.size()
@@ -511,7 +512,7 @@ public class OnlineCFTrainHybridBSP
       InterruptedException {
 
     long startTime = System.currentTimeMillis();
-
+    
     // **********************************************************************
     // Collect inputs
     // **********************************************************************
@@ -727,6 +728,9 @@ public class OnlineCFTrainHybridBSP
       rowId++;
     }
 
+    // Sync tasks after input has been collected
+    peer.sync();
+    
     // **********************************************************************
     // Run GPU Kernels
     // **********************************************************************
@@ -882,7 +886,7 @@ public class OnlineCFTrainHybridBSP
     BSPJob job = new BSPJob(new HamaConfiguration(conf),
         OnlineCFTrainHybridBSP.class);
     // Set the job name
-    job.setJobName("Online CF train");
+    job.setJobName("Online Collaboration Filtering");
     // set the BSP class which shall be executed
     job.setBspClass(OnlineCFTrainHybridBSP.class);
     // help Hama to locale the jar to be distributed
@@ -901,10 +905,10 @@ public class OnlineCFTrainHybridBSP
     job.setMessageClass(ItemMessage.class);
 
     // Enable Partitioning
-    job.setBoolean(Constants.ENABLE_RUNTIME_PARTITIONING, true);
-    job.setPartitioner(HashPartitioner.class);
+    // job.setBoolean(Constants.ENABLE_RUNTIME_PARTITIONING, true);
+    // job.setPartitioner(HashPartitioner.class);
 
-    job.set("bsp.child.java.opts", "-Xmx4G");
+    job.set("bsp.child.java.opts", "-Xmx8G");
 
     return job;
   }
@@ -928,6 +932,8 @@ public class OnlineCFTrainHybridBSP
     int itemCount = 0;
     int percentNonZeroValues = 0;
 
+    int GPUPercentage = 20;
+
     boolean useTestExampleInput = true;
     boolean isDebugging = true;
     String inputFile = "";
@@ -941,62 +947,68 @@ public class OnlineCFTrainHybridBSP
     // ClusterStatus cluster = jobClient.getClusterStatus(true);
     // numBspTask = cluster.getMaxTasks();
 
-    if ((args.length > 0) && (args.length >= 9)) {
-      numBspTask = Integer.parseInt(args[0]);
-      numGpuBspTask = Integer.parseInt(args[1]);
-      blockSize = Integer.parseInt(args[2]);
-      gridSize = Integer.parseInt(args[3]);
+    if (args.length > 0) {
+      if (args.length >= 14) {
+        numBspTask = Integer.parseInt(args[0]);
+        numGpuBspTask = Integer.parseInt(args[1]);
+        blockSize = Integer.parseInt(args[2]);
+        gridSize = Integer.parseInt(args[3]);
 
-      maxIteration = Integer.parseInt(args[4]);
-      matrixRank = Integer.parseInt(args[5]);
-      skipCount = Integer.parseInt(args[6]);
+        maxIteration = Integer.parseInt(args[4]);
+        matrixRank = Integer.parseInt(args[5]);
+        skipCount = Integer.parseInt(args[6]);
 
-      alpha = Double.parseDouble(args[7]);
-      userCount = Integer.parseInt(args[8]);
-      itemCount = Integer.parseInt(args[9]);
-      percentNonZeroValues = Integer.parseInt(args[10]);
+        alpha = Double.parseDouble(args[7]);
+        userCount = Integer.parseInt(args[8]);
+        itemCount = Integer.parseInt(args[9]);
+        percentNonZeroValues = Integer.parseInt(args[10]);
 
-      useTestExampleInput = Boolean.parseBoolean(args[11]);
-      isDebugging = Boolean.parseBoolean(args[12]);
+        GPUPercentage = Integer.parseInt(args[11]);
 
-      // optional parameters
-      if (args.length > 13) {
-        inputFile = args[13];
+        useTestExampleInput = Boolean.parseBoolean(args[12]);
+        isDebugging = Boolean.parseBoolean(args[13]);
+
+        // optional parameters
+        if (args.length > 14) {
+          inputFile = args[14];
+        }
+        if (args.length > 15) {
+          separator = args[15];
+        }
+
+      } else {
+        System.out.println("Wrong argument size!");
+        System.out.println("    Argument1=numBspTask");
+        System.out.println("    Argument2=numGpuBspTask");
+        System.out.println("    Argument3=blockSize");
+        System.out.println("    Argument4=gridSize");
+        System.out
+            .println("    Argument5=maxIterations | Number of maximal iterations ("
+                + maxIteration + ")");
+        System.out.println("    Argument6=matrixRank | matrixRank ("
+            + matrixRank + ")");
+        System.out.println("    Argument7=skipCount | skipCount (" + skipCount
+            + ")");
+        System.out.println("    Argument8=alpha | alpha (" + alpha + ")");
+        System.out.println("    Argument9=userCount | userCount (" + userCount
+            + ")");
+        System.out.println("    Argument10=itemCount | itemCount (" + itemCount
+            + ")");
+        System.out
+            .println("    Argument11=percentNonZeroValues | percentNonZeroValues ("
+                + percentNonZeroValues + ")");
+        System.out
+            .println("    Argument12=GPUPercentage (percentage of input)");
+        System.out
+            .println("    Argument13=testExample | Use testExample input (true|false=default)");
+        System.out
+            .println("    Argument14=debug | Enable debugging (true|false=default)");
+        System.out
+            .println("    Argument15=inputFile (optional) | MovieLens inputFile");
+        System.out.println("    Argument16=separator (optional) | default '"
+            + separator + "' ");
+        return;
       }
-      if (args.length > 14) {
-        separator = args[14];
-      }
-
-    } else {
-      System.out.println("Wrong argument size!");
-      System.out.println("    Argument1=numBspTask");
-      System.out.println("    Argument2=numGpuBspTask");
-      System.out.println("    Argument3=blockSize");
-      System.out.println("    Argument4=gridSize");
-      System.out
-          .println("    Argument5=maxIterations | Number of maximal iterations ("
-              + maxIteration + ")");
-      System.out.println("    Argument6=matrixRank | matrixRank (" + matrixRank
-          + ")");
-      System.out.println("    Argument7=skipCount | skipCount (" + skipCount
-          + ")");
-      System.out.println("    Argument8=alpha | alpha (" + alpha + ")");
-      System.out.println("    Argument9=userCount | userCount (" + userCount
-          + ")");
-      System.out.println("    Argument10=itemCount | itemCount (" + itemCount
-          + ")");
-      System.out
-          .println("    Argument11=percentNonZeroValues | percentNonZeroValues ("
-              + percentNonZeroValues + ")");
-      System.out
-          .println("    Argument12=testExample | Use testExample input (true|false=default)");
-      System.out
-          .println("    Argument13=debug | Enable debugging (true|false=default)");
-      System.out
-          .println("    Argument14=inputFile (optional) | MovieLens inputFile");
-      System.out.println("    Argument11=separator (optional) | default '"
-          + separator + "' ");
-      return;
     }
 
     // Check if inputFile exists
@@ -1017,6 +1029,13 @@ public class OnlineCFTrainHybridBSP
     // Check if blockSize < matrixRank when using GPU
     if ((numGpuBspTask > 0) && (blockSize < matrixRank)) {
       System.out.println("Error: BlockSize < matrixRank");
+      return;
+    }
+
+    // Check GPUPercentage
+    if ((GPUPercentage < 0) && (GPUPercentage > 100)) {
+      System.out
+          .println("Error: GPUPercentage must be between 0 and 100 percent");
       return;
     }
 
@@ -1041,6 +1060,7 @@ public class OnlineCFTrainHybridBSP
     LOG.info("bsp.tasks.maximum: " + conf.get("bsp.tasks.maximum"));
     LOG.info("BlockSize: " + conf.get(CONF_BLOCKSIZE));
     LOG.info("GridSize: " + conf.get(CONF_GRIDSIZE));
+    LOG.info("GPUPercentage: " + GPUPercentage);
 
     LOG.info("isDebugging: " + isDebugging);
     LOG.info("useTestExampleInput: " + useTestExampleInput);
@@ -1071,9 +1091,9 @@ public class OnlineCFTrainHybridBSP
 
     } else if (inputFile.isEmpty()) {
 
-      testPrefs = generateRandomInputData(conf, fs, CONF_INPUT_DIR,
-          preferencesIn, userCount, itemCount, percentNonZeroValues,
-          maxTestPrefs);
+      testPrefs = generateRandomInputData(conf, fs, CONF_INPUT_DIR, numBspTask,
+          numGpuBspTask, userCount, itemCount, percentNonZeroValues,
+          GPUPercentage, maxTestPrefs);
 
     } else if (!inputFile.isEmpty()) {
       // parse inputFile and return first entries for testing
@@ -1183,16 +1203,14 @@ public class OnlineCFTrainHybridBSP
   // generateRandomInputData and return test data
   // **********************************************************************
   public static List<Preference<Long, Long>> generateRandomInputData(
-      Configuration conf, FileSystem fs, Path in, Path preferencesIn,
-      int userCount, int itemCount, int percentNonZeroValues, int maxTestPrefs)
+      Configuration conf, FileSystem fs, Path in, int numBspTask,
+      int numGPUBspTask, int userCount, int itemCount,
+      int percentNonZeroValues, int GPUPercentage, int maxTestPrefs)
       throws IOException {
 
-    // Delete input files if already exist
+    // Delete input directory if already exist
     if (fs.exists(in)) {
       fs.delete(in, true);
-    }
-    if (fs.exists(preferencesIn)) {
-      fs.delete(preferencesIn, true);
     }
 
     Random rand = new Random(32L);
@@ -1201,42 +1219,77 @@ public class OnlineCFTrainHybridBSP
 
     int possibleUserItemRatings = userCount * itemCount;
     int userItemRatings = possibleUserItemRatings * percentNonZeroValues / 100;
-    System.out.println("possibleRatings: " + possibleUserItemRatings
-        + " ratings: " + userItemRatings);
+    System.out.println("generateRandomInputData possibleRatings: "
+        + possibleUserItemRatings + " ratings: " + userItemRatings);
 
-    final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs, conf,
-        preferencesIn, LongWritable.class, PipesVectorWritable.class,
-        CompressionType.NONE);
-
-    for (int i = 0; i < userItemRatings; i++) {
-
-      // Find new user item rating which was not used before
-      Map.Entry<Long, Long> userItemPair;
-      do {
-        long userId = rand.nextInt(userCount);
-        long itemId = rand.nextInt(itemCount);
-        userItemPair = new AbstractMap.SimpleImmutableEntry<Long, Long>(userId,
-            itemId);
-      } while (userItemPairs.contains(userItemPair));
-
-      // Add user item rating
-      userItemPairs.add(userItemPair);
-
-      // Generate rating
-      int rating = rand.nextInt(5) + 1; // values between 1 and 5
-
-      // Add user item rating to test data
-      if (i < maxTestPrefs) {
-        testItems.add(new Preference<Long, Long>(userItemPair.getKey(),
-            userItemPair.getValue(), rating));
-      }
-
-      // Write out user item rating
-      dataWriter.append(new LongWritable(userItemPair.getKey()),
-          new PipesVectorWritable(new DenseDoubleVector(new double[] {
-              userItemPair.getValue(), rating })));
+    // Compute work distributions
+    int cpuTaskNum = numBspTask - numGPUBspTask;
+    long ratingsPerGPUTask = 0;
+    long ratingsPerCPU = 0;
+    long ratingsPerCPUTask = 0;
+    if ((numGPUBspTask > 0) && (GPUPercentage > 0) && (GPUPercentage <= 100)) {
+      ratingsPerGPUTask = (userItemRatings * GPUPercentage) / 100;
+      ratingsPerCPU = userItemRatings - ratingsPerGPUTask;
+    } else {
+      ratingsPerCPU = userItemRatings;
     }
-    dataWriter.close();
+    if (cpuTaskNum > 0) {
+      ratingsPerCPUTask = ratingsPerCPU / cpuTaskNum;
+    }
+
+    System.out.println("generateRandomInputData ratingsPerGPUTask: "
+        + ratingsPerGPUTask + " ratingsPerCPU: " + ratingsPerCPU
+        + " ratingsPerCPUTask: " + ratingsPerCPUTask);
+
+    for (int part = 0; part < numBspTask; part++) {
+      Path partIn = new Path(in, "part" + part + ".seq");
+      final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs,
+          conf, partIn, LongWritable.class, PipesVectorWritable.class,
+          CompressionType.NONE);
+
+      long interval = 0;
+      if (part > cpuTaskNum) {
+        interval = ratingsPerGPUTask;
+      } else {
+        interval = ratingsPerCPUTask;
+      }
+      long start = interval * part;
+      long end = start + interval - 1;
+      if ((numBspTask - 1) == part) {
+        end = userItemRatings;
+      }
+      LOG.info("Partition " + part + ": from " + start + " to " + end);
+
+      for (long i = start; i <= end; i++) {
+
+        // Find new user item rating which was not used before
+        Map.Entry<Long, Long> userItemPair;
+        do {
+          long userId = rand.nextInt(userCount);
+          long itemId = rand.nextInt(itemCount);
+          userItemPair = new AbstractMap.SimpleImmutableEntry<Long, Long>(
+              userId, itemId);
+        } while (userItemPairs.contains(userItemPair));
+
+        // Add user item rating
+        userItemPairs.add(userItemPair);
+
+        // Generate rating
+        int rating = rand.nextInt(5) + 1; // values between 1 and 5
+
+        // Add user item rating to test data
+        if (i < maxTestPrefs) {
+          testItems.add(new Preference<Long, Long>(userItemPair.getKey(),
+              userItemPair.getValue(), rating));
+        }
+
+        // Write out user item rating
+        dataWriter.append(new LongWritable(userItemPair.getKey()),
+            new PipesVectorWritable(new DenseDoubleVector(new double[] {
+                userItemPair.getValue(), rating })));
+      }
+      dataWriter.close();
+    }
 
     return testItems;
   }

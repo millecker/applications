@@ -242,180 +242,177 @@ public class OnlineCFTrainHybridKernel implements Kernel {
       // **********************************************************************
       // normalizeWithBroadcastingValues
       // **********************************************************************
-      if (((i + 1) % m_skipCount == 0) && (m_peerCount > 1)) {
+      // Only global Thread 0
+      if ((m_peerCount > 1) && ((i + 1) % m_skipCount == 0)
+          && (RootbeerGpu.getThreadId() == 0)) {
 
-        // Only global Thread 0
-        if (RootbeerGpu.getThreadId() == 0) {
+        // clear sender map
+        m_senderMap.clear();
 
-          // clear sender map
-          m_senderMap.clear();
+        // Step 1)
+        // send item matrices to selected peers
+        for (int itemId = 0; itemId < m_M; itemId++) {
 
-          // Step 1)
-          // send item matrices to selected peers
-          for (int itemId = 0; itemId < m_M; itemId++) {
+          int realItemId = m_colItemMap.get(itemId);
+          int toPeerId = realItemId % m_peerCount;
+          // don't send item to itself
+          if (toPeerId != m_peerId) {
+            // init Counter
+            m_counterMap.put(itemId, 0);
 
-            int realItemId = m_colItemMap.get(itemId);
-            int toPeerId = realItemId % m_peerCount;
-            // don't send item to itself
-            if (toPeerId != m_peerId) {
-              // init Counter
-              m_counterMap.put(itemId, 0);
-
-              // ItemMessage (senderId,itemId,itemVector)
-              // 0,1,0.622676719363376,0.47894004113535393,0.9099409696184495
-              StringBuilder message = new StringBuilder();
-              message.append(Integer.toString(m_peerId));
-              message.append(",");
-              message.append(Integer.toString(realItemId));
-              message.append(",");
-              for (int d = 0; d < m_matrixRank; d++) {
-                message.append(Double.toString(m_itemsMatrix[itemId][d]));
-                if (d + 1 < m_matrixRank) {
-                  message.append(",");
-                }
+            // ItemMessage (senderId,itemId,itemVector)
+            // 0,1,0.622676719363376,0.47894004113535393,0.9099409696184495
+            StringBuilder message = new StringBuilder();
+            message.append(Integer.toString(m_peerId));
+            message.append(",");
+            message.append(Integer.toString(realItemId));
+            message.append(",");
+            for (int d = 0; d < m_matrixRank; d++) {
+              message.append(Double.toString(m_itemsMatrix[itemId][d]));
+              if (d + 1 < m_matrixRank) {
+                message.append(",");
               }
-              String messageStr = message.toString();
+            }
+            String messageStr = message.toString();
 
-              // System.out.println("sendItem itemId: " + itemId + " toPeerId: "
-              // + toPeerId + " value: "
-              // + arrayToString(m_itemsMatrix[itemId], m_matrixRank));
+            // System.out.println("sendItem itemId: " + itemId + " toPeerId: "
+            // + toPeerId + " value: "
+            // + arrayToString(m_itemsMatrix[itemId], m_matrixRank));
+
+            HamaPeer.send(m_allPeerNames[toPeerId], messageStr);
+
+          } else {
+            m_counterMap.put(itemId, 1);
+          }
+        }
+
+        HamaPeer.sync();
+
+        // Step 2)
+        // receive item matrices if this peer is selected and normalize them
+        String msg;
+        while ((msg = HamaPeer.getCurrentStringMessage()) != null) {
+          // Parse string message
+          // ItemMessage (senderId,itemId,itemVector)
+          String[] values = msg.split(",");
+          int senderId = Integer.parseInt(values[0]);
+          int realItemId = Integer.parseInt(values[1]);
+          Integer itemId = m_itemColMap.get(realItemId);
+          if (itemId != null) {
+            int dim = values.length - 2;
+            for (int d = 0; d < dim; d++) {
+              m_itemsMatrix[itemId][d] += Double.parseDouble(values[d + 2]);
+            }
+
+            m_counterMap.add(itemId, 1);
+            m_senderMap.put(itemId, senderId);
+
+            // System.out.println("receiveItem itemId: " + itemId
+            // + " fromPeerId: " + senderId + " accumulated value: "
+            // + arrayToString(m_itemsMatrix[itemId], dim) + " counter: "
+            // + m_counterMap.get(itemId));
+          }
+        }
+
+      } // RootbeerGpu.getThreadId() == 0
+
+      // Sync all blocks Inter-Block Synchronization
+      RootbeerGpu.syncblocks(3);
+
+      // Step 3)
+      // normalize (messages with counters)
+      // Loop over all itemsPerBlock
+      // Each thread within a block in parallel
+      for (int v = 0; v < itemsPerBlock; v++) {
+        int itemId = (itemsPerBlock * v) + block_idxx;
+        Integer counter = m_counterMap.get(itemId);
+        if ((itemId < m_M) && (counter != null) && (counter > 1)
+            && (thread_idxx < m_matrixRank)) {
+          m_itemsMatrix[itemId][thread_idxx] = m_itemsMatrix[itemId][thread_idxx]
+              / counter;
+        }
+
+        // Sync all threads within a block
+        RootbeerGpu.syncthreads();
+
+      } // loop over all itemsPerBlock
+
+      // Sync all blocks Inter-Block Synchronization
+      RootbeerGpu.syncblocks(4);
+
+      // Only global Thread 0
+      if (RootbeerGpu.getThreadId() == 0) {
+
+        // Step 4)
+        // send back normalized values to senders
+        for (int itemId = 0; itemId < m_M; itemId++) {
+
+          // only send own items
+          int realItemId = m_colItemMap.get(itemId);
+          if (m_peerId == realItemId % m_peerCount) {
+
+            // ItemMessage (senderId,itemId,itemVector)
+            // e.g.,
+            // 0,1,0.622676719363376,0.47894004113535393,0.9099409696184495
+            StringBuilder message = new StringBuilder();
+            message.append(Integer.toString(m_peerId));
+            message.append(",");
+            message.append(Integer.toString(realItemId));
+            message.append(",");
+            for (int d = 0; d < m_matrixRank; d++) {
+              message.append(Double.toString(m_itemsMatrix[itemId][d]));
+              if (d + 1 < m_matrixRank) {
+                message.append(",");
+              }
+            }
+            String messageStr = message.toString();
+            // System.out.println(messageStr); // Error will break
+
+            // send to interested peers
+            GpuIntIntPair pair = m_senderMap.getList(itemId);
+            while (pair != null) {
+              int toPeerId = pair.getValue();
+
+              // System.out.println("sendNormalizedBack itemId: " + itemId
+              // + " toPeerId: " + toPeerId + " value: "
+              // + arrayToString(vector) + "\n");
 
               HamaPeer.send(m_allPeerNames[toPeerId], messageStr);
 
-            } else {
-              m_counterMap.put(itemId, 1);
+              pair = pair.getNext();
             }
-          }
+          } // if (m_peerId == realItemId % m_peerCount)
+        }
 
-          HamaPeer.sync();
+        HamaPeer.sync();
 
-          // Step 2)
-          // receive item matrices if this peer is selected and normalize them
-          String msg;
-          while ((msg = HamaPeer.getCurrentStringMessage()) != null) {
-            // Parse string message
-            // ItemMessage (senderId,itemId,itemVector)
-            String[] values = msg.split(",");
-            int senderId = Integer.parseInt(values[0]);
-            int realItemId = Integer.parseInt(values[1]);
-            Integer itemId = m_itemColMap.get(realItemId);
-            if (itemId != null) {
-              int dim = values.length - 2;
-              for (int d = 0; d < dim; d++) {
-                m_itemsMatrix[itemId][d] += Double.parseDouble(values[d + 2]);
-              }
+        // Step 5)
+        // receive already normalized and update data
+        String msg;
+        while ((msg = HamaPeer.getCurrentStringMessage()) != null) {
+          // Parse string message
+          // ItemMessage (senderId,itemId,itemVector)
+          String[] values = msg.split(",");
 
-              m_counterMap.add(itemId, 1);
-              m_senderMap.put(itemId, senderId);
-
-              // System.out.println("receiveItem itemId: " + itemId
-              // + " fromPeerId: " + senderId + " accumulated value: "
-              // + arrayToString(m_itemsMatrix[itemId], dim) + " counter: "
-              // + m_counterMap.get(itemId));
+          // don't care about the senderId (values[0])
+          int realItemId = Integer.parseInt(values[1]);
+          Integer itemId = m_itemColMap.get(realItemId);
+          if (itemId != null) {
+            int dim = values.length - 2;
+            for (int d = 0; d < dim; d++) {
+              m_itemsMatrix[itemId][d] = Double.parseDouble(values[d + 2]);
             }
+            // System.out.println("updateItems itemId: " + itemId + " value: "
+            // + arrayToString(vector) + "\n");
           }
+        }
 
-        } // RootbeerGpu.getThreadId() == 0
+      } // if (RootbeerGpu.getThreadId() == 0)
 
-        // Sync all blocks Inter-Block Synchronization
-        RootbeerGpu.syncblocks(3);
+      // Sync all blocks Inter-Block Synchronization
+      RootbeerGpu.syncblocks(5);
 
-        // Step 3)
-        // normalize (messages with counters)
-        // Loop over all itemsPerBlock
-        // Each thread within a block in parallel
-        for (int v = 0; v < itemsPerBlock; v++) {
-          int itemId = (itemsPerBlock * v) + block_idxx;
-          Integer counter = m_counterMap.get(itemId);
-          if ((itemId < m_M) && (counter != null) && (counter > 1)
-              && (thread_idxx < m_matrixRank)) {
-            m_itemsMatrix[itemId][thread_idxx] = m_itemsMatrix[itemId][thread_idxx]
-                / counter;
-          }
-
-          // Sync all threads within a block
-          RootbeerGpu.syncthreads();
-
-        } // loop over all itemsPerBlock
-
-        // Sync all blocks Inter-Block Synchronization
-        RootbeerGpu.syncblocks(4);
-
-        // Only global Thread 0
-        if (RootbeerGpu.getThreadId() == 0) {
-
-          // Step 4)
-          // send back normalized values to senders
-          for (int itemId = 0; itemId < m_M; itemId++) {
-
-            // only send own items
-            int realItemId = m_colItemMap.get(itemId);
-            if (m_peerId == realItemId % m_peerCount) {
-
-              // ItemMessage (senderId,itemId,itemVector)
-              // e.g.,
-              // 0,1,0.622676719363376,0.47894004113535393,0.9099409696184495
-              StringBuilder message = new StringBuilder();
-              message.append(Integer.toString(m_peerId));
-              message.append(",");
-              message.append(Integer.toString(realItemId));
-              message.append(",");
-              for (int d = 0; d < m_matrixRank; d++) {
-                message.append(Double.toString(m_itemsMatrix[itemId][d]));
-                if (d + 1 < m_matrixRank) {
-                  message.append(",");
-                }
-              }
-              String messageStr = message.toString();
-              // System.out.println(messageStr); // Error will break
-
-              // send to interested peers
-              GpuIntIntPair pair = m_senderMap.getList(itemId);
-              while (pair != null) {
-                int toPeerId = pair.getValue();
-
-                // System.out.println("sendNormalizedBack itemId: " + itemId
-                // + " toPeerId: " + toPeerId + " value: "
-                // + arrayToString(vector) + "\n");
-
-                HamaPeer.send(m_allPeerNames[toPeerId], messageStr);
-
-                pair = pair.getNext();
-              }
-            } // if (m_peerId == realItemId % m_peerCount)
-          }
-
-          HamaPeer.sync();
-
-          // Step 5)
-          // receive already normalized and update data
-          String msg;
-          while ((msg = HamaPeer.getCurrentStringMessage()) != null) {
-            // Parse string message
-            // ItemMessage (senderId,itemId,itemVector)
-            String[] values = msg.split(",");
-
-            // don't care about the senderId (values[0])
-            int realItemId = Integer.parseInt(values[1]);
-            Integer itemId = m_itemColMap.get(realItemId);
-            if (itemId != null) {
-              int dim = values.length - 2;
-              for (int d = 0; d < dim; d++) {
-                m_itemsMatrix[itemId][d] = Double.parseDouble(values[d + 2]);
-              }
-              // System.out.println("updateItems itemId: " + itemId + " value: "
-              // + arrayToString(vector) + "\n");
-            }
-          }
-
-        } // if (RootbeerGpu.getThreadId() == 0)
-
-        // Sync all blocks Inter-Block Synchronization
-        RootbeerGpu.syncblocks(5);
-
-      } // if (((i + 1) % m_skipCount == 0) && (m_peerCount > 0))
-
-    }
+    } // if (((i + 1) % m_skipCount == 0) && (m_peerCount > 0))
   }
 
   private int divup(int x, int y) {
