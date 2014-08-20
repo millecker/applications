@@ -59,22 +59,28 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   private int iteration = 150; // 1; // plot 3 // amount of iterations
 
   // Plot 2
-  @Param({ "1", "2", "3", "4", "5" })
+  // @Param({ "1", "2", "3", "4", "5" })
   // @Param({ "6", "7", "8" })
   // @Param({ "9", "10" })
-  private int percentNonZeroValues; // = 10; // plot 1
+  private int percentNonZeroValues = 10; // plot 1
 
-  @Param
-  CalcType type;
+  // @Param
+  // CalcType type;
 
   public enum CalcType {
     CPU, GPU
   };
 
   // Plot 3
-  // maximal 4 cpu tasks and 1 gpu task
-  // @Param({ "1", "2", "3", "4", "5" })
-  private int bspTaskNum = 1;
+  // maximal 4 CPU tasks and 1 GPU task
+  @Param({ "1", "2", "3", "4", "5" })
+  private int bspTaskNum; // = 1;
+  private final int maxTaskNum = 5;
+
+  // GPU percentage of the input data
+  // @Param({ "20", "30", "40", "50", "60", "70", "75", "80", "90" })
+  private int GPUWorkload = 0;
+
   // - one iteration only
   // - do not write out results
   // because each task will write out all items!
@@ -82,7 +88,7 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   private String m_movieLensInputFile = "/home/martin/Downloads/ml-1m/ratings.dat";
 
   private int matrixRank = 256; // 3; // plot 3
-  private int skipCount = 1;
+  private int skipCount = 40;
 
   private static final Path CONF_TMP_DIR = new Path(
       "output/hama/hybrid/examples/onlinecf/bench-"
@@ -148,21 +154,24 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     m_conf.set(OnlineCFTrainHybridBSP.CONF_BLOCKSIZE, "" + BLOCK_SIZE);
     m_conf.set(OnlineCFTrainHybridBSP.CONF_GRIDSIZE, "" + GRID_SIZE);
 
+    int numGpuBspTask = 0;
+
     // CPU vs GPU iterations benchmark
     // Plot 1 and 2
-    int numGpuBspTask = 0;
-    if (type == CalcType.GPU) {
-      bspTaskNum = 1;
-      numGpuBspTask = 1;
-    }
+    // if (type == CalcType.GPU) {
+    // bspTaskNum = 1;
+    // numGpuBspTask = 1;
+    // GPUWorkload = 100;
+    // }
 
     // CPU + GPU Hybrid benchmark
     // Plot 3
-    // if (bspTaskNum == 5) {
-    // numGpuBspTask = 1;
-    // } else {
-    // numGpuBspTask = 0;
-    // }
+    if (bspTaskNum == maxTaskNum) {
+      numGpuBspTask = 1;
+      // GPUWorkload = 75;
+    } else {
+      numGpuBspTask = 0;
+    }
 
     // Set CPU tasks
     m_conf.setInt("bsp.peers.num", bspTaskNum);
@@ -178,8 +187,8 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     if (!m_useInputFile) {
       // Generate random input data
       m_testPrefs = generateRandomInputData(m_conf, FileSystem.get(m_conf),
-          CONF_INPUT_DIR, preferencesIn, n, m, percentNonZeroValues,
-          m_maxTestPrefs);
+          CONF_INPUT_DIR, bspTaskNum, numGpuBspTask, n, m,
+          percentNonZeroValues, GPUWorkload, m_maxTestPrefs);
     } else {
       // Convert MovieLens input data
       // parse inputFile and return first entries for testing
@@ -189,18 +198,18 @@ public class OnlineCFHybridBenchmark extends Benchmark {
     }
 
     // Debug output
+    // System.out.println("CalcType: " + type);
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
+    System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0)
+        + " NumGpuBspTask: " + m_conf.getInt("bsp.peers.gpu.num", 0));
     if (!m_useInputFile) {
-      System.out.println("n: " + n + " m: " + m);
-      System.out.println("percentNonZeroValues: " + percentNonZeroValues);
+      System.out.println("n: " + n + " m: " + m + " percentNonZeroValues: "
+          + percentNonZeroValues);
     } else {
       System.out.println("Use inputFile: " + m_movieLensInputFile);
     }
-    System.out.println("matrixRank: " + matrixRank);
-    System.out.println("iterations: " + iteration);
-    System.out.println("NumBspTask: " + m_conf.getInt("bsp.peers.num", 0));
-    System.out.println("NumGpuBspTask: "
-        + m_conf.getInt("bsp.peers.gpu.num", 0));
+    System.out.println("matrixRank: " + matrixRank + " iterations: "
+        + iteration);
   }
 
   @Override
@@ -220,15 +229,13 @@ public class OnlineCFHybridBenchmark extends Benchmark {
   // generateRandomInputData
   // **********************************************************************
   public static List<double[]> generateRandomInputData(Configuration conf,
-      FileSystem fs, Path in, Path preferencesIn, int userCount, int itemCount,
-      int percentNonZeroValues, int maxTestPrefs) throws IOException {
+      FileSystem fs, Path in, int numBspTask, int numGPUBspTask, int userCount,
+      int itemCount, int percentNonZeroValues, int GPUPercentage,
+      int maxTestPrefs) throws IOException {
 
-    // Delete input files if already exist
+    // Delete input directory if already exist
     if (fs.exists(in)) {
       fs.delete(in, true);
-    }
-    if (fs.exists(preferencesIn)) {
-      fs.delete(preferencesIn, true);
     }
 
     Random rand = new Random(32L);
@@ -237,42 +244,78 @@ public class OnlineCFHybridBenchmark extends Benchmark {
 
     int possibleUserItemRatings = userCount * itemCount;
     int userItemRatings = possibleUserItemRatings * percentNonZeroValues / 100;
-    System.out.println("possibleRatings: " + possibleUserItemRatings
-        + " ratings: " + userItemRatings);
+    System.out.println("generateRandomInputData possibleRatings: "
+        + possibleUserItemRatings + " ratings: " + userItemRatings);
 
-    final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs, conf,
-        preferencesIn, LongWritable.class, PipesVectorWritable.class,
-        CompressionType.NONE);
-
-    for (int i = 0; i < userItemRatings; i++) {
-
-      // Find new user item rating which was not used before
-      Map.Entry<Long, Long> userItemPair;
-      do {
-        long userId = rand.nextInt(userCount);
-        long itemId = rand.nextInt(itemCount);
-        userItemPair = new AbstractMap.SimpleImmutableEntry<Long, Long>(userId,
-            itemId);
-      } while (userItemPairs.contains(userItemPair));
-
-      // Add user item rating
-      userItemPairs.add(userItemPair);
-
-      // Generate rating
-      int rating = rand.nextInt(5) + 1; // values between 1 and 5
-
-      // Add user item rating to test data
-      if (i < maxTestPrefs) {
-        testItems.add(new double[] { userItemPair.getKey(),
-            userItemPair.getValue(), rating });
-      }
-
-      // Write out user item rating
-      dataWriter.append(new LongWritable(userItemPair.getKey()),
-          new PipesVectorWritable(new DenseDoubleVector(new double[] {
-              userItemPair.getValue(), rating })));
+    // Compute work distributions
+    int cpuTaskNum = numBspTask - numGPUBspTask;
+    long ratingsPerGPUTask = 0;
+    long ratingsPerCPU = 0;
+    long ratingsPerCPUTask = 0;
+    if ((numGPUBspTask > 0) && (GPUPercentage > 0) && (GPUPercentage <= 100)) {
+      ratingsPerGPUTask = (userItemRatings * GPUPercentage) / 100;
+      ratingsPerCPU = userItemRatings - ratingsPerGPUTask;
+    } else {
+      ratingsPerCPU = userItemRatings;
     }
-    dataWriter.close();
+    if (cpuTaskNum > 0) {
+      ratingsPerCPUTask = ratingsPerCPU / cpuTaskNum;
+    }
+
+    System.out.println("generateRandomInputData ratingsPerGPUTask: "
+        + ratingsPerGPUTask + " ratingsPerCPU: " + ratingsPerCPU
+        + " ratingsPerCPUTask: " + ratingsPerCPUTask);
+
+    for (int part = 0; part < numBspTask; part++) {
+      Path partIn = new Path(in, "part" + part + ".seq");
+      final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs,
+          conf, partIn, LongWritable.class, PipesVectorWritable.class,
+          CompressionType.NONE);
+
+      long interval = 0;
+      if (part > cpuTaskNum) {
+        interval = ratingsPerGPUTask;
+      } else {
+        interval = ratingsPerCPUTask;
+      }
+      long start = interval * part;
+      long end = start + interval - 1;
+      if ((numBspTask - 1) == part) {
+        end = userItemRatings;
+      }
+      System.out
+          .println("Partition " + part + ": from " + start + " to " + end);
+
+      for (long i = start; i <= end; i++) {
+
+        // Find new user item rating which was not used before
+        Map.Entry<Long, Long> userItemPair;
+        do {
+          long userId = rand.nextInt(userCount);
+          long itemId = rand.nextInt(itemCount);
+          userItemPair = new AbstractMap.SimpleImmutableEntry<Long, Long>(
+              userId, itemId);
+        } while (userItemPairs.contains(userItemPair));
+
+        // Add user item rating
+        userItemPairs.add(userItemPair);
+
+        // Generate rating
+        int rating = rand.nextInt(5) + 1; // values between 1 and 5
+
+        // Add user item rating to test data
+        if (i < maxTestPrefs) {
+          testItems.add(new double[] { userItemPair.getKey(),
+              userItemPair.getValue(), rating });
+        }
+
+        // Write out user item rating
+        dataWriter.append(new LongWritable(userItemPair.getKey()),
+            new PipesVectorWritable(new DenseDoubleVector(new double[] {
+                userItemPair.getValue(), rating })));
+      }
+      dataWriter.close();
+    }
 
     return testItems;
   }
