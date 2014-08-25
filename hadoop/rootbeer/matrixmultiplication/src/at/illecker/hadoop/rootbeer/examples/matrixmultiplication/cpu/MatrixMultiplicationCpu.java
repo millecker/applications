@@ -81,6 +81,112 @@ public class MatrixMultiplicationCpu extends AbstractJob {
   private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
       + "/MatrixD.seq");
 
+  public static class MatrixMultiplyCpuMapper extends MapReduceBase implements
+      Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
+
+    private int outCardinality;
+    private boolean isDebuggingEnabled;
+    private FSDataOutputStream logMapper;
+
+    @Override
+    public void configure(JobConf conf) {
+
+      outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
+      isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+
+      // Init logging
+      if (isDebuggingEnabled) {
+        try {
+          FileSystem fs = FileSystem.get(conf);
+          logMapper = fs.create(new Path(FileOutputFormat.getOutputPath(conf)
+              .getParent() + "/Mapper_" + conf.get("mapred.job.id") + ".log"));
+
+          logMapper.writeChars("map,configure,outCardinality=" + outCardinality
+              + "\n");
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+
+    @Override
+    public void map(IntWritable index, TupleWritable v,
+        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
+        throws IOException {
+
+      // Logging
+      if (isDebuggingEnabled) {
+        for (int i = 0; i < v.size(); i++) {
+          Vector vector = ((VectorWritable) v.get(i)).get();
+          logMapper.writeChars("map,input,key=" + index + ",value="
+              + vector.toString() + "\n");
+        }
+      }
+
+      Vector firstVector = ((VectorWritable) v.get(0)).get();
+      Vector secondVector = ((VectorWritable) v.get(1)).get();
+
+      // outCardinality is resulting column size n
+      // (l x m) * (m x n) = (l x n)
+      boolean firstIsOutFrag = secondVector.size() == outCardinality;
+
+      // outFrag is Matrix which has the resulting column cardinality
+      // (matrixB)
+      Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
+
+      // multiplier is Matrix which has the resulting row count
+      // (transposed matrixA)
+      Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
+
+      if (isDebuggingEnabled) {
+        logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
+        logMapper.writeChars("map,outFrag=" + outFrag + "\n");
+        logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+      }
+
+      for (Vector.Element e : multiplier.nonZeroes()) {
+
+        VectorWritable outVector = new VectorWritable();
+        // Scalar Multiplication (Vector x Element)
+        outVector.set(outFrag.times(e.get()));
+
+        out.collect(new IntWritable(e.index()), outVector);
+
+        if (isDebuggingEnabled) {
+          logMapper.writeChars("map,collect,key=" + e.index() + ",value="
+              + outVector.get().toString() + "\n");
+        }
+      }
+      if (isDebuggingEnabled) {
+        logMapper.flush();
+      }
+    }
+  }
+
+  public static class MatrixMultiplicationCpuReducer extends MapReduceBase
+      implements
+      Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
+
+    @Override
+    public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
+        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
+        throws IOException {
+
+      if (!it.hasNext()) {
+        return;
+      }
+
+      Vector accumulator = new RandomAccessSparseVector(it.next().get());
+      while (it.hasNext()) {
+        Vector row = it.next().get();
+        accumulator.assign(row, Functions.PLUS);
+      }
+
+      out.collect(rowNum, new VectorWritable(new SequentialAccessSparseVector(
+          accumulator)));
+    }
+  }
+
   public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
       Path bPath, Path outPath, int outCardinality) {
 
@@ -227,111 +333,5 @@ public class MatrixMultiplicationCpu extends AbstractJob {
       }
     }
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
-  }
-
-  public static class MatrixMultiplyCpuMapper extends MapReduceBase implements
-      Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
-
-    private int outCardinality;
-    private boolean isDebuggingEnabled;
-    private FSDataOutputStream logMapper;
-
-    @Override
-    public void configure(JobConf conf) {
-
-      outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
-      isDebuggingEnabled = conf.getBoolean(DEBUG, false);
-
-      // Init logging
-      if (isDebuggingEnabled) {
-        try {
-          FileSystem fs = FileSystem.get(conf);
-          logMapper = fs.create(new Path(FileOutputFormat.getOutputPath(conf)
-              .getParent() + "/Mapper_" + conf.get("mapred.job.id") + ".log"));
-
-          logMapper.writeChars("map,configure,outCardinality=" + outCardinality
-              + "\n");
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    }
-
-    @Override
-    public void map(IntWritable index, TupleWritable v,
-        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
-        throws IOException {
-
-      // Logging
-      if (isDebuggingEnabled) {
-        for (int i = 0; i < v.size(); i++) {
-          Vector vector = ((VectorWritable) v.get(i)).get();
-          logMapper.writeChars("map,input,key=" + index + ",value="
-              + vector.toString() + "\n");
-        }
-      }
-
-      Vector firstVector = ((VectorWritable) v.get(0)).get();
-      Vector secondVector = ((VectorWritable) v.get(1)).get();
-
-      // outCardinality is resulting column size n
-      // (l x m) * (m x n) = (l x n)
-      boolean firstIsOutFrag = secondVector.size() == outCardinality;
-
-      // outFrag is Matrix which has the resulting column cardinality
-      // (matrixB)
-      Vector outFrag = firstIsOutFrag ? secondVector : firstVector;
-
-      // multiplier is Matrix which has the resulting row count
-      // (transposed matrixA)
-      Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
-
-      if (isDebuggingEnabled) {
-        logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
-        logMapper.writeChars("map,outFrag=" + outFrag + "\n");
-        logMapper.writeChars("map,multiplier=" + multiplier + "\n");
-      }
-
-      for (Vector.Element e : multiplier.nonZeroes()) {
-
-        VectorWritable outVector = new VectorWritable();
-        // Scalar Multiplication (Vector x Element)
-        outVector.set(outFrag.times(e.get()));
-
-        out.collect(new IntWritable(e.index()), outVector);
-
-        if (isDebuggingEnabled) {
-          logMapper.writeChars("map,collect,key=" + e.index() + ",value="
-              + outVector.get().toString() + "\n");
-        }
-      }
-      if (isDebuggingEnabled) {
-        logMapper.flush();
-      }
-    }
-  }
-
-  public static class MatrixMultiplicationCpuReducer extends MapReduceBase
-      implements
-      Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
-
-    @Override
-    public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
-        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
-        throws IOException {
-
-      if (!it.hasNext()) {
-        return;
-      }
-
-      Vector accumulator = new RandomAccessSparseVector(it.next().get());
-      while (it.hasNext()) {
-        Vector row = it.next().get();
-        accumulator.assign(row, Functions.PLUS);
-      }
-
-      out.collect(rowNum, new VectorWritable(new SequentialAccessSparseVector(
-          accumulator)));
-    }
   }
 }
