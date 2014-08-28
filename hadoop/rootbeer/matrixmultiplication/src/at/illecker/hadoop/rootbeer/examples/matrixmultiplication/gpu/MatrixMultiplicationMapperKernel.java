@@ -21,71 +21,128 @@ import org.trifort.rootbeer.runtime.RootbeerGpu;
 
 public class MatrixMultiplicationMapperKernel implements Kernel {
 
-  // input
-  private double[] vector;
-  private double multiplier;
-  // output
-  public int row;
-  public double[] results;
+  private double[] m_matrixA; // matrix A is transposed
+  private double[] m_matrixB;
+  private double[] m_matrixC;
+  private int m_N;
+  private int m_M;
+  private int m_L;
+  private int m_gridSize;
+  private int m_blockSize;
+  private int m_tileWidth;
+  private int m_subMatricesPerThread;
 
-  // debug
-  public double multiplierVal;
-  public double[] vectorVal;
-  public int thread_idxx;
-
-  public MatrixMultiplicationMapperKernel(int row, double multiplier,
-      double[] vector) {
-    this.row = row;
-    this.multiplier = multiplier;
-    this.vector = vector;
-    this.results = new double[this.vector.length];
+  public MatrixMultiplicationMapperKernel(double[] transposedmatrixA,
+      double[] matrixB, double[] matrixC, int n, int m, int l, int gridSize,
+      int blockSize, int tileWidth, int subMatricesPerThread) {
+    m_matrixA = transposedmatrixA; // m x n
+    m_matrixB = matrixB; // m x l
+    m_matrixC = matrixC; // n x l
+    m_N = n;
+    m_M = m;
+    m_L = l;
+    m_gridSize = gridSize;
+    m_blockSize = blockSize;
+    m_tileWidth = tileWidth; // 32 by default
+    m_subMatricesPerThread = subMatricesPerThread;
   }
 
+  // SharedMemory per block
+  // blockSize = 1024
+  // => 12 (needed by Rootbeer) + (2 * 1024 * 8 (double)) = 16396 bytes
+  //
+  // based on
+  // http://www.shodor.org/media/content//petascale/materials/UPModules/matrixMultiplication/moduleDocument.pdf
+  //
   public void gpuMethod() {
+    // get local blockIdx and threadIdx
+    int block_idxx = RootbeerGpu.getBlockIdxx();
+    int thread_idxx = RootbeerGpu.getThreadIdxx();
 
-    // int blockSize = RootbeerGpu.getBlockDimx();
-    // int gridSize = RootbeerGpu.getGridDimx();
-    // int block_idxx = RootbeerGpu.getBlockIdxx();
-    thread_idxx = RootbeerGpu.getThreadIdxx();
-    // int globalThreadIndex = block_idxx * blockSize + thread_idxx;
+    // store fields into local variables
+    // each read from a field hits global ram while a local variable
+    // is most likely stored in a register
+    // int gridSize = m_gridSize;
+    // int blockSize = m_blockSize;
+    // int N = m_N;
+    int M = m_M;
+    int L = m_L;
+    int tileWidth = m_tileWidth;
+    int subMatricesPerThread = m_subMatricesPerThread;
 
-    int vectorStartIndex = 0;
+    // store pointers to arrays in local variable
+    double[] matrixA = m_matrixA;
+    double[] matrixB = m_matrixB;
+    double[] matrixC = m_matrixC;
 
-    // shared memory size
-    // shared-mem-size = (vector.length * 8)
+    // Convert block_idxx to a two dimensional index
+    int blockRow = block_idxx / (L / tileWidth);
+    int blockCol = block_idxx % (L / tileWidth);
 
-    // TODO setting up shared memory only within first thread of block does not
-    // work!
-    // if (thread_idxx == 0) {
-    // Put vector to share memory
-    for (int i = 0; i < this.vector.length; i++) {
-      RootbeerGpu.setSharedDouble(vectorStartIndex + i * 8, this.vector[i]);
+    // Convert thread_idxx to a two dimensional index within submatrix
+    int threadRow = thread_idxx / tileWidth;
+    int threadCol = thread_idxx % tileWidth;
+
+    // Calculate the index of the destination row and col within submatrix
+    int destRow = (blockRow * tileWidth) + threadRow;
+    int destCol = (blockCol * tileWidth) + threadCol;
+
+    // print(RootbeerGpu.getThreadId(), colA, colB, 0, 0, 0);
+
+    double sum = 0;
+
+    // Loop over all the sub-matrices of A and B that are
+    // required to compute Csub
+    // Multiply each pair of sub-matrices together
+    // and accumulate the results
+    for (int m = 0; m < subMatricesPerThread; m++) {
+      int aRowIndex = (m * tileWidth) + threadRow;
+      int aColIndex = (blockRow * tileWidth) + threadCol;
+      int aValueIndex = (aRowIndex * M) + aColIndex;
+
+      int bRowIndex = (m * tileWidth) + threadRow;
+      int bColIndex = destCol;
+      int bValueIndex = (bRowIndex * L) + bColIndex;
+
+      double aValue = matrixA[aValueIndex];
+      double bValue = matrixB[bValueIndex];
+
+      // store the aValue into shared memory at location
+      RootbeerGpu.setSharedDouble(thread_idxx * 8, aValue);
+      // store the bValue into shared memory at location
+      // 1024 is the offset for the row of matrix A
+      RootbeerGpu.setSharedDouble(1024 + (thread_idxx * 8), bValue);
+
+      // sync threads within a block to make sure the sub-matrices are loaded
+      RootbeerGpu.syncthreads();
+
+      // loop over all of aValues and bValues
+      for (int k = 0; k < tileWidth; k++) {
+        // read the aValue from shared memory
+        aValue = RootbeerGpu.getSharedDouble((k * tileWidth + threadRow) * 8);
+        // read the bValue from shared memory
+        bValue = RootbeerGpu
+            .getSharedDouble(1024 + (k * tileWidth + threadCol) * 8);
+
+        // multiply aValue and bValue and accumulate
+        sum += aValue * bValue;
+      }
+
+      // sync threads within a block to make sure that the preceding
+      // computation is done before loading two new
+      // sub-matrices of A and B in the next iteration
+      RootbeerGpu.syncthreads();
     }
-    // }
 
-    // Sync all kernels, until shared memory was established
-    RootbeerGpu.syncthreads();
-
-    // debug
-    multiplierVal = multiplier;
-    vectorVal = new double[this.vector.length];
-
-    // Scalar Multiplication (Vector x Element)
-    for (int i = 0; i < this.vector.length; i++) {
-
-      double vectorElement = RootbeerGpu.getSharedDouble(vectorStartIndex + i
-          * 8);
-
-      vectorVal[i] = vectorElement;
-      results[i] = vectorElement * multiplier;
-    }
-
+    int cValueIndex = destRow * L + destCol;
+    // update the target cValue with the sum
+    matrixC[cValueIndex] = sum;
   }
 
   public static void main(String[] args) {
     // Dummy constructor invocation
     // to keep kernel constructor in
     // rootbeer transformation
-    new MatrixMultiplicationMapperKernel(0, 0, null);
+    new MatrixMultiplicationMapperKernel(null, null, null, 0, 0, 0, 0, 0, 0, 0);
   }
 }
