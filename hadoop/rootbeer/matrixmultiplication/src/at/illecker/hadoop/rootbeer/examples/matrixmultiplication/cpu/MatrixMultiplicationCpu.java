@@ -74,6 +74,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
           + System.currentTimeMillis());
   private static final Path MATRIX_A_PATH = new Path(
       "input/hadoop/rootbeer/examples/MatrixA.seq");
+  private static final Path MATRIX_A_TRANSPOSED_PATH = new Path(
+      "input/hadoop/rootbeer/examples/MatrixA_transposed.seq");
   private static final Path MATRIX_B_PATH = new Path(
       "input/hadoop/rootbeer/examples/MatrixB.seq");
   private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
@@ -271,14 +273,14 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     // use constant seeds to get reproducable results
     // Matrix A is stored transposed
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-        numColsA, new Random(42L), MATRIX_A_PATH, true);
+        numColsA, new Random(42L), MATRIX_A_TRANSPOSED_PATH, true);
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
         numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
     // Load DistributedRowMatrix a and b
-    DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
+    DistributedRowMatrix aTransposed = new DistributedRowMatrix(MATRIX_A_TRANSPOSED_PATH,
         OUTPUT_DIR, numRowsA, numColsA);
-    a.setConf(conf);
+    aTransposed.setConf(conf);
 
     DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
         OUTPUT_DIR, numRowsB, numColsB);
@@ -286,7 +288,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
     // MatrixMultiply all within a new MapReduce job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyMapReduce(b, MATRIX_C_PATH, false, true);
+    DistributedRowMatrix c = aTransposed.multiplyMapReduce(b, MATRIX_C_PATH,
+        false, true);
     System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
@@ -294,7 +297,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     // Overwrite matrix A, NOT transposed for verification check
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
         numColsA, new Random(42L), MATRIX_A_PATH, false);
-    a = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR, numRowsA, numColsA);
+    DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
+        OUTPUT_DIR, numRowsA, numColsA);
     a.setConf(conf);
 
     DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
@@ -307,6 +311,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     if (isDebugging) {
       System.out.println("Matrix A:");
       a.printDistributedRowMatrix();
+      System.out.println("Matrix A transposed:");
+      aTransposed.printDistributedRowMatrix();
       System.out.println("Matrix B:");
       b.printDistributedRowMatrix();
       System.out.println("Matrix C:");
