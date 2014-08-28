@@ -78,7 +78,7 @@ public class OnlineCFTrainHybridKernel implements Kernel {
 
   public void gpuMethod() {
     int blockSize = RootbeerGpu.getBlockDimx();
-    int gridSize = RootbeerGpu.getGridDimx();
+    int gridSize = (int) RootbeerGpu.getGridDimx();
     int block_idxx = RootbeerGpu.getBlockIdxx();
     int thread_idxx = RootbeerGpu.getThreadIdxx();
 

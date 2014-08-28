@@ -47,7 +47,7 @@ public class KMeansHybridKernel implements Kernel {
     }
 
     int blockSize = RootbeerGpu.getBlockDimx();
-    int gridSize = RootbeerGpu.getGridDimx();
+    int gridSize = (int) RootbeerGpu.getGridDimx();
 
     int block_idxx = RootbeerGpu.getBlockIdxx();
     int thread_idxx = RootbeerGpu.getThreadIdxx();
