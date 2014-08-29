@@ -1,7 +1,7 @@
 <project>
 	<property name="root" value="../../.." />
-	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<!-- <property name="rootbeer.args" value="-nodoubles -norecursion" /> -->
+	<property name="rootbeer.version" value="rootbeer-master-branch.jar" />
+	<property name="rootbeer.args" value="-64bit -noexceptions -noarraychecks -shared-mem-size 16408" />
 	<!-- -nodoubles and -norecursion are required for GeForce GT 330M (1.2), because 2.0 compatibility -->
 	<property name="output.file" value="MatrixMultiplication" />
 	<property name="libjars.gpu" value="${lib}${file.separator}mahout-core-0.8-SNAPSHOT-job.jar,${lib}${file.separator}commons-cli-2.0-mahout.jar,${lib}${file.separator}guava-12.0.jar" />
