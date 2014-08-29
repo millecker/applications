@@ -49,9 +49,11 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
 
   // SharedMemory per block
   // blockSize = 1024
-  // => 12 (needed by Rootbeer) + (2 * 1024 * 8 (double)) = 16396 bytes
+  // => 24 bytes (needed by Rootbeer)
+  // + (2 * 1024 * 8)
+  // = 16408 bytes
   //
-  // based on
+  // Implementation is based on
   // http://www.shodor.org/media/content//petascale/materials/UPModules/matrixMultiplication/moduleDocument.pdf
   //
   public void gpuMethod() {
@@ -111,7 +113,7 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
       RootbeerGpu.setSharedDouble(thread_idxx * 8, aValue);
       // store the bValue into shared memory at location
       // 1024 is the offset for the row of matrix A
-      RootbeerGpu.setSharedDouble((1024 + thread_idxx * 8), bValue);
+      RootbeerGpu.setSharedDouble((1024 + thread_idxx) * 8, bValue);
 
       // sync threads within a block to make sure the sub-matrices are loaded
       RootbeerGpu.syncthreads();
@@ -134,8 +136,8 @@ public class MatrixMultiplicationMapperKernel implements Kernel {
       RootbeerGpu.syncthreads();
     }
 
-    int cValueIndex = destRow * L + destCol;
     // update the target cValue with the sum
+    int cValueIndex = destRow * L + destCol;
     matrixC[cValueIndex] = sum;
   }
 
