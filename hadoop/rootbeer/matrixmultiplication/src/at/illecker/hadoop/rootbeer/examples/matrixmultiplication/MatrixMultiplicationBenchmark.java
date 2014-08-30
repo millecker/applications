@@ -20,14 +20,15 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.mapreduce.Job;
+
+import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.cpu.MatrixMultiplicationCpu;
+import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu.MatrixMultiplicationGpu;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
@@ -36,8 +37,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "256", "512", "768", "1024", "1280", "1536" })
-  // "1792", "2048" })
+  @Param({ "256", "512", "768", "1024", "1280", "1536", "1792", "2048" })
   private int n;
 
   @Param
@@ -113,7 +113,7 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
     // Debug output
     System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
-    System.out.println("Benchmark " + n + " x " + n + " matrix");
+    System.out.println("Benchmark " + n + " x " + n + " matrix on " + type);
   }
 
   @Override
@@ -148,6 +148,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     } else {
       System.out.println("Verify FAILED!");
     }
+
+    // matrixC.printDistributedRowMatrix();
+    // matrixD.printDistributedRowMatrix();
   }
 
   private void printOutput(Configuration conf) throws IOException {
@@ -171,46 +174,35 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
 
   public void doBenchmark() {
     try {
-      ToolRunner.run(new MatrixMultiplication(type, m_transposedMatrixA,
-          m_matrixB, m_matrixCPath), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
+      Configuration conf = null;
 
-  private class MatrixMultiplication extends Configured implements Tool {
-    private CalcType m_type;
-    private DistributedRowMatrix m_transposedMatrixA;
-    private DistributedRowMatrix m_matrixB;
-    private Path m_matrixC;
-
-    public MatrixMultiplication(CalcType type,
-        DistributedRowMatrix transposedMatrixA, DistributedRowMatrix matrixB,
-        Path matrixC) {
-      this.m_type = type;
-      m_transposedMatrixA = transposedMatrixA;
-      m_matrixB = matrixB;
-      m_matrixC = matrixC;
-    }
-
-    @Override
-    public int run(String[] arg0) throws Exception {
-      switch (m_type) {
+      switch (type) {
       // case JAVA:
       // m_matrixA.multiplyJava(m_matrixB, m_matrixC);
       // break;
         case CPU:
-          m_transposedMatrixA.multiplyMapReduce(m_matrixB, m_matrixC, false,
-              true, 0, false);
+          conf = MatrixMultiplicationCpu.createMatrixMultiplicationCpuConf(
+              m_conf, m_transposedMatrixAPath, m_matrixBPath, m_matrixCPath,
+              Integer.MAX_VALUE, false);
           break;
         case GPU:
-          m_transposedMatrixA.multiplyMapReduce(m_matrixB, m_matrixC, true,
-              true, TILE_WIDTH, false);
+          conf = MatrixMultiplicationGpu.createMatrixMultiplicationGpuConf(
+              m_conf, m_transposedMatrixAPath, m_matrixBPath, m_matrixCPath,
+              Integer.MAX_VALUE, TILE_WIDTH, false);
           break;
         default:
           break;
       }
-      return 0;
+
+      Job job = new Job(conf);
+      long startTime = System.currentTimeMillis();
+      job.waitForCompletion(false);
+      System.out.println("MatrixMultiplication on " + type + " with size: " + n
+          + " finished in " + (System.currentTimeMillis() - startTime) / 1000.0
+          + " seconds");
+
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 

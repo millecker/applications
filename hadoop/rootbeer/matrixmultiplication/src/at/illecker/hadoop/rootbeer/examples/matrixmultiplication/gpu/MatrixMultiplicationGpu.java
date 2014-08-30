@@ -273,6 +273,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < l; j++) {
           resultRow[j] = matrixC[(j * l) + i]; // submit in col-wise order
+          // resultRow[j] = matrixC[(i * l) + j]; // submit in row-wise order
         }
         if (m_isDebuggingEnabled) {
           m_logMapper.writeChars("map,close,resultRow[" + i + "]="
