@@ -222,7 +222,7 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
    */
   public DistributedRowMatrix multiply(DistributedRowMatrix other, Path outPath)
       throws IOException {
-    return multiplyMapReduce(other, outPath, false, false);
+    return multiplyMapReduce(other, outPath, false, false, 0, false);
   }
 
   /**
@@ -235,8 +235,8 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
    * @return a DistributedRowMatrix containing the product
    */
   public DistributedRowMatrix multiplyMapReduce(DistributedRowMatrix other,
-      Path outPath, boolean useGPU, boolean isMatrixATransposed)
-      throws IOException {
+      Path outPath, boolean useGPU, boolean isMatrixATransposed, int tileWidth,
+      boolean isDebugging) throws IOException {
     // Check if cols of MatrixA = rows of MatrixB
     // (l x m) * (m x n) = (l x n)
     if (numCols != other.numRows()) {
@@ -260,11 +260,11 @@ public class DistributedRowMatrix implements VectorIterable, Configurable {
     if (!useGPU) {
       conf = MatrixMultiplicationCpu.createMatrixMultiplicationCpuConf(
           initialConf, transposed.rowPath, other.rowPath, outPath,
-          other.numCols);
+          other.numCols, isDebugging);
     } else { // use GPU
       conf = MatrixMultiplicationGpu.createMatrixMultiplicationGpuConf(
           initialConf, transposed.rowPath, other.rowPath, outPath,
-          other.numCols);
+          other.numCols, tileWidth, isDebugging);
     }
 
     // Multiply Matrix with transposed one

@@ -213,8 +213,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
       if (javaOnly) {
         resultMatrix = matrixA.multiplyJava(matrixB, MATRIX_C_PATH);
       } else {
+        int tileWidth = 0;
         resultMatrix = matrixA.multiplyMapReduce(matrixB, MATRIX_C_PATH,
-            useGPU, true);
+            useGPU, true, tileWidth, false);
       }
 
       return resultMatrix.numRows();

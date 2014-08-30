@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -40,7 +39,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SequenceFileInputFormat;
 import org.apache.hadoop.mapred.SequenceFileOutputFormat;
@@ -50,11 +48,8 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.mahout.common.AbstractJob;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.DenseVector;
-import org.apache.mahout.math.RandomAccessSparseVector;
-import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.Vector;
 import org.apache.mahout.math.VectorWritable;
-import org.apache.mahout.math.function.Functions;
 import org.trifort.rootbeer.runtime.Context;
 import org.trifort.rootbeer.runtime.Kernel;
 import org.trifort.rootbeer.runtime.Rootbeer;
@@ -69,8 +64,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationGpu.class);
 
-  private static final String OUT_CARD = "output.vector.cardinality";
-  private static final String DEBUG = "matrixmultiplication.gpu.debug";
+  private static final String CONF_OUT_CARD = "matrixmultiplication.gpu.output.vector.cardinality";
+  private static final String CONF_DEBUG = "matrixmultiplication.gpu.debug";
+  private static final String CONF_TILE_WIDTH = "matrixmultiplication.gpu.tilewidth";
 
   private static final Path OUTPUT_DIR = new Path(
       "output/hadoop/rootbeer/examples/matrixmultiplication/GPU-"
@@ -86,10 +82,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
   private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
       + "/MatrixD.seq");
 
-  // TILE_WITH denotes the size of one submatrix
-  // 32 * 32 = 1024 threads matches the blocksize
-  public static final int TILE_WIDTH = 32;
-
   public static class MatrixMultiplyGpuMapper extends MapReduceBase implements
       Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
 
@@ -97,6 +89,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     private boolean m_isDebuggingEnabled;
     private FSDataOutputStream m_logMapper;
 
+    private int m_tileWidth;
     private List<Vector> m_tranposedMatrixA = new ArrayList<Vector>();
     private List<Vector> m_matrixB = new ArrayList<Vector>();
 
@@ -109,8 +102,9 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     @Override
     public void configure(JobConf conf) {
 
-      m_outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
-      m_isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+      m_outCardinality = conf.getInt(CONF_OUT_CARD, Integer.MAX_VALUE);
+      m_tileWidth = conf.getInt(CONF_TILE_WIDTH, 32);
+      m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
       // Set user.home to jars dir for .rootbeer folder
       // which includes CUDA lib
@@ -198,32 +192,38 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       // Convert transposedMatrixA List<Vector> to double[] in row-wise order
       for (int i = 0; i < m; i++) {
         int j = 0;
+        // m_logMapper.writeChars("map,close,transposedMatrixA[" + i + "]: ");
         for (Vector.Element e : m_tranposedMatrixA.get(i).all()) {
           transposedmatrixA[(i * n) + j] = e.get();
           j++;
+          // m_logMapper.writeChars(e.get() + ",");
         }
+        // m_logMapper.writeChars("\n");
       }
 
       // Convert matrixB List<Vector> to double[] in row-wise order
       for (int i = 0; i < m; i++) {
         int j = 0;
+        // m_logMapper.writeChars("map,close,matrixB[" + i + "]: ");
         for (Vector.Element e : m_matrixB.get(i).all()) {
           matrixB[(i * l) + j] = e.get();
           j++;
+          // m_logMapper.writeChars(e.get() + ",");
         }
+        // m_logMapper.writeChars("\n");
       }
 
-      int subMatrixSize = TILE_WIDTH * TILE_WIDTH;
+      int subMatrixSize = m_tileWidth * m_tileWidth;
       int numberOfSubMatrices = divup(n * l, subMatrixSize);
       int gridSize = numberOfSubMatrices;
       int blockSize = subMatrixSize;
 
       // int subMatrixSize = tileWidth * tileWidth;
       // rows of A and cols of B per block
-      int subMatricesPerThread = divup(m, TILE_WIDTH);
+      int subMatricesPerThread = divup(m, m_tileWidth);
 
       if (m_isDebuggingEnabled) {
-        m_logMapper.writeChars("map,close,tileWidth: " + TILE_WIDTH + "ms\n");
+        m_logMapper.writeChars("map,close,tileWidth: " + m_tileWidth + "\n");
         m_logMapper.writeChars("map,close,gridSize: " + gridSize + "\n");
         m_logMapper.writeChars("map,close,blockSize: " + blockSize + "\n");
         m_logMapper.writeChars("map,close,n: " + n + "\n");
@@ -234,7 +234,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       }
 
       Kernel kernel = new MatrixMultiplicationMapperKernel(transposedmatrixA,
-          matrixB, matrixC, n, m, l, gridSize, blockSize, TILE_WIDTH,
+          matrixB, matrixC, n, m, l, gridSize, blockSize, m_tileWidth,
           subMatricesPerThread);
 
       // Run GPU kernel
@@ -246,19 +246,21 @@ public class MatrixMultiplicationGpu extends AbstractJob {
           * gridSize), context);
       watch.stop();
 
-      List<StatsRow> stats = context.getStats();
-      for (StatsRow row : stats) {
-        System.out.println("  StatsRow:\n");
-        System.out.println("    serial time: " + row.getSerializationTime()
-            + "\n");
-        System.out.println("    exec time: " + row.getExecutionTime() + "\n");
-        System.out.println("    deserial time: " + row.getDeserializationTime()
-            + "\n");
-        System.out.println("    num blocks: " + row.getNumBlocks() + "\n");
-        System.out.println("    num threads: " + row.getNumThreads() + "\n");
-      }
-
       if (m_isDebuggingEnabled) {
+        List<StatsRow> stats = context.getStats();
+        for (StatsRow row : stats) {
+          m_logMapper.writeChars("  StatsRow:\n");
+          m_logMapper.writeChars("    serial time: "
+              + row.getSerializationTime() + "\n");
+          m_logMapper.writeChars("    exec time: " + row.getExecutionTime()
+              + "\n");
+          m_logMapper.writeChars("    deserial time: "
+              + row.getDeserializationTime() + "\n");
+          m_logMapper
+              .writeChars("    num blocks: " + row.getNumBlocks() + "\n");
+          m_logMapper.writeChars("    num threads: " + row.getNumThreads()
+              + "\n");
+        }
         m_logMapper.writeChars("map,close,GPUTime=" + watch.elapsedTimeMillis()
             + "ms\n");
         m_logMapper.writeChars("map,close,blockSize=" + blockSize
@@ -270,14 +272,12 @@ public class MatrixMultiplicationGpu extends AbstractJob {
       double[] resultRow = new double[l];
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < l; j++) {
-          resultRow[j] = matrixC[(i * l) + j];
+          resultRow[j] = matrixC[(j * l) + i]; // submit in col-wise order
         }
-
         if (m_isDebuggingEnabled) {
           m_logMapper.writeChars("map,close,resultRow[" + i + "]="
               + Arrays.toString(resultRow) + "\n");
         }
-
         out.collect(new IntWritable(i), new VectorWritable(new DenseVector(
             resultRow)));
       }
@@ -292,78 +292,25 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     }
   }
 
-  public static class MatrixMultiplicationGpuReducer extends MapReduceBase
-      implements
-      Reducer<IntWritable, VectorWritable, IntWritable, VectorWritable> {
-
-    private boolean isDebuggingEnabled;
-    private FSDataOutputStream logReducer;
-
-    @Override
-    public void configure(JobConf conf) {
-
-      isDebuggingEnabled = conf.getBoolean(DEBUG, false);
-
-      // Set user.home to jars dir for .rootbeer folder
-      // which includes CUDA lib
-      // System.setProperty("user.home", new Path(conf.getJobLocalDir())
-      // .getParent().toString() + File.separator + "jars");
-
-      // Init logging
-      if (isDebuggingEnabled) {
-        try {
-          FileSystem fs = FileSystem.get(conf);
-          logReducer = fs.create(new Path(FileOutputFormat.getOutputPath(conf)
-              .getParent() + "/Reducer_" + conf.get("mapred.job.id") + ".log"));
-
-          logReducer.writeChars("reduce,configure,user.home="
-              + System.getProperty("user.home") + "\n");
-
-          logReducer.writeChars("reduce,configure,NumMapTasks="
-              + conf.getNumMapTasks() + "\n");
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    }
-
-    // TODO reduce should only implement the identity function
-    @Override
-    public void reduce(IntWritable rowNum, Iterator<VectorWritable> it,
-        OutputCollector<IntWritable, VectorWritable> out, Reporter reporter)
-        throws IOException {
-
-      if (!it.hasNext()) {
-        return;
-      }
-
-      Vector accumulator = new RandomAccessSparseVector(it.next().get());
-      while (it.hasNext()) {
-        Vector row = it.next().get();
-        accumulator.assign(row, Functions.PLUS);
-      }
-
-      out.collect(rowNum, new VectorWritable(new SequentialAccessSparseVector(
-          accumulator)));
-    }
-  }
-
   public static Configuration createMatrixMultiplicationGpuConf(Path aPath,
-      Path bPath, Path outPath, int outCardinality) {
+      Path bPath, Path outPath, int outCardinality, int tileWidth,
+      boolean isDebugging) {
 
     return createMatrixMultiplicationGpuConf(new Configuration(), aPath, bPath,
-        outPath, outCardinality);
+        outPath, outCardinality, tileWidth, isDebugging);
   }
 
   public static Configuration createMatrixMultiplicationGpuConf(
       Configuration initialConf, Path aPath, Path bPath, Path outPath,
-      int outCardinality) {
+      int outCardinality, int tileWidth, boolean isDebugging) {
 
     JobConf conf = new JobConf(initialConf, MatrixMultiplicationGpu.class);
     conf.setJobName("MatrixMultiplicationGPU: " + aPath + " x " + bPath + " = "
         + outPath);
 
-    conf.setInt(OUT_CARD, outCardinality);
+    conf.setInt(CONF_OUT_CARD, outCardinality);
+    conf.setInt(CONF_TILE_WIDTH, tileWidth);
+    conf.setBoolean(CONF_DEBUG, isDebugging);
 
     conf.setInputFormat(CompositeInputFormat.class);
     conf.set("mapred.join.expr", CompositeInputFormat.compose("inner",
@@ -373,8 +320,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     FileOutputFormat.setOutputPath(conf, outPath);
 
     conf.setMapperClass(MatrixMultiplyGpuMapper.class);
-    conf.setCombinerClass(MatrixMultiplicationGpuReducer.class);
-    conf.setReducerClass(MatrixMultiplicationGpuReducer.class);
 
     conf.setMapOutputKeyClass(IntWritable.class);
     conf.setMapOutputValueClass(VectorWritable.class);
@@ -385,7 +330,14 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     // Increase client heap size for GPU Rootbeer execution
     conf.set("mapred.child.java.opts", "-Xms8G -Xmx8G");
 
-    // TODO ensure that only 1 map task will be executed
+    // Ensure that only 1 map task will be executed
+    conf.setNumMapTasks(1);
+
+    // No Reduce step is needed
+    // -> 0 reducer means reduce step will be skipped and
+    // mapper output will be the final out
+    // -> Identity reducer means then shuffling/sorting will still take place
+    conf.setNumReduceTasks(0);
 
     return conf;
   }
@@ -400,12 +352,12 @@ public class MatrixMultiplicationGpu extends AbstractJob {
         true);
     addOption("numColsA", "nca", "Number of columns of the first input matrix",
         true);
-
     addOption("numRowsB", "nrb", "Number of rows of the second input matrix",
         true);
     addOption("numColsB", "ncb",
         "Number of columns of the second input matrix", true);
-
+    addOption("tileWidth", "tw", "TileWidth denotes the size of a submatrix",
+        true);
     addOption("debug", "db", "Enable debugging (true|false)", false);
 
     Map<String, List<String>> argMap = parseArguments(strings);
@@ -418,11 +370,16 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     int numRowsB = Integer.parseInt(getOption("numRowsB"));
     int numColsB = Integer.parseInt(getOption("numColsB"));
 
+    // TILE_WITH = 32
+    // --> 2 * 32 = 1024 threads matches the blocksize
+    int tileWidth = Integer.parseInt(getOption("tileWidth"));
     boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
+
     LOG.info("numRowsA: " + numRowsA);
     LOG.info("numColsA: " + numColsA);
     LOG.info("numRowsB: " + numRowsB);
     LOG.info("numColsB: " + numColsB);
+    LOG.info("tileWidth: " + tileWidth);
     LOG.info("isDebugging: " + isDebugging);
     LOG.info("outputPath: " + OUTPUT_DIR);
 
@@ -431,7 +388,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     }
 
     Configuration conf = new Configuration(getConf());
-    conf.setBoolean(DEBUG, isDebugging);
 
     // Create random DistributedRowMatrix
     // use constant seeds to get reproducable results
@@ -453,7 +409,7 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     // MatrixMultiply all within a new MapReduce job
     long startTime = System.currentTimeMillis();
     DistributedRowMatrix c = aTransposed.multiplyMapReduce(b, MATRIX_C_PATH,
-        true, true);
+        true, true, tileWidth, isDebugging);
     System.out.println("MatrixMultiplicationGpu using Hadoop finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 

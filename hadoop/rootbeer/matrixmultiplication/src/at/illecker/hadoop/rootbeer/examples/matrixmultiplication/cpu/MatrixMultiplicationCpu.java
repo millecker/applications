@@ -66,8 +66,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
   private static final Log LOG = LogFactory
       .getLog(MatrixMultiplicationCpu.class);
 
-  private static final String OUT_CARD = "output.vector.cardinality";
-  private static final String DEBUG = "matrixmultiplication.cpu.debug";
+  private static final String CONF_OUT_CARD = "matrixmultiplication.cpu.output.vector.cardinality";
+  private static final String CONF_DEBUG = "matrixmultiplication.cpu.debug";
 
   private static final Path OUTPUT_DIR = new Path(
       "output/hadoop/rootbeer/examples/matrixmultiplication/CPU-"
@@ -86,25 +86,25 @@ public class MatrixMultiplicationCpu extends AbstractJob {
   public static class MatrixMultiplyCpuMapper extends MapReduceBase implements
       Mapper<IntWritable, TupleWritable, IntWritable, VectorWritable> {
 
-    private int outCardinality;
-    private boolean isDebuggingEnabled;
-    private FSDataOutputStream logMapper;
+    private int m_outCardinality;
+    private boolean m_isDebuggingEnabled;
+    private FSDataOutputStream m_logMapper;
 
     @Override
     public void configure(JobConf conf) {
 
-      outCardinality = conf.getInt(OUT_CARD, Integer.MAX_VALUE);
-      isDebuggingEnabled = conf.getBoolean(DEBUG, false);
+      m_outCardinality = conf.getInt(CONF_OUT_CARD, Integer.MAX_VALUE);
+      m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
       // Init logging
-      if (isDebuggingEnabled) {
+      if (m_isDebuggingEnabled) {
         try {
           FileSystem fs = FileSystem.get(conf);
-          logMapper = fs.create(new Path(FileOutputFormat.getOutputPath(conf)
+          m_logMapper = fs.create(new Path(FileOutputFormat.getOutputPath(conf)
               .getParent() + "/Mapper_" + conf.get("mapred.job.id") + ".log"));
 
-          logMapper.writeChars("map,configure,outCardinality=" + outCardinality
-              + "\n");
+          m_logMapper.writeChars("map,configure,outCardinality="
+              + m_outCardinality + "\n");
         } catch (IOException e) {
           e.printStackTrace();
         }
@@ -117,10 +117,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
         throws IOException {
 
       // Logging
-      if (isDebuggingEnabled) {
+      if (m_isDebuggingEnabled) {
         for (int i = 0; i < v.size(); i++) {
           Vector vector = ((VectorWritable) v.get(i)).get();
-          logMapper.writeChars("map,input,key=" + index + ",value="
+          m_logMapper.writeChars("map,input,key=" + index + ",value="
               + vector.toString() + "\n");
         }
       }
@@ -130,7 +130,7 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
       // outCardinality is resulting column size n
       // (l x m) * (m x n) = (l x n)
-      boolean firstIsOutFrag = secondVector.size() == outCardinality;
+      boolean firstIsOutFrag = secondVector.size() == m_outCardinality;
 
       // outFrag is Matrix which has the resulting column cardinality
       // (matrixB)
@@ -140,10 +140,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
       // (transposed matrixA)
       Vector multiplier = firstIsOutFrag ? firstVector : secondVector;
 
-      if (isDebuggingEnabled) {
-        logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
-        logMapper.writeChars("map,outFrag=" + outFrag + "\n");
-        logMapper.writeChars("map,multiplier=" + multiplier + "\n");
+      if (m_isDebuggingEnabled) {
+        m_logMapper.writeChars("map,firstIsOutFrag=" + firstIsOutFrag + "\n");
+        m_logMapper.writeChars("map,outFrag=" + outFrag + "\n");
+        m_logMapper.writeChars("map,multiplier=" + multiplier + "\n");
       }
 
       for (Vector.Element e : multiplier.nonZeroes()) {
@@ -154,13 +154,13 @@ public class MatrixMultiplicationCpu extends AbstractJob {
 
         out.collect(new IntWritable(e.index()), outVector);
 
-        if (isDebuggingEnabled) {
-          logMapper.writeChars("map,collect,key=" + e.index() + ",value="
+        if (m_isDebuggingEnabled) {
+          m_logMapper.writeChars("map,collect,key=" + e.index() + ",value="
               + outVector.get().toString() + "\n");
         }
       }
-      if (isDebuggingEnabled) {
-        logMapper.flush();
+      if (m_isDebuggingEnabled) {
+        m_logMapper.flush();
       }
     }
   }
@@ -190,21 +190,22 @@ public class MatrixMultiplicationCpu extends AbstractJob {
   }
 
   public static Configuration createMatrixMultiplicationCpuConf(Path aPath,
-      Path bPath, Path outPath, int outCardinality) {
+      Path bPath, Path outPath, int outCardinality, boolean isDebugging) {
 
     return createMatrixMultiplicationCpuConf(new Configuration(), aPath, bPath,
-        outPath, outCardinality);
+        outPath, outCardinality, isDebugging);
   }
 
   public static Configuration createMatrixMultiplicationCpuConf(
       Configuration initialConf, Path aPath, Path bPath, Path outPath,
-      int outCardinality) {
+      int outCardinality, boolean isDebugging) {
 
     JobConf conf = new JobConf(initialConf, MatrixMultiplicationCpu.class);
     conf.setJobName("MatrixMultiplicationCPU: " + aPath + " x " + bPath + " = "
         + outPath);
 
-    conf.setInt(OUT_CARD, outCardinality);
+    conf.setInt(CONF_OUT_CARD, outCardinality);
+    conf.setBoolean(CONF_DEBUG, isDebugging);
 
     conf.setInputFormat(CompositeInputFormat.class);
     conf.set("mapred.join.expr", CompositeInputFormat.compose("inner",
@@ -223,6 +224,13 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     conf.setOutputKeyClass(IntWritable.class);
     conf.setOutputValueClass(VectorWritable.class);
 
+    // Increase client heap size
+    conf.set("mapred.child.java.opts", "-Xms8G -Xmx8G");
+
+    // Ensure that 8 map tasks will be executed
+    conf.setNumMapTasks(8);
+    conf.setNumReduceTasks(1);
+
     return conf;
   }
 
@@ -236,12 +244,10 @@ public class MatrixMultiplicationCpu extends AbstractJob {
         true);
     addOption("numColsA", "nca", "Number of columns of the first input matrix",
         true);
-
     addOption("numRowsB", "nrb", "Number of rows of the second input matrix",
         true);
     addOption("numColsB", "ncb",
         "Number of columns of the second input matrix", true);
-
     addOption("debug", "db", "Enable debugging (true|false)", false);
 
     Map<String, List<String>> argMap = parseArguments(strings);
@@ -253,8 +259,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     int numColsA = Integer.parseInt(getOption("numColsA"));
     int numRowsB = Integer.parseInt(getOption("numRowsB"));
     int numColsB = Integer.parseInt(getOption("numColsB"));
-
     boolean isDebugging = Boolean.parseBoolean(getOption("debug"));
+
     LOG.info("numRowsA: " + numRowsA);
     LOG.info("numColsA: " + numColsA);
     LOG.info("numRowsB: " + numRowsB);
@@ -267,7 +273,6 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     }
 
     Configuration conf = new Configuration(getConf());
-    conf.setBoolean(DEBUG, isDebugging);
 
     // Create random DistributedRowMatrix
     // use constant seeds to get reproducable results
@@ -278,8 +283,8 @@ public class MatrixMultiplicationCpu extends AbstractJob {
         numColsB, new Random(1337L), MATRIX_B_PATH, false);
 
     // Load DistributedRowMatrix a and b
-    DistributedRowMatrix aTransposed = new DistributedRowMatrix(MATRIX_A_TRANSPOSED_PATH,
-        OUTPUT_DIR, numRowsA, numColsA);
+    DistributedRowMatrix aTransposed = new DistributedRowMatrix(
+        MATRIX_A_TRANSPOSED_PATH, OUTPUT_DIR, numRowsA, numColsA);
     aTransposed.setConf(conf);
 
     DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
@@ -289,7 +294,7 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     // MatrixMultiply all within a new MapReduce job
     long startTime = System.currentTimeMillis();
     DistributedRowMatrix c = aTransposed.multiplyMapReduce(b, MATRIX_C_PATH,
-        false, true);
+        false, true, 0, isDebugging);
     System.out.println("MatrixMultiplicationCpu using Hadoop finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
