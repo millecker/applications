@@ -227,10 +227,6 @@ public class MatrixMultiplicationCpu extends AbstractJob {
     // Increase client heap size
     conf.set("mapred.child.java.opts", "-Xms8G -Xmx8G");
 
-    // Ensure that 8 map tasks will be executed
-    conf.setNumMapTasks(8);
-    conf.setNumReduceTasks(1);
-
     return conf;
   }
 

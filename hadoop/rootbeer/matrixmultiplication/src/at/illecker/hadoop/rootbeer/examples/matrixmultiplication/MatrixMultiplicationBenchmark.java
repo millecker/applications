@@ -20,13 +20,14 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.mahout.common.AbstractJob;
 
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
@@ -35,7 +36,8 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "256", "384", "512", "768", "1024" })
+  @Param({ "256", "512", "768", "1024", "1280", "1536" })
+  // "1792", "2048" })
   private int n;
 
   @Param
@@ -46,103 +48,100 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  // private static final Log LOG =
-  // LogFactory.getLog(MatrixMultiplicationBenchmark.class);
-  private static final String OUTPUT_DIR = "output/hadoop/rootbeer/examples/matrixmultiplication/bench";
+  public static final int TILE_WIDTH = 32; // -> max blockSize 1024
 
-  private Path OUTPUT_DIR_PATH;
-  private Path MATRIX_A_PATH;
-  private Path MATRIX_B_PATH;
-  private Path MATRIX_C_PATH;
-  private Path MATRIX_D_PATH;
+  private static final Path CONF_TMP_DIR = new Path(
+      "output/hadoop/rootbeer/examples/matrixmultiplication/bench-"
+          + System.currentTimeMillis());
+  private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
+  private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
 
-  private Configuration conf;
+  private Configuration m_conf;
+  private boolean m_runLocally = false;
 
-  private DistributedRowMatrix matrixA;
-  private DistributedRowMatrix matrixB;
-  private boolean runLocally = false;
+  private Path m_transposedMatrixAPath = new Path(CONF_INPUT_DIR
+      + "/transposedMatrixA.seq");
+  private Path m_matrixAPath = new Path(CONF_INPUT_DIR + "/matrixA.seq");
+  private Path m_matrixBPath = new Path(CONF_INPUT_DIR + "/matrixB.seq");
+  private Path m_matrixCPath = new Path(CONF_OUTPUT_DIR + "/matrixC.seq");
+
+  private DistributedRowMatrix m_transposedMatrixA;
+  private DistributedRowMatrix m_matrixB;
 
   @Override
   protected void setUp() throws Exception {
-    conf = new Configuration();
+    m_conf = new Configuration();
+
+    // Try to load Hadoop configuration
     String HADOOP_HOME = System.getenv("HADOOP_HOME");
     String HADOOP_INSTALL = System.getenv("HADOOP_INSTALL");
 
-    if ((HADOOP_HOME != null) || (HADOOP_INSTALL != null) && (!runLocally)) {
+    if ((HADOOP_HOME != null) || (HADOOP_INSTALL != null) && (!m_runLocally)) {
       String HADOOP = ((HADOOP_HOME != null) ? HADOOP_HOME : HADOOP_INSTALL);
 
-      conf.addResource(new Path(HADOOP, "src/core/core-default.xml"));
-      conf.addResource(new Path(HADOOP, "src/hdfs/hdfs-default.xml"));
-      conf.addResource(new Path(HADOOP, "src/mapred/mapred-default.xml"));
-      conf.addResource(new Path(HADOOP, "conf/core-site.xml"));
-      conf.addResource(new Path(HADOOP, "conf/hdfs-site.xml"));
-      conf.addResource(new Path(HADOOP, "conf/mapred-site.xml"));
-
-      System.out.println("Loaded Hadoop configuration from " + HADOOP);
+      m_conf.addResource(new Path(HADOOP, "src/core/core-default.xml"));
+      m_conf.addResource(new Path(HADOOP, "src/hdfs/hdfs-default.xml"));
+      m_conf.addResource(new Path(HADOOP, "src/mapred/mapred-default.xml"));
+      m_conf.addResource(new Path(HADOOP, "conf/core-site.xml"));
+      m_conf.addResource(new Path(HADOOP, "conf/hdfs-site.xml"));
+      m_conf.addResource(new Path(HADOOP, "conf/mapred-site.xml"));
+      // System.out.println("Loaded Hadoop configuration from " + HADOOP);
 
       try {
         // Connect to HDFS Filesystem
-        FileSystem.get(conf);
+        FileSystem.get(m_conf);
       } catch (Exception e) {
         // HDFS not reachable run Benchmark locally
-        conf = new Configuration();
-        runLocally = true;
+        m_conf = new Configuration();
+        m_runLocally = true;
       }
     }
 
-    // Setup outputs
-    OUTPUT_DIR_PATH = new Path(OUTPUT_DIR + "/bench_"
-        + System.currentTimeMillis());
-    System.out.println("OUTPUT_DIR_PATH: " + OUTPUT_DIR_PATH);
+    // Create random DistributedRowMatrix and write out transposed
+    DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
+        new Random(42L), m_transposedMatrixAPath, true);
+    DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
+        new Random(), m_matrixBPath, false);
 
-    MATRIX_A_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixA.seq");
-    MATRIX_B_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixB.seq");
-    MATRIX_C_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixC.seq");
-    MATRIX_D_PATH = new Path(OUTPUT_DIR_PATH + "/MatrixD.seq");
+    // Load DistributedRowMatrix A and B
+    m_transposedMatrixA = new DistributedRowMatrix(m_transposedMatrixAPath,
+        CONF_INPUT_DIR, n, n);
+    m_transposedMatrixA.setConf(m_conf);
 
+    m_matrixB = new DistributedRowMatrix(m_matrixBPath, CONF_INPUT_DIR, n, n);
+    m_matrixB.setConf(m_conf);
+
+    // Debug output
+    System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
     System.out.println("Benchmark " + n + " x " + n + " matrix");
-    // Create random DistributedRowMatrix
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-        new Random(42L), MATRIX_A_PATH, true);
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-        new Random(), MATRIX_B_PATH, false);
-
-    // Load DistributedRowMatrix a and b
-    matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR_PATH, n, n);
-    matrixB = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR_PATH, n, n);
-
-    matrixA.setConf(conf);
-    matrixB.setConf(conf);
   }
 
   @Override
   protected void tearDown() throws Exception {
-
-    verify();
+    // verify();
 
     // Cleanup
-    FileSystem fs = FileSystem.get(conf);
-    fs.delete(MATRIX_A_PATH, true);
-    fs.delete(MATRIX_B_PATH, true);
-    fs.delete(MATRIX_C_PATH, true);
-    fs.delete(MATRIX_D_PATH, true);
+    FileSystem fs = FileSystem.get(m_conf);
+    fs.delete(CONF_TMP_DIR, true);
 
-    printOutput(conf);
+    // printOutput(m_conf);
   }
 
   private void verify() throws Exception {
+    // Create NOT transposed matrix A for verification check
+    DistributedRowMatrix.createRandomDistributedRowMatrix(m_conf, n, n,
+        new Random(42L), m_matrixAPath, false);
+    DistributedRowMatrix matrixA = new DistributedRowMatrix(m_matrixAPath,
+        CONF_INPUT_DIR, n, n);
+    matrixA.setConf(m_conf);
 
-    DistributedRowMatrix matrixC = new DistributedRowMatrix(MATRIX_C_PATH,
-        OUTPUT_DIR_PATH, n, n);
-    matrixC.setConf(conf);
+    Path matrixDPath = new Path(CONF_INPUT_DIR + "/MatrixD.seq");
+    DistributedRowMatrix matrixD = matrixA.multiplyJava(m_matrixB, matrixDPath);
 
-    // Overwrite matrix A, NOT transposed for verification check
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, n, n,
-        new Random(42L), MATRIX_A_PATH, false);
-    matrixA = new DistributedRowMatrix(MATRIX_A_PATH, OUTPUT_DIR_PATH, n, n);
-    matrixA.setConf(conf);
-
-    DistributedRowMatrix matrixD = matrixA.multiplyJava(matrixB, MATRIX_D_PATH);
+    // Load MapReduce result matrix C
+    DistributedRowMatrix matrixC = new DistributedRowMatrix(m_matrixCPath,
+        CONF_OUTPUT_DIR, n, n);
+    matrixC.setConf(m_conf);
 
     if (matrixC.verify(matrixD)) {
       System.out.println("Verify PASSED!");
@@ -151,9 +150,9 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     }
   }
 
-  static void printOutput(Configuration conf) throws IOException {
+  private void printOutput(Configuration conf) throws IOException {
     FileSystem fs = FileSystem.get(conf);
-    FileStatus[] files = fs.listStatus(new Path(OUTPUT_DIR));
+    FileStatus[] files = fs.listStatus(CONF_OUTPUT_DIR);
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
         System.out.println("File " + files[i].getPath());
@@ -165,88 +164,54 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
 
-  // Microbenchmark
-  // Uncomment Macro to use Micro
-  public void timeCalculate(int reps) {
-    int sum = 0;
-    for (int rep = 0; rep < reps; rep++) {
-      sum = doBenchmark(sum);
-    }
-    System.out.println(sum);
-  }
-
   @Macrobenchmark
   public void timeCalculate() {
-    doBenchmark(0);
+    doBenchmark();
   }
 
-  public int doBenchmark(int sum) {
-    switch (type) {
-    /*
-     * case JAVA: sum = matrixMultiplyJava(sum); break;
-     */
-      case CPU:
-        sum = matrixMultiplyHadoopCPU(sum);
-        break;
-      case GPU:
-        sum = matrixMultiplyHadoopGPU(sum);
-        break;
-      default:
-        break;
+  public void doBenchmark() {
+    try {
+      ToolRunner.run(new MatrixMultiplication(type, m_transposedMatrixA,
+          m_matrixB, m_matrixCPath), null);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
-    return sum;
   }
 
-  private class MatrixMultiplication extends AbstractJob {
-    private boolean javaOnly;
-    private boolean useGPU;
+  private class MatrixMultiplication extends Configured implements Tool {
+    private CalcType m_type;
+    private DistributedRowMatrix m_transposedMatrixA;
+    private DistributedRowMatrix m_matrixB;
+    private Path m_matrixC;
 
-    public MatrixMultiplication(boolean javaOnly, boolean useGPU) {
-      this.javaOnly = javaOnly;
-      this.useGPU = useGPU;
+    public MatrixMultiplication(CalcType type,
+        DistributedRowMatrix transposedMatrixA, DistributedRowMatrix matrixB,
+        Path matrixC) {
+      this.m_type = type;
+      m_transposedMatrixA = transposedMatrixA;
+      m_matrixB = matrixB;
+      m_matrixC = matrixC;
     }
 
     @Override
     public int run(String[] arg0) throws Exception {
-
-      DistributedRowMatrix resultMatrix = null;
-      if (javaOnly) {
-        resultMatrix = matrixA.multiplyJava(matrixB, MATRIX_C_PATH);
-      } else {
-        int tileWidth = 0;
-        resultMatrix = matrixA.multiplyMapReduce(matrixB, MATRIX_C_PATH,
-            useGPU, true, tileWidth, false);
+      switch (m_type) {
+      // case JAVA:
+      // m_matrixA.multiplyJava(m_matrixB, m_matrixC);
+      // break;
+        case CPU:
+          m_transposedMatrixA.multiplyMapReduce(m_matrixB, m_matrixC, false,
+              true, 0, false);
+          break;
+        case GPU:
+          m_transposedMatrixA.multiplyMapReduce(m_matrixB, m_matrixC, true,
+              true, TILE_WIDTH, false);
+          break;
+        default:
+          break;
       }
-
-      return resultMatrix.numRows();
+      return 0;
     }
-  }
-
-  private int matrixMultiplyJava(int sum) {
-    try {
-      sum += ToolRunner.run(new MatrixMultiplication(true, false), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
-  }
-
-  private int matrixMultiplyHadoopCPU(int sum) {
-    try {
-      sum += ToolRunner.run(new MatrixMultiplication(false, false), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
-  }
-
-  private int matrixMultiplyHadoopGPU(int sum) {
-    try {
-      sum += ToolRunner.run(new MatrixMultiplication(false, true), null);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return sum;
   }
 
   public static void main(String[] args) {

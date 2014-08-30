@@ -330,9 +330,6 @@ public class MatrixMultiplicationGpu extends AbstractJob {
     // Increase client heap size for GPU Rootbeer execution
     conf.set("mapred.child.java.opts", "-Xms8G -Xmx8G");
 
-    // Ensure that only 1 map task will be executed
-    conf.setNumMapTasks(1);
-
     // No Reduce step is needed
     // -> 0 reducer means reduce step will be skipped and
     // mapper output will be the final out
