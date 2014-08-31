@@ -34,16 +34,18 @@
 # Rootbeer Examples
 ###############################################################################
 
-###############################
-# MatrixMultiplicationBenchmark
-###############################
+######################################
+# MatrixMultiplicationBenchmark Hadoop
+######################################
+
 ./CaliperResults.R \
-  results/hama/rootbeer/matrixmultiplication/at.illecker.hama.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.*.json \
-  6 "(n=matrixSize)" "(ms)" false true n 0 "" "" "90,90" false 2
+  results/hadoop/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2014*.json \
+  3 "(n=matrixSize)" "(sec)" false true n 0 "Matrix Size" "1 CPU map task,1 GPU map task" "0,0" false 10 100 256 256
 
 ######################
 # PiEstimatorBenchmark
 ######################
+
 ./CaliperResults.R \
   results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.*.json \
   9 "(n*1024*14)" "(sec)" false true n 3 "N" "" "90,90" false 2
