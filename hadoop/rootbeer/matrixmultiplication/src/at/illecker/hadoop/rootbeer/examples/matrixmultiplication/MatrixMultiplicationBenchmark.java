@@ -33,11 +33,13 @@ import at.illecker.hadoop.rootbeer.examples.matrixmultiplication.gpu.MatrixMulti
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
+import com.google.caliper.model.ArbitraryMeasurement;
 import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationBenchmark extends Benchmark {
 
-  @Param({ "256", "512", "768", "1024", "1280", "1536", "1792", "2048" })
+  @Param({ "256", "512", "768", "1024", "1280", "1536" })
+  // , "1792", "2048" })
   private int n;
 
   @Param
@@ -172,7 +174,12 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
     doBenchmark();
   }
 
-  public void doBenchmark() {
+  @ArbitraryMeasurement
+  public double arbitraryBenchmark() {
+    return doBenchmark();
+  }
+
+  public long doBenchmark() {
     try {
       Configuration conf = null;
 
@@ -195,15 +202,22 @@ public class MatrixMultiplicationBenchmark extends Benchmark {
       }
 
       Job job = new Job(conf);
+      job.setJobName("MatrixMultiplication on " + type + " with n=" + n);
+
       long startTime = System.currentTimeMillis();
-      job.waitForCompletion(false);
+      boolean status = job.waitForCompletion(false);
+      long endTime = System.currentTimeMillis() - startTime;
       System.out.println("MatrixMultiplication on " + type + " with size: " + n
-          + " finished in " + (System.currentTimeMillis() - startTime) / 1000.0
-          + " seconds");
+          + " finished in " + (endTime / 1000.0) + " seconds with return: "
+          + status);
+
+      return endTime;
 
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    return 0;
   }
 
   public static void main(String[] args) {
