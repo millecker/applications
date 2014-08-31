@@ -34,9 +34,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.bsp.BSPJobClient;
 import org.apache.hama.bsp.BSPPeer;
-import org.apache.hama.bsp.ClusterStatus;
 import org.apache.hama.bsp.FileOutputFormat;
 import org.apache.hama.bsp.SequenceFileInputFormat;
 import org.apache.hama.bsp.SequenceFileOutputFormat;
@@ -61,33 +59,30 @@ public class MatrixMultiplicationHybridBSP
       .getLog(MatrixMultiplicationHybridBSP.class);
 
   public static final String CONF_DEBUG = "matrixmultiplication.hybrid.debug";
-  public static final String CONF_MATRIX_MULT_B_PATH = "matrixmultiplication.hybrid.B.path";
+  public static final String CONF_MATRIX_B_PATH = "matrixmultiplication.hybrid.B.path";
+  private static final String CONF_TILE_WIDTH = "matrixmultiplication.hybrid.tilewidth";
 
-  public static final String CONF_BLOCKSIZE = "matrixmultiplication.hybrid.blockSize";
-  public static final String CONF_GRIDSIZE = "matrixmultiplication.hybrid.gridSize";
-  // gridSize = amount of blocks and multiprocessors
-  public static final int GRID_SIZE = 14;
-  // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 1024;
+  private static final Path CONF_TMP_DIR = new Path(
+      "output/hama/hybrid/examples/kmeans/hybrid-" + System.currentTimeMillis());
+  private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
+  private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
 
-  private static final Path OUTPUT_DIR = new Path(
-      "output/hama/hybrid/examples/matrixmultiplication/Hybrid-"
-          + System.currentTimeMillis());
-  private static final Path MATRIX_A_PATH = new Path(
-      "input/hama/hybrid/examples/MatrixA.seq");
-  private static final Path MATRIX_B_PATH = new Path(
-      "input/hama/hybrid/examples/MatrixB.seq");
-  private static final Path MATRIX_C_PATH = new Path(OUTPUT_DIR
+  private static final Path MATRIX_A_PATH = new Path(CONF_INPUT_DIR
+      + "/MatrixA.seq");
+  private static final Path MATRIX_B_PATH = new Path(CONF_INPUT_DIR
+      + "/MatrixB.seq");
+  private static final Path MATRIX_B_TRANSPOSED_PATH = new Path(CONF_INPUT_DIR
+      + "/transposedMatrixB.seq");
+  private static final Path MATRIX_C_PATH = new Path(CONF_OUTPUT_DIR
       + "/MatrixC.seq");
-  private static final Path MATRIX_D_PATH = new Path(OUTPUT_DIR
+  private static final Path MATRIX_D_PATH = new Path(CONF_OUTPUT_DIR
       + "/MatrixD.seq");
 
   private boolean m_isDebuggingEnabled;
   private FSDataOutputStream m_logger;
   private String m_masterTask;
   private List<KeyValuePair<Integer, DoubleVector>> m_transposedMatrixB = new ArrayList<KeyValuePair<Integer, DoubleVector>>();
-  private int m_gridSize;
-  private int m_blockSize;
+  private int m_tileWidth;
 
   /********************************* CPU *********************************/
   @Override
@@ -99,11 +94,7 @@ public class MatrixMultiplicationHybridBSP
     this.m_isDebuggingEnabled = conf.getBoolean(CONF_DEBUG, false);
 
     // used by GPU only
-    this.m_blockSize = Integer.parseInt(peer.getConfiguration().get(
-        CONF_BLOCKSIZE));
-
-    this.m_gridSize = Integer.parseInt(peer.getConfiguration().get(
-        CONF_GRIDSIZE));
+    m_tileWidth = conf.getInt(CONF_TILE_WIDTH, 32);
 
     // Choose one as a master, who sorts the matrix rows at the end
     // this.m_masterTask = peer.getPeerName(peer.getNumPeers() / 2);
@@ -127,7 +118,7 @@ public class MatrixMultiplicationHybridBSP
 
     // Load transposed Matrix B
     SequenceFile.Reader reader = new SequenceFile.Reader(FileSystem.get(conf),
-        new Path(conf.get(CONF_MATRIX_MULT_B_PATH)), conf);
+        new Path(conf.get(CONF_MATRIX_B_PATH)), conf);
 
     IntWritable transposedMatrixBRowId = new IntWritable();
     VectorWritable transposedMatrixBRow = new VectorWritable();
@@ -229,28 +220,76 @@ public class MatrixMultiplicationHybridBSP
           matrixARow.getVector()));
     }
 
-    // TODO
+    // Convert data for GPU
+    // n - rows of matrix A
+    int n = matrixA.size();
+    // m - cols of matrix A and rows of matrix B
+    int m = matrixA.get(0).getValue().getDimension();
+    // l - cols of matrix B
+    int l = m_transposedMatrixB.size();
+
+    double[] transposedmatrixA = new double[m * n];
+    double[] matrixB = new double[m * l];
+    double[] matrixC = new double[n * l];
+
     // Convert matrixA rows to double[]
-
-    // Convert transposedMatrixB rows to double[]
-
-    double[][] inputsArr = new double[inputs.size()][inputs.get(0).getLength()];
-    for (int i = 0; i < inputs.size(); i++) {
-      double[] vector = inputs.get(i).toArray();
-      for (int j = 0; j < vector.length; j++) {
-        inputsArr[i][j] = vector[j];
+    int i = 0;
+    for (KeyValuePair<Integer, DoubleVector> row : matrixA) {
+      for (int j = 0; j < m; j++) {
+        // store row column wise to get a transposed matrix A
+        transposedmatrixA[(j * n) + j] = row.getValue().get(j);
       }
+      i++;
+    }
+    // Convert transposedMatrixB rows to double[]
+    i = 0;
+    for (KeyValuePair<Integer, DoubleVector> row : m_transposedMatrixB) {
+      for (int j = 0; j < m; j++) {
+        // store row column wise to get a normal matrix B
+        matrixB[(j * l) + j] = row.getValue().get(j);
+      }
+      i++;
+    }
+
+    // DEBUG
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("transposedmatrixA: \n");
+      printMatrix(transposedmatrixA, m, n);
+      m_logger.writeChars("\nmatrixB:\n");
+      printMatrix(matrixB, m, l);
+      m_logger.writeChars("\n");
+    }
+
+    int subMatrixSize = m_tileWidth * m_tileWidth;
+    int numberOfSubMatrices = divup(n * l, subMatrixSize);
+    int gridSize = numberOfSubMatrices;
+    int blockSize = subMatrixSize;
+
+    // int subMatrixSize = tileWidth * tileWidth;
+    // rows of A and cols of B per block
+    int subMatricesPerThread = divup(m, m_tileWidth);
+
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("map,close,tileWidth: " + m_tileWidth + "\n");
+      m_logger.writeChars("map,close,gridSize: " + gridSize + "\n");
+      m_logger.writeChars("map,close,blockSize: " + blockSize + "\n");
+      m_logger.writeChars("map,close,n: " + n + "\n");
+      m_logger.writeChars("map,close,m: " + m + "\n");
+      m_logger.writeChars("map,close,l: " + l + "\n");
+      m_logger.writeChars("map,close,subMatricesPerThread: "
+          + subMatricesPerThread + "\n");
     }
 
     MatrixMultiplicationHybridKernel kernel = new MatrixMultiplicationHybridKernel(
-        peer.getConfiguration().get(CONF_MATRIX_MULT_B_PATH));
+        transposedmatrixA, matrixB, matrixC, n, m, l, gridSize, blockSize,
+        m_tileWidth, subMatricesPerThread);
 
-    // Run GPU Kernels
+    // Run GPU kernel
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
     watch.start();
-    rootbeer.run(kernel, new ThreadConfig(m_blockSize, m_gridSize, m_blockSize
-        * m_gridSize), context);
+    rootbeer.run(kernel, new ThreadConfig(blockSize, gridSize, blockSize
+        * gridSize), context);
     watch.stop();
 
     if (m_isDebuggingEnabled) {
@@ -265,23 +304,86 @@ public class MatrixMultiplicationHybridBSP
         m_logger.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
         m_logger.writeChars("    num threads: " + row.getNumThreads() + "\n");
       }
-      m_logger.writeChars("MatrixMultiplicationHybrid,GPUTime="
-          + watch.elapsedTimeMillis() + "ms\n");
-      m_logger.close();
+      m_logger.writeChars("map,close,GPUTime=" + watch.elapsedTimeMillis()
+          + "ms\n");
+      m_logger.writeChars("map,close,blockSize=" + blockSize + ",gridSize="
+          + gridSize + "\n");
+      m_logger.flush();
+    }
+
+    // Send results of GPU kernels
+    DenseDoubleVector resultRow = new DenseDoubleVector(l);
+    for (int x = 0; x < n; x++) {
+      for (int y = 0; y < l; y++) {
+        // submit in col-wise order
+        resultRow.set(y, matrixC[(x * l) + y]);
+      }
+    }
+
+    peer.send(m_masterTask, new MatrixRowMessage(i, resultRow));
+
+    if (m_isDebuggingEnabled) {
+      m_logger.writeChars("bsp,send,key=" + i + ",value="
+          + resultRow.toString() + "\n");
+      m_logger.flush();
+    }
+
+    peer.sync();
+
+    // the master task writes out the incoming messages
+    if (peer.getPeerName().equals(m_masterTask)) {
+
+      MatrixRowMessage currentMatrixRowMessage = null;
+
+      // Collect messages
+      while ((currentMatrixRowMessage = peer.getCurrentMessage()) != null) {
+
+        int rowIndex = currentMatrixRowMessage.getRowIndex();
+        DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
+
+        if (m_isDebuggingEnabled) {
+          m_logger.writeChars("bsp,write,key=" + rowIndex + ",value="
+              + rowValues.toString() + "\n");
+        }
+        peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
+      }
     }
   }
 
+  private int divup(int x, int y) {
+    if (x % y != 0) {
+      return ((x + y - 1) / y); // round up
+    } else {
+      return x / y;
+    }
+  }
+
+  private void printMatrix(double[] matrix, int n, int m) throws IOException {
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < m; ++j) {
+        if (j == m - 1) {
+          m_logger.writeChars(matrix[i * m + j] + "]\n");
+        } else if (j == 0) {
+          m_logger.writeChars("[" + matrix[i * m + j] + ",");
+        } else {
+          m_logger.writeChars(matrix[i * m + j] + ",");
+        }
+      }
+    }
+    System.out.println();
+  }
+
   public static BSPJob createMatrixMultiplicationHybridBSPConf(
-      Path matrixAPath, Path transposedMatrixBPath, Path matrixCPath)
-      throws IOException {
+      Path matrixAPath, Path transposedMatrixBPath, Path matrixCPath,
+      int tileWidth, boolean isDebugging) throws IOException {
 
     return createMatrixMultiplicationHybridBSPConf(new HamaConfiguration(),
-        matrixAPath, transposedMatrixBPath, matrixCPath);
+        matrixAPath, transposedMatrixBPath, matrixCPath, tileWidth, isDebugging);
   }
 
   public static BSPJob createMatrixMultiplicationHybridBSPConf(
       Configuration conf, Path matrixAPath, Path transposedMatrixBPath,
-      Path matrixCPath) throws IOException {
+      Path matrixCPath, int tileWidth, boolean isDebugging) throws IOException {
 
     BSPJob job = new BSPJob(new HamaConfiguration(conf));
     // Set the job name
@@ -303,20 +405,152 @@ public class MatrixMultiplicationHybridBSP
 
     job.setMessageClass(MatrixRowMessage.class);
 
-    job.set(CONF_MATRIX_MULT_B_PATH, transposedMatrixBPath.toString());
-
     job.set("bsp.child.java.opts", "-Xms8G -Xmx8G");
 
     // Order message by row index
     job.set(MessageManager.RECEIVE_QUEUE_TYPE_CLASS,
         "org.apache.hama.bsp.message.queue.SortedMemoryQueue");
 
+    job.set(CONF_MATRIX_B_PATH, transposedMatrixBPath.toString());
+    job.set(CONF_TILE_WIDTH, "" + tileWidth);
+    job.setBoolean(CONF_DEBUG, isDebugging);
+
     return job;
   }
 
+  public static void main(String[] args) throws Exception {
+
+    // Defaults
+    int numBspTask = 1;
+    int numGpuBspTask = 1;
+    int numRowsA = 4;// 1024;
+    int numColsA = 4;// 1024;
+    int numRowsB = 4;// 1024;
+    int numColsB = 4;// 1024;
+    int tileWidth = 32; // 2 * 32 = 1024 threads matches the blocksize
+    int GPUPercentage = 100;
+    boolean isDebugging = true;
+
+    Configuration conf = new HamaConfiguration();
+
+    if (args.length > 0) {
+      if (args.length == 9) {
+        numBspTask = Integer.parseInt(args[0]);
+        numGpuBspTask = Integer.parseInt(args[1]);
+        numRowsA = Integer.parseInt(args[2]);
+        numColsA = Integer.parseInt(args[3]);
+        numRowsB = Integer.parseInt(args[4]);
+        numColsB = Integer.parseInt(args[5]);
+        tileWidth = Integer.parseInt(args[6]);
+        GPUPercentage = Integer.parseInt(args[7]);
+        isDebugging = Boolean.parseBoolean(args[8]);
+
+      } else {
+        System.out.println("Wrong argument size!");
+        System.out.println("    Argument1=numBspTask");
+        System.out.println("    Argument2=numGpuBspTask");
+        System.out
+            .println("    Argument3=numRowsA | Number of rows of the first input matrix");
+        System.out
+            .println("    Argument4=numColsA | Number of columns of the first input matrix");
+        System.out
+            .println("    Argument5=numRowsB | Number of rows of the second input matrix");
+        System.out
+            .println("    Argument6=numColsB | Number of columns of the second input matrix");
+        System.out
+            .println("    Argument7=tileWidth | TileWidth denotes the size of a submatrix");
+        System.out.println("    Argument8=GPUPercentage (percentage of input)");
+        System.out
+            .println("    Argument9=debug | Enable debugging (true|false)");
+        return;
+      }
+    }
+
+    // Set config variables
+    conf.setBoolean("hama.pipes.logging", false);
+    // Set CPU tasks
+    conf.setInt("bsp.peers.num", numBspTask);
+    // Set GPU tasks
+    conf.setInt("bsp.peers.gpu.num", numGpuBspTask);
+    // Set GPU workload
+    // conf.setInt(CONF_GPU_PERCENTAGE, GPUPercentage);
+
+    LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
+    LOG.info("NumGpuBspTask: " + conf.getInt("bsp.peers.gpu.num", 0));
+    LOG.info("bsp.tasks.maximum: " + conf.get("bsp.tasks.maximum"));
+    // LOG.info("GPUPercentage: " + conf.get(CONF_GPU_PERCENTAGE));
+    LOG.info("numRowsA: " + numRowsA);
+    LOG.info("numColsA: " + numColsA);
+    LOG.info("numRowsB: " + numRowsB);
+    LOG.info("numColsB: " + numColsB);
+    LOG.info("isDebugging: " + isDebugging);
+    LOG.info("inputPath: " + CONF_INPUT_DIR);
+    LOG.info("outputPath: " + CONF_OUTPUT_DIR);
+
+    if (numColsA != numRowsB) {
+      throw new Exception("Cols of MatrixA != rows of MatrixB! (" + numColsA
+          + "!=" + numRowsB + ")");
+    }
+
+    // Create random DistributedRowMatrix
+    // use constant seeds to get reproducible results
+    // Matrix A
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
+        numColsA, new Random(42L), MATRIX_A_PATH, false);
+    // Matrix B is stored transposed
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
+        numColsB, new Random(1337L), MATRIX_B_TRANSPOSED_PATH, true);
+
+    // Load DistributedRowMatrix matrixA
+    DistributedRowMatrix matrixA = new DistributedRowMatrix(MATRIX_A_PATH,
+        CONF_INPUT_DIR, numRowsA, numColsA);
+    matrixA.setConf(conf);
+    // Load DistributedRowMatrix transposedMatrixB
+    DistributedRowMatrix transposedMatrixB = new DistributedRowMatrix(
+        MATRIX_B_TRANSPOSED_PATH, CONF_INPUT_DIR, numRowsB, numColsB);
+    transposedMatrixB.setConf(conf);
+
+    // Execute MatrixMultiplication BSP Job
+    long startTime = System.currentTimeMillis();
+    DistributedRowMatrix matrixC = matrixA.multiplyBSP(transposedMatrixB,
+        MATRIX_C_PATH, tileWidth, isDebugging);
+
+    LOG.info("MatrixMultiplicationHybrid using Hama finished in "
+        + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
+
+    // Overwrite matrix B, NOT transposed for verification
+    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
+        numColsB, new Random(1337L), MATRIX_B_PATH, false);
+    DistributedRowMatrix matrixB = new DistributedRowMatrix(MATRIX_B_PATH,
+        CONF_INPUT_DIR, numRowsB, numColsB);
+    matrixB.setConf(conf);
+
+    // Verification
+    DistributedRowMatrix matrixD = matrixA.multiplyJava(matrixB, MATRIX_D_PATH);
+    if (matrixC.verify(matrixD)) {
+      System.out.println("Verify PASSED!");
+    } else {
+      System.out.println("Verify FAILED!");
+    }
+
+    if (isDebugging) {
+      System.out.println("Matrix A:");
+      matrixA.printDistributedRowMatrix();
+      System.out.println("Matrix B:");
+      matrixB.printDistributedRowMatrix();
+      System.out.println("TransposedMatrix B:");
+      transposedMatrixB.printDistributedRowMatrix();
+      // System.out.println("Matrix C:");
+      // matrixC.printDistributedRowMatrix();
+      System.out.println("Matrix D:");
+      matrixD.printDistributedRowMatrix();
+      printOutput(conf);
+    }
+  }
+
   static void printOutput(Configuration conf) throws IOException {
-    FileSystem fs = OUTPUT_DIR.getFileSystem(conf);
-    FileStatus[] files = fs.listStatus(OUTPUT_DIR);
+    FileSystem fs = CONF_OUTPUT_DIR.getFileSystem(conf);
+    FileStatus[] files = fs.listStatus(CONF_OUTPUT_DIR);
     for (int i = 0; i < files.length; i++) {
       if (files[i].getLen() > 0) {
         if (files[i].getPath().getName().endsWith(".log")) {
@@ -329,122 +563,4 @@ public class MatrixMultiplicationHybridBSP
     }
     // fs.delete(FileOutputFormat.getOutputPath(job), true);
   }
-
-  public static void main(String[] args) throws Exception {
-
-    // Defaults
-    int numRowsA = 4;// 1024;
-    int numColsA = 4;// 1024;
-    int numRowsB = 4;// 1024;
-    int numColsB = 4;// 1024;
-    boolean isDebugging = true;
-
-    Configuration conf = new HamaConfiguration();
-    BSPJobClient jobClient = new BSPJobClient(conf);
-    ClusterStatus cluster = jobClient.getClusterStatus(true);
-
-    if (args.length > 0) {
-      if (args.length == 6) {
-        conf.setInt("bsp.peers.num", Integer.parseInt(args[0]));
-        numRowsA = Integer.parseInt(args[1]);
-        numColsA = Integer.parseInt(args[2]);
-        numRowsB = Integer.parseInt(args[3]);
-        numColsB = Integer.parseInt(args[4]);
-        isDebugging = Boolean.parseBoolean(args[5]);
-
-      } else {
-        System.out.println("Wrong argument size!");
-        System.out.println("    Argument1=numBspTask");
-        System.out
-            .println("    Argument2=numRowsA | Number of rows of the first input matrix");
-        System.out
-            .println("    Argument3=numColsA | Number of columns of the first input matrix");
-        System.out
-            .println("    Argument4=numRowsB | Number of rows of the second input matrix");
-        System.out
-            .println("    Argument5=numColsB | Number of columns of the second input matrix");
-        System.out
-            .println("    Argument6=debug | Enable debugging (true|false)");
-        return;
-      }
-    } else {
-      conf.setInt("bsp.peers.num", 1); // cluster.getMaxTasks());
-      // Enable one GPU task
-      conf.setInt("bsp.peers.gpu.num", 1);
-    }
-
-    conf.setBoolean("hama.pipes.logging", isDebugging);
-    conf.setBoolean(CONF_DEBUG, isDebugging);
-    conf.set(CONF_BLOCKSIZE, "" + BLOCK_SIZE);
-    conf.set(CONF_GRIDSIZE, "" + GRID_SIZE);
-
-    LOG.info("NumBspTask: " + conf.getInt("bsp.peers.num", 0));
-    LOG.info("NumGpuBspTask: " + conf.getInt("bsp.peers.gpu.num", 0));
-    LOG.info("numRowsA: " + numRowsA);
-    LOG.info("numColsA: " + numColsA);
-    LOG.info("numRowsB: " + numRowsB);
-    LOG.info("numColsB: " + numColsB);
-    LOG.info("isDebugging: " + isDebugging);
-    LOG.info("outputPath: " + OUTPUT_DIR);
-
-    if (numColsA != numRowsB) {
-      throw new Exception("Cols of MatrixA != rows of MatrixB! (" + numColsA
-          + "!=" + numRowsB + ")");
-    }
-
-    // Create random DistributedRowMatrix
-    // use constant seeds to get reproducible results
-
-    // Matrix A
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-        numColsA, new Random(42L), MATRIX_A_PATH, false);
-    // Matrix B is stored transposed
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_PATH, true);
-
-    // Load DistributedRowMatrix a and b
-    DistributedRowMatrix a = new DistributedRowMatrix(MATRIX_A_PATH,
-        OUTPUT_DIR, numRowsA, numColsA);
-    a.setConf(conf);
-
-    DistributedRowMatrix b = new DistributedRowMatrix(MATRIX_B_PATH,
-        OUTPUT_DIR, numRowsB, numColsB);
-    b.setConf(conf);
-
-    // MatrixMultiplication
-    long startTime = System.currentTimeMillis();
-    DistributedRowMatrix c = a.multiplyBSP(b, MATRIX_C_PATH);
-
-    LOG.info("MatrixMultiplicationHybrid using Hama finished in "
-        + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
-
-    // Verification
-
-    // Overwrite matrix B, NOT transposed for verification
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_PATH, false);
-    b = new DistributedRowMatrix(MATRIX_B_PATH, OUTPUT_DIR, numRowsB, numColsB);
-    b.setConf(conf);
-
-    DistributedRowMatrix d = a.multiplyJava(b, MATRIX_D_PATH);
-
-    if (c.verify(d)) {
-      System.out.println("Verify PASSED!");
-    } else {
-      System.out.println("Verify FAILED!");
-    }
-
-    if (isDebugging) {
-      System.out.println("Matrix A:");
-      a.printDistributedRowMatrix();
-      System.out.println("Matrix B:");
-      b.printDistributedRowMatrix();
-      System.out.println("Matrix C:");
-      c.printDistributedRowMatrix();
-      System.out.println("Matrix D:");
-      d.printDistributedRowMatrix();
-      printOutput(conf);
-    }
-  }
-
 }

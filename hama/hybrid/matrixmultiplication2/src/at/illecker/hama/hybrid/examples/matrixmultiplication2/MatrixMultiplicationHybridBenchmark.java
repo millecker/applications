@@ -29,8 +29,6 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import at.illecker.hama.hybrid.examples.matrixmultiplication.MatrixMultiplicationHybridBSP;
-
 import com.google.caliper.Benchmark;
 import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
@@ -114,9 +112,6 @@ public class MatrixMultiplicationHybridBenchmark extends Benchmark {
     m_MATRIX_B_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixB.seq");
     m_MATRIX_C_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixC.seq");
     m_MATRIX_D_PATH = new Path(m_OUTPUT_DIR_PATH + "/MatrixD.seq");
-
-    m_blockSize = MatrixMultiplicationHybridBSP.BLOCK_SIZE;
-    m_gridSize = MatrixMultiplicationHybridBSP.GRID_SIZE;
 
     System.out.println("Benchmark MatrixMultiplication " + type
         + " [blockSize=" + m_blockSize + ",gridSize=" + m_gridSize + "] " + n
@@ -234,7 +229,7 @@ public class MatrixMultiplicationHybridBenchmark extends Benchmark {
 
     @Override
     public int run(String[] arg0) throws Exception {
-
+/*
       if (useGPU) {
         m_conf.set(MatrixMultiplicationHybridBSP.CONF_BLOCKSIZE, ""
             + m_blockSize);
@@ -249,8 +244,8 @@ public class MatrixMultiplicationHybridBenchmark extends Benchmark {
 
       DistributedRowMatrix resultMatrix = m_matrixA.multiplyBSP(m_matrixB,
           m_MATRIX_C_PATH);
-
-      return resultMatrix.numRows();
+*/
+      return 0;
     }
   }
 

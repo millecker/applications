@@ -14,24 +14,26 @@ ant jar-gpu
 ant jar-cpu
 
 # Submit GPU Task to Hama
-ant run-gpu [-DnumBspTask=1 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
+ant run-gpu [-DnumBspTask=1 -DnumGpuBspTask=1 \
+ -DnumRowsA=1024 -DnumColsA=1024 -DnumRowsB=1024 -DnumColsB=1024 \
+ -DtileWidth=32 -DGPUPercentage=100 -Ddebug=false]
 
-# Submit GPU native emulated Task to Hama
-ant run-gpu-nemu [-DnumBspTask=1 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
+ant run-gpu -DnumBspTask=1 -DnumGpuBspTask=1 \
+ -DnumRowsA=4 -DnumColsA=4 -DnumRowsB=4 -DnumColsB=4 \
+ -DtileWidth=4 -DGPUPercentage=100 -Ddebug=true
 
-# Submit GPU Java emulated Task to Hama
-ant run-gpu-jemu [-DnumBspTask=1 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
+###############################################################################
 
 # Submit CPU Task to Hama
-ant run-cpu [-DnumBspTask=8 -DnumRowsA=1024 -DnumColsA=1024 \
- -DnumRowsB=1024 -DnumColsB=1024 -Ddebug=false]
+ant run-cpu [-DnumBspTask=8 -DnumGpuBspTask=0 \
+ -DnumRowsA=1024 -DnumColsA=1024 -DnumRowsB=1024 -DnumColsB=1024 \
+ -DtileWidth=0 -DGPUPercentage=0 -Ddebug=false]
+
+ant run-cpu -DnumBspTask=1 -DnumGpuBspTask=0 \
+ -DnumRowsA=4 -DnumColsA=4 -DnumRowsB=4 -DnumColsB=4 \
+ -DtileWidth=0 -DGPUPercentage=0 -Ddebug=true
  
- # Build and run GPU Kernel
-ant run-kernel
-# java -jar MatrixMultiplication-GPU.jar 1024 1024 14 false
+###############################################################################
 
 # Run Benchmark
 ant run-bench -DbenchTimeLimit='--time-limit 600s' \

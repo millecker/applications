@@ -36,7 +36,7 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
-import org.apache.hama.commons.io.PipesVectorWritable;
+import org.apache.hama.commons.io.VectorWritable;
 import org.apache.hama.commons.math.DenseDoubleMatrix;
 import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
@@ -116,9 +116,10 @@ public class DistributedRowMatrix implements Configurable {
    * 
    * @return a DistributedRowMatrix containing the product
    */
-  public DistributedRowMatrix multiply(DistributedRowMatrix other, Path outPath)
-      throws IOException, ClassNotFoundException, InterruptedException {
-    return multiplyBSP(other, outPath);
+  public DistributedRowMatrix multiply(DistributedRowMatrix other,
+      Path outPath, int tileWidth, boolean isDebugging) throws IOException,
+      ClassNotFoundException, InterruptedException {
+    return multiplyBSP(other, outPath, tileWidth, isDebugging);
   }
 
   /**
@@ -131,8 +132,9 @@ public class DistributedRowMatrix implements Configurable {
    * @return a DistributedRowMatrix containing the product
    */
   public DistributedRowMatrix multiplyBSP(DistributedRowMatrix other,
-      Path outPath) throws IOException, ClassNotFoundException,
-      InterruptedException {
+      Path outPath, int tileWidth, boolean isDebugging) throws IOException,
+      ClassNotFoundException, InterruptedException {
+
     // Check if cols of MatrixA = rows of MatrixB
     // (l x m) * (m x n) = (l x n)
     if (numCols != other.numRows()) {
@@ -150,7 +152,7 @@ public class DistributedRowMatrix implements Configurable {
     // Build MatrixMultiplication job configuration
     BSPJob job = MatrixMultiplicationHybridBSP
         .createMatrixMultiplicationHybridBSPConf(initialConf, this.rowPath,
-            other.rowPath, outPath.getParent());
+            other.rowPath, outPath.getParent(), tileWidth, isDebugging);
 
     // Multiply Matrix
     if (job.waitForCompletion(true)) {
@@ -337,7 +339,7 @@ public class DistributedRowMatrix implements Configurable {
       reader = new SequenceFile.Reader(fs, path, conf);
 
       IntWritable key = new IntWritable();
-      PipesVectorWritable vector = new PipesVectorWritable();
+      VectorWritable vector = new VectorWritable();
 
       while (reader.next(key, vector)) {
         // System.out.println("readDistributedRowMatrix: key: " + key
@@ -375,7 +377,7 @@ public class DistributedRowMatrix implements Configurable {
     try {
       FileSystem fs = FileSystem.get(conf);
       writer = new SequenceFile.Writer(fs, conf, path, IntWritable.class,
-          PipesVectorWritable.class);
+          VectorWritable.class);
 
       if (saveTransposed) { // Transpose Matrix before saving
         double[][] transposed = new double[columns][rows];
@@ -389,7 +391,7 @@ public class DistributedRowMatrix implements Configurable {
 
       for (int i = 0; i < matrix.length; i++) {
         DenseDoubleVector rowVector = new DenseDoubleVector(matrix[i]);
-        writer.append(new IntWritable(i), new PipesVectorWritable(rowVector));
+        writer.append(new IntWritable(i), new VectorWritable(rowVector));
       }
 
     } catch (IOException e) {

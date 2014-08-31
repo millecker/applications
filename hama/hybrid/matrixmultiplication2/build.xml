@@ -1,20 +1,20 @@
 <project>
 	<property name="root" value="../../.." />
-	<property name="rootbeer.version" value="rootbeer-master-branch.jar" />
+	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
 	<property name="rootbeer.args" value="-64bit -noexceptions -noarraychecks -shared-mem-size 16408" />
 	<property name="output.file" value="MatrixMultiplication" />
 	<property name="libjars.gpu" value="" />
 	<property name="libjars.cpu" value="" />
 	<property name="libjars.bench" value="${lib}${file.separator}caliper-1.0-beta-1-all.jar,${lib}${file.separator}hadoop-core-1.3.0-SNAPSHOT.jar,${lib}${file.separator}hama-core-0.6.3-SNAPSHOT.jar,${lib}${file.separator}hama-ml-0.6.3-SNAPSHOT.jar,${lib}${file.separator}commons-logging-1.1.1.jar,${lib}${file.separator}commons-configuration-1.7.jar,${lib}${file.separator}commons-lang-2.6.jar,${lib}${file.separator}zookeeper-3.4.5.jar" />
-	<property name="rootbeer.package.dir" value="at/illecker/hama/hybrid/examples/matrixmultiplication" />
+	<property name="rootbeer.package.dir" value="at/illecker/hama/hybrid/examples/matrixmultiplication2" />
 	<property name="rootbeer.classes" value="MatrixMultiplicationHybridKernel.class" />
-	<property name="kernel.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication.MatrixMultiplicationHybridKernel.class" />
-	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication.MatrixMultiplicationHybridBSP" />
-	<property name="cpu.class" value="" />
-	<property name="bench.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication.MatrixMultiplicationHybridBenchmark" />
+	<property name="kernel.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridKernel.class" />
+	<property name="gpu.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBSP" />
+	<property name="cpu.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBSP" />
+	<property name="bench.class" value="at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark" />
 	<property name="program" value="hama" />
 	<property name="program.args" value="jar" />
-	<property name="application.args" value="numBspTask numRowsA numColsA numRowsB numColsB debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
+	<property name="application.args" value="numBspTask numGpuBspTask numRowsA numColsA numRowsB numColsB tileWidth GPUPercentage debug benchTimeLimit benchInstrument benchMacroMeasurements benchMacroWarmup benchTrials" />
 
 	<import file="${root}${file.separator}commonbuild.xml" />
 </project>
