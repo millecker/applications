@@ -218,6 +218,10 @@ public class MatrixMultiplicationHybridBSP
     while (peer.readNext(matrixARowId, matrixARow)) {
       matrixA.add(new KeyValuePair<Integer, DoubleVector>(matrixARowId.get(),
           matrixARow.getVector()));
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("bspGpu,matrixA,key=" + matrixARowId.get()
+            + ",value=" + matrixARow.getVector().toString() + "\n");
+      }
     }
 
     // Convert data for GPU
@@ -237,7 +241,7 @@ public class MatrixMultiplicationHybridBSP
     for (KeyValuePair<Integer, DoubleVector> row : matrixA) {
       for (int j = 0; j < m; j++) {
         // store row column wise to get a transposed matrix A
-        transposedmatrixA[(j * n) + j] = row.getValue().get(j);
+        transposedmatrixA[(j * n) + i] = row.getValue().get(j);
       }
       i++;
     }
@@ -246,7 +250,7 @@ public class MatrixMultiplicationHybridBSP
     for (KeyValuePair<Integer, DoubleVector> row : m_transposedMatrixB) {
       for (int j = 0; j < m; j++) {
         // store row column wise to get a normal matrix B
-        matrixB[(j * l) + j] = row.getValue().get(j);
+        matrixB[(j * l) + i] = row.getValue().get(j);
       }
       i++;
     }
@@ -270,13 +274,13 @@ public class MatrixMultiplicationHybridBSP
     int subMatricesPerThread = divup(m, m_tileWidth);
 
     if (m_isDebuggingEnabled) {
-      m_logger.writeChars("map,close,tileWidth: " + m_tileWidth + "\n");
-      m_logger.writeChars("map,close,gridSize: " + gridSize + "\n");
-      m_logger.writeChars("map,close,blockSize: " + blockSize + "\n");
-      m_logger.writeChars("map,close,n: " + n + "\n");
-      m_logger.writeChars("map,close,m: " + m + "\n");
-      m_logger.writeChars("map,close,l: " + l + "\n");
-      m_logger.writeChars("map,close,subMatricesPerThread: "
+      m_logger.writeChars("bspGpu,tileWidth: " + m_tileWidth + "\n");
+      m_logger.writeChars("bspGpu,gridSize: " + gridSize + "\n");
+      m_logger.writeChars("bspGpu,blockSize: " + blockSize + "\n");
+      m_logger.writeChars("bspGpu,n: " + n + "\n");
+      m_logger.writeChars("bspGpu,m: " + m + "\n");
+      m_logger.writeChars("bspGpu,l: " + l + "\n");
+      m_logger.writeChars("bspGpu,subMatricesPerThread: "
           + subMatricesPerThread + "\n");
     }
 
@@ -304,10 +308,8 @@ public class MatrixMultiplicationHybridBSP
         m_logger.writeChars("    num blocks: " + row.getNumBlocks() + "\n");
         m_logger.writeChars("    num threads: " + row.getNumThreads() + "\n");
       }
-      m_logger.writeChars("map,close,GPUTime=" + watch.elapsedTimeMillis()
+      m_logger.writeChars("bspGpu,GPUTime=" + watch.elapsedTimeMillis()
           + "ms\n");
-      m_logger.writeChars("map,close,blockSize=" + blockSize + ",gridSize="
-          + gridSize + "\n");
       m_logger.flush();
     }
 
@@ -318,16 +320,17 @@ public class MatrixMultiplicationHybridBSP
         // submit in col-wise order
         resultRow.set(y, matrixC[(x * l) + y]);
       }
+
+      peer.send(m_masterTask, new MatrixRowMessage(x, resultRow));
+
+      if (m_isDebuggingEnabled) {
+        m_logger.writeChars("bspGpu,send,key=" + x + ",value="
+            + resultRow.toString() + "\n");
+        m_logger.flush();
+      }
     }
 
-    peer.send(m_masterTask, new MatrixRowMessage(i, resultRow));
-
-    if (m_isDebuggingEnabled) {
-      m_logger.writeChars("bsp,send,key=" + i + ",value="
-          + resultRow.toString() + "\n");
-      m_logger.flush();
-    }
-
+    // Global barrier synchronization
     peer.sync();
 
     // the master task writes out the incoming messages
@@ -342,7 +345,7 @@ public class MatrixMultiplicationHybridBSP
         DoubleVector rowValues = currentMatrixRowMessage.getRowValues();
 
         if (m_isDebuggingEnabled) {
-          m_logger.writeChars("bsp,write,key=" + rowIndex + ",value="
+          m_logger.writeChars("bspGpu,write,key=" + rowIndex + ",value="
               + rowValues.toString() + "\n");
         }
         peer.write(new IntWritable(rowIndex), new VectorWritable(rowValues));
