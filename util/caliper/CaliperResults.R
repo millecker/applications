@@ -191,10 +191,15 @@ for (scenarioIndex in 1:length(caliperResult)) {
   scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Instrument=scenarioInstrumentSpec$instrumentSpec$className))
   # Add measurements if not null
   if (is.null(scenarioInstrumentSpec$instrumentSpec$options$measurements)) {
-    message <- paste("Warning: Scenario",scenarioId,"does not contain instrumentSpec measurements information. Skipping this scenario!\n")
-    cat(message)
-    next; # skip scenario continue
-    # scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Measurements=0))  
+    if (scenarioInstrumentSpec$instrumentSpec$className == "com.google.caliper.runner.ArbitraryMeasurementInstrument") {
+      scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Measurements=1))  
+      # message <- paste("Setting measurements to 1 because you are using the ArbitraryMeasurementInstrument.\n")
+      # cat(message)
+    } else {
+      message <- paste("Warning: Scenario",scenarioId,"does not contain instrumentSpec measurements information. Skipping this scenario!\n")
+      cat(message)
+      next; # skip scenario continue
+    }
   } else {
     scenarioTableRow <- data.frame(scenarioTableRow,data.frame(Measurements=scenarioInstrumentSpec$instrumentSpec$options$measurements))  
   }
@@ -277,6 +282,12 @@ for (scenarioIndex in 1:length(caliperResult)) {
     newMeasurementRow <- c(scenario=scenarioIndex,measurement=measurementIndex,magnitude=magnitude,unit=unit,weight=weight)
     measurementResults <- lappend(measurementResults, newMeasurementRow)
   }
+}
+
+# Check if valid results where found in json input
+if (length(measurementResults)==0) {
+  message <- paste("No measurements have been found in input file: ",caliperJsonFile,sep="")
+  stop(message)
 }
 
 ###############################################################################
