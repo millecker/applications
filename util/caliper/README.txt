@@ -107,11 +107,10 @@
 # MatrixMultiplicationHybridBenchmark
 ############################
 
-# 8 CPU tasks and 1 GPU task
-# set printTitle <- FALSE
+# 4 CPU tasks and 1 GPU task
 ./CaliperResults.R \
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.CPU.vs.GPU.json \
-  9 "Matrix Size" "(sec)" false true n 0 "Matrix Size" "8 CPU tasks,1 GPU task" "0,0" false 5 20 256 256
+  9 "Matrix Size" "(sec)" false true n 0 "Matrix Size" "4 CPU tasks,1 GPU task" "0,0" false 5 50 256 256
 
 #######################
 # KMeansHybridBenchmark
