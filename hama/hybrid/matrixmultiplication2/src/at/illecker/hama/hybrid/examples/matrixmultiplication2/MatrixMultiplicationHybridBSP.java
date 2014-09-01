@@ -410,7 +410,7 @@ public class MatrixMultiplicationHybridBSP
 
     job.setMessageClass(MatrixRowMessage.class);
 
-    job.set("bsp.child.java.opts", "-Xms8G -Xmx8G");
+    // job.set("bsp.child.java.opts", "-Xms8G -Xmx8G");
 
     // Order message by row index
     job.set(MessageManager.RECEIVE_QUEUE_TYPE_CLASS,
