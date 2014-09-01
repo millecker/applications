@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
@@ -42,7 +43,7 @@ import org.apache.hama.commons.math.DenseDoubleVector;
 import org.apache.hama.commons.math.DoubleVector;
 
 public class DistributedRowMatrix implements Configurable {
-  private static final Log log = LogFactory.getLog(DistributedRowMatrix.class);
+  private static final Log LOG = LogFactory.getLog(DistributedRowMatrix.class);
 
   private final Path inputPath;
   private final Path outputTmpPath;
@@ -103,7 +104,7 @@ public class DistributedRowMatrix implements Configurable {
       outputTmpBasePath = FileSystem.get(conf).makeQualified(
           new Path(outPathString));
     } catch (IOException ioe) {
-      log.error("Unable to set outputBasePath to {}, leaving as {}"
+      LOG.error("Unable to set outputBasePath to {}, leaving as {}"
           + outPathString + " " + outputTmpBasePath);
     }
   }
@@ -215,16 +216,12 @@ public class DistributedRowMatrix implements Configurable {
     }
 
     // Save resulting Matrix to HDFS
-    try {
-      writeDistributedRowMatrix(this.conf, matrixC, this.numRows,
-          other.numCols, outPath, false);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    List<Path> matrixCPaths = writeDistributedRowMatrix(this.conf, matrixC,
+        this.numRows, other.numCols, outPath, 1, 0, 0);
 
     // Read resulting Matrix from HDFS
-    DistributedRowMatrix out = new DistributedRowMatrix(outPath, outputTmpPath,
-        numCols, other.numCols());
+    DistributedRowMatrix out = new DistributedRowMatrix(matrixCPaths.get(0),
+        outputTmpPath, this.numRows, other.numCols);
     out.setConf(conf);
 
     return out;
@@ -311,11 +308,19 @@ public class DistributedRowMatrix implements Configurable {
     }
   }
 
-  public static void createRandomDistributedRowMatrix(Configuration conf,
+  public static List<Path> createRandomDistributedRowMatrix(Configuration conf,
       int rows, int columns, Random rand, Path path, boolean saveTransposed)
       throws Exception {
 
-    final double[][] matrix = new double[rows][columns];
+    return createRandomDistributedRowMatrix(conf, rows, columns, rand, path,
+        saveTransposed, 1, 0, 0);
+  }
+
+  public static List<Path> createRandomDistributedRowMatrix(Configuration conf,
+      int rows, int columns, Random rand, Path path, boolean saveTransposed,
+      int numBspTask, int numGPUBspTask, int GPUPercentage) throws Exception {
+
+    double[][] matrix = new double[rows][columns];
     for (int i = 0; i < rows; i++) {
       for (int j = 0; j < columns; j++) {
         // matrix[i][j] = rand.nextDouble();
@@ -323,7 +328,24 @@ public class DistributedRowMatrix implements Configurable {
       }
     }
 
-    writeDistributedRowMatrix(conf, matrix, rows, columns, path, saveTransposed);
+    // Transpose Matrix before saving
+    if (saveTransposed) {
+      double[][] transposed = new double[columns][rows];
+      for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+          transposed[j][i] = matrix[i][j];
+        }
+      }
+      matrix = transposed;
+
+      // switch cols and rows
+      int tmp = rows;
+      rows = columns;
+      columns = tmp;
+    }
+
+    return writeDistributedRowMatrix(conf, matrix, rows, columns, path,
+        numBspTask, numGPUBspTask, GPUPercentage);
   }
 
   public static DenseDoubleMatrix readDistributedRowMatrix(Configuration conf,
@@ -369,47 +391,62 @@ public class DistributedRowMatrix implements Configurable {
     return null;
   }
 
-  public static void writeDistributedRowMatrix(Configuration conf,
-      double[][] matrix, int rows, int columns, Path path,
-      boolean saveTransposed) {
+  public static List<Path> writeDistributedRowMatrix(Configuration conf,
+      double[][] matrix, int rows, int columns, Path path, int numBspTask,
+      int numGPUBspTask, int GPUPercentage) throws IOException {
 
-    SequenceFile.Writer writer = null;
-    try {
-      FileSystem fs = FileSystem.get(conf);
-      writer = new SequenceFile.Writer(fs, conf, path, IntWritable.class,
-          VectorWritable.class);
+    List<Path> splittedFiles = new ArrayList<Path>();
 
-      if (saveTransposed) { // Transpose Matrix before saving
-        double[][] transposed = new double[columns][rows];
-        for (int i = 0; i < rows; i++) {
-          for (int j = 0; j < columns; j++) {
-            transposed[j][i] = matrix[i][j];
-          }
-        }
-        matrix = transposed;
-      }
-
-      for (int i = 0; i < matrix.length; i++) {
-        DenseDoubleVector rowVector = new DenseDoubleVector(matrix[i]);
-        writer.append(new IntWritable(i), new VectorWritable(rowVector));
-      }
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    } finally {
-      if (writer != null) {
-        try {
-          writer.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
+    // Compute work distributions
+    int cpuTaskNum = numBspTask - numGPUBspTask;
+    int inputVectorsPerGPUTask = 0;
+    int inputVectorsPerCPU = 0;
+    int inputVectorsPerCPUTask = 0;
+    if ((numGPUBspTask > 0) && (GPUPercentage > 0) && (GPUPercentage <= 100)) {
+      inputVectorsPerGPUTask = (rows * GPUPercentage) / 100;
+      inputVectorsPerCPU = rows - inputVectorsPerGPUTask;
+    } else {
+      inputVectorsPerCPU = rows;
     }
+    if (cpuTaskNum > 0) {
+      inputVectorsPerCPUTask = inputVectorsPerCPU / cpuTaskNum;
+    }
+
+    for (int part = 0; part < numBspTask; part++) {
+
+      Path partIn = new Path(path, "part" + part + ".seq");
+      splittedFiles.add(partIn);
+      FileSystem fs = FileSystem.get(conf);
+      final SequenceFile.Writer dataWriter = SequenceFile.createWriter(fs,
+          conf, partIn, IntWritable.class, VectorWritable.class,
+          CompressionType.NONE);
+
+      int interval = 0;
+      if (part > cpuTaskNum) {
+        interval = inputVectorsPerGPUTask;
+      } else {
+        interval = inputVectorsPerCPUTask;
+      }
+      int start = interval * part;
+      int end = start + interval;
+      if ((numBspTask - 1) == part) {
+        end = rows; // set to totalRows
+      }
+      LOG.info("Partition " + part + " file " + partIn.getParent().getName()
+          + "/" + partIn.getName() + " from " + start + " to " + (end - 1));
+
+      for (int i = start; i < end; i++) {
+        DenseDoubleVector rowVector = new DenseDoubleVector(matrix[i]);
+        dataWriter.append(new IntWritable(i), new VectorWritable(rowVector));
+      }
+      dataWriter.close();
+    }
+
+    return splittedFiles;
   }
 
   public static void printMatrix(double[][] matrix, int rows, int columns) {
     if (matrix != null) {
-      System.out.println();
       for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++) {
           System.out.print(matrix[i][j] + " ");
@@ -420,7 +457,8 @@ public class DistributedRowMatrix implements Configurable {
   }
 
   public void printDistributedRowMatrix() {
-    System.out.println("RowPath: " + this.rowPath);
+    System.out.println("printMatrix (" + this.numRows + " x " + this.numCols
+        + ") Path: " + this.rowPath);
     printMatrix(this.toDoubleArray(), this.numRows, this.numCols);
   }
 

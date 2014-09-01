@@ -63,20 +63,22 @@ public class MatrixMultiplicationHybridBSP
   private static final String CONF_TILE_WIDTH = "matrixmultiplication.hybrid.tilewidth";
 
   private static final Path CONF_TMP_DIR = new Path(
-      "output/hama/hybrid/examples/kmeans/hybrid-" + System.currentTimeMillis());
+      "output/hama/hybrid/examples/matrixmultiplication/hybrid-"
+          + System.currentTimeMillis());
   private static final Path CONF_INPUT_DIR = new Path(CONF_TMP_DIR, "input");
   private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
 
+  private static final Path MATRIX_A_SPLITS_PATH = new Path(CONF_INPUT_DIR
+      + "/matrixAsplits/");
+  private static Path MATRIX_B_TRANSPOSED_PATH = new Path(CONF_INPUT_DIR
+      + "/transposedMatrixB");
   private static final Path MATRIX_A_PATH = new Path(CONF_INPUT_DIR
-      + "/MatrixA.seq");
-  private static final Path MATRIX_B_PATH = new Path(CONF_INPUT_DIR
-      + "/MatrixB.seq");
-  private static final Path MATRIX_B_TRANSPOSED_PATH = new Path(CONF_INPUT_DIR
-      + "/transposedMatrixB.seq");
+      + "/matrixA");
+  private static Path MATRIX_B_PATH = new Path(CONF_INPUT_DIR + "/matrixB");
   private static final Path MATRIX_C_PATH = new Path(CONF_OUTPUT_DIR
-      + "/MatrixC.seq");
+      + "/matrixC");
   private static final Path MATRIX_D_PATH = new Path(CONF_OUTPUT_DIR
-      + "/MatrixD.seq");
+      + "/matrixD");
 
   private boolean m_isDebuggingEnabled;
   private FSDataOutputStream m_logger;
@@ -156,8 +158,7 @@ public class MatrixMultiplicationHybridBSP
       // for each column of matrix B (cause by transposed matrix B)
       for (KeyValuePair<Integer, DoubleVector> bVectorRow : m_transposedMatrixB) {
         if (outVector == null) { // init outVector only once
-          outVector = new DenseDoubleVector(bVectorRow.getValue()
-              .getDimension());
+          outVector = new DenseDoubleVector(m_transposedMatrixB.size());
         }
         double dot = matrixARow.getVector().dot(bVectorRow.getValue());
 
@@ -388,7 +389,8 @@ public class MatrixMultiplicationHybridBSP
       Configuration conf, Path matrixAPath, Path transposedMatrixBPath,
       Path matrixCPath, int tileWidth, boolean isDebugging) throws IOException {
 
-    BSPJob job = new BSPJob(new HamaConfiguration(conf));
+    BSPJob job = new BSPJob(new HamaConfiguration(conf),
+        MatrixMultiplicationHybridBSP.class);
     // Set the job name
     job.setJobName("MatrixMultiplicationHybridBSP");
     // set the BSP class which shall be executed
@@ -499,33 +501,62 @@ public class MatrixMultiplicationHybridBSP
     // use constant seeds to get reproducible results
     // Matrix A
     DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsA,
-        numColsA, new Random(42L), MATRIX_A_PATH, false);
-    // Matrix B is stored transposed
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_TRANSPOSED_PATH, true);
+        numColsA, new Random(42L), MATRIX_A_SPLITS_PATH, false, numBspTask,
+        numGpuBspTask, GPUPercentage);
 
-    // Load DistributedRowMatrix matrixA
-    DistributedRowMatrix matrixA = new DistributedRowMatrix(MATRIX_A_PATH,
-        CONF_INPUT_DIR, numRowsA, numColsA);
-    matrixA.setConf(conf);
-    // Load DistributedRowMatrix transposedMatrixB
-    DistributedRowMatrix transposedMatrixB = new DistributedRowMatrix(
-        MATRIX_B_TRANSPOSED_PATH, CONF_INPUT_DIR, numRowsB, numColsB);
-    transposedMatrixB.setConf(conf);
+    // Matrix B is stored in transposed order
+    List<Path> transposedMatrixBPaths = DistributedRowMatrix
+        .createRandomDistributedRowMatrix(conf, numRowsB, numColsB, new Random(
+            1337L), MATRIX_B_TRANSPOSED_PATH, true);
 
     // Execute MatrixMultiplication BSP Job
     long startTime = System.currentTimeMillis();
-    DistributedRowMatrix matrixC = matrixA.multiplyBSP(transposedMatrixB,
-        MATRIX_C_PATH, tileWidth, isDebugging);
+
+    BSPJob job = MatrixMultiplicationHybridBSP
+        .createMatrixMultiplicationHybridBSPConf(conf, MATRIX_A_SPLITS_PATH,
+            transposedMatrixBPaths.get(0), MATRIX_C_PATH, tileWidth,
+            isDebugging);
+
+    // Multiply Matrix
+    DistributedRowMatrix matrixC = null;
+    if (job.waitForCompletion(true)) {
+
+      // Rename result file to output path
+      Path matrixCOutPath = new Path(MATRIX_C_PATH + "/part0.seq");
+
+      FileSystem fs = MATRIX_C_PATH.getFileSystem(conf);
+      FileStatus[] files = fs.listStatus(MATRIX_C_PATH);
+      for (int i = 0; i < files.length; i++) {
+        if ((files[i].getPath().getName().startsWith("part-"))
+            && (files[i].getLen() > 97)) {
+          fs.rename(files[i].getPath(), matrixCOutPath);
+          break;
+        }
+      }
+
+      // Read resulting Matrix from HDFS
+      matrixC = new DistributedRowMatrix(matrixCOutPath, MATRIX_C_PATH,
+          numRowsA, numColsB);
+      matrixC.setConf(conf);
+    }
 
     LOG.info("MatrixMultiplicationHybrid using Hama finished in "
         + (System.currentTimeMillis() - startTime) / 1000.0 + " seconds");
 
-    // Overwrite matrix B, NOT transposed for verification
-    DistributedRowMatrix.createRandomDistributedRowMatrix(conf, numRowsB,
-        numColsB, new Random(1337L), MATRIX_B_PATH, false);
-    DistributedRowMatrix matrixB = new DistributedRowMatrix(MATRIX_B_PATH,
-        CONF_INPUT_DIR, numRowsB, numColsB);
+    // Create matrix A in one file for verification
+    List<Path> matrixAPaths = DistributedRowMatrix
+        .createRandomDistributedRowMatrix(conf, numRowsA, numColsA, new Random(
+            42L), MATRIX_A_PATH, false);
+    DistributedRowMatrix matrixA = new DistributedRowMatrix(
+        matrixAPaths.get(0), CONF_INPUT_DIR, numRowsA, numColsA);
+    matrixA.setConf(conf);
+
+    // Create matrix B, NOT transposed for verification
+    List<Path> matrixBPaths = DistributedRowMatrix
+        .createRandomDistributedRowMatrix(conf, numRowsB, numColsB, new Random(
+            1337L), MATRIX_B_PATH, false);
+    DistributedRowMatrix matrixB = new DistributedRowMatrix(
+        matrixBPaths.get(0), CONF_INPUT_DIR, numRowsB, numColsB);
     matrixB.setConf(conf);
 
     // Verification
@@ -537,16 +568,24 @@ public class MatrixMultiplicationHybridBSP
     }
 
     if (isDebugging) {
-      System.out.println("Matrix A:");
+      System.out.println("\nMatrix A:");
       matrixA.printDistributedRowMatrix();
-      System.out.println("Matrix B:");
+      System.out.println("\nMatrix B:");
       matrixB.printDistributedRowMatrix();
-      System.out.println("TransposedMatrix B:");
+
+      System.out.println("\nTransposedMatrix B:");
+      // Load DistributedRowMatrix transposedMatrixB
+      DistributedRowMatrix transposedMatrixB = new DistributedRowMatrix(
+          transposedMatrixBPaths.get(0), CONF_INPUT_DIR, numColsB, numRowsB);
+      transposedMatrixB.setConf(conf);
       transposedMatrixB.printDistributedRowMatrix();
-      // System.out.println("Matrix C:");
-      // matrixC.printDistributedRowMatrix();
-      System.out.println("Matrix D:");
+
+      System.out.println("\nMatrix C:");
+      matrixC.printDistributedRowMatrix();
+      System.out.println("\nMatrix D:");
       matrixD.printDistributedRowMatrix();
+
+      // Print out log files
       printOutput(conf);
     }
   }
