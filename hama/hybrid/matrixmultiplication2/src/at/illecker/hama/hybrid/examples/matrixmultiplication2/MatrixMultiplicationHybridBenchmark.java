@@ -38,7 +38,7 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationHybridBenchmark extends Benchmark {
 
-  @Param({ "512", "1024", "1536", "2048", "2560", "3072", "3584", "4096" })
+  @Param({ "256", "512", "768", "1024", "1280", "1536" })
   private int n;
 
   @Param
@@ -163,7 +163,8 @@ public class MatrixMultiplicationHybridBenchmark extends Benchmark {
 
   @Override
   protected void tearDown() throws Exception {
-    verify();
+    // skip verification
+    // verify();
 
     // Cleanup
     FileSystem fs = FileSystem.get(m_conf);

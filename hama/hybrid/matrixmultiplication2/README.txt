@@ -23,6 +23,7 @@ ant run-gpu -DnumBspTask=1 -DnumGpuBspTask=1 \
  -DtileWidth=4 -DGPUPercentage=100 -Ddebug=true
 
 hama jar MatrixMultiplication-GPU.jar 1 1 1024 1024 1024 1024 32 100 false
+hama jar MatrixMultiplication-GPU.jar 1 1 2048 2048 2048 2048 32 100 false
 
 ###############################################################################
 

@@ -292,6 +292,7 @@ public class MatrixMultiplicationHybridBSP
     // Run GPU kernel
     Context context = rootbeer.createDefaultContext();
     Stopwatch watch = new Stopwatch();
+    // context.init(2 * 1024 * 1024 * 1024); // 2GB
     watch.start();
     rootbeer.run(kernel, new ThreadConfig(blockSize, gridSize, blockSize
         * gridSize), context);
@@ -410,7 +411,7 @@ public class MatrixMultiplicationHybridBSP
 
     job.setMessageClass(MatrixRowMessage.class);
 
-    // job.set("bsp.child.java.opts", "-Xms8G -Xmx8G");
+    job.set("bsp.child.java.opts", "-Xmx4G");
 
     // Order message by row index
     job.set(MessageManager.RECEIVE_QUEUE_TYPE_CLASS,
