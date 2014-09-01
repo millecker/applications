@@ -103,6 +103,16 @@
   "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 CPUs|1 GPU" 4 7 \
   "gray,gray,gray,gray,gray,gray,gray,gray,#F39200" "1,2,3,4,5,6,7,8,9" 0 0.4987
 
+############################
+# MatrixMultiplicationHybridBenchmark
+############################
+
+# 8 CPU tasks and 1 GPU task
+# set printTitle <- FALSE
+./CaliperResults.R \
+  results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.CPU.vs.GPU.json \
+  9 "Matrix Size" "(sec)" false true n 0 "Matrix Size" "8 CPU tasks,1 GPU task" "0,0" false 5 20 256 256
+
 #######################
 # KMeansHybridBenchmark
 #######################
