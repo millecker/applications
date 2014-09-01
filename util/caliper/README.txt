@@ -40,7 +40,7 @@
 
 ./CaliperResults.R \
   results/hadoop/matrixmultiplication/at.illecker.hadoop.rootbeer.examples.matrixmultiplication.MatrixMultiplicationBenchmark.2014*.json \
-  3 "(n=matrixSize)" "(sec)" false true n 0 "Matrix Size" "1 CPU map task,1 GPU map task" "0,0" false 10 100 256 256
+  3 "(n=matrixSize)" "(sec)" false true n 0 "Matrix Size" "1 CPU map task,1 GPU map task" "0,0" false 10 200 256 256
 
 ######################
 # PiEstimatorBenchmark
