@@ -41,7 +41,7 @@ hama jar MatrixMultiplication.jar 8 0 1024 1024 1024 1024 0 0 false
 ###############################################################################
 
 # Run Benchmark
-ant run-bench -DbenchTimeLimit='--time-limit 5000s' \
+ant run-bench -DbenchTimeLimit='--time-limit 12000s' \
   -DbenchInstrument='--instrument macro' \
   -DbenchMacroMeasurements='-Cinstrument.macro.options.measurements=5' \
   -DbenchMacroWarmup='-Cinstrument.macro.options.warmup=30s'

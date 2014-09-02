@@ -38,22 +38,22 @@ import com.google.caliper.runner.CaliperMain;
 
 public class MatrixMultiplicationHybridBenchmark extends Benchmark {
 
-  @Param({ "256", "512", "768", "1024", "1280", "1536" })
-  private int n;
+  // @Param({ "256", "512", "768", "1024", "1280", "1536", "1792", "2048" })
+  private int n = 2048;
 
-  @Param
-  CalcType type;
+  // @Param
+  // CalcType type;
 
   public enum CalcType {
     CPU, GPU
   };
 
-  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8" })
-  private int bspTaskNum = 8;
-  private final int maxTaskNum = 8;
+  @Param({ "1", "2", "3", "4", "5" })
+  private int bspTaskNum; // = 5;
+  private final int maxTaskNum = 5;
 
   // GPU percentage of the input data
-  // @Param({ "20", "30", "40", "50", "60", "70", "75", "80", "90" })
+  // @Param({ "20", "30", "40", "50", "60", "70", "80", "90", "95" })
   private int GPUWorkload = 0;
 
   private static final int TILE_WIDTH = 32; // max blockSize is 1024 (32 x 32)
@@ -124,22 +124,20 @@ public class MatrixMultiplicationHybridBenchmark extends Benchmark {
     }
 
     // CPU vs GPU benchmark
-    // Plot 1 and 2
     int numGpuBspTask = 0;
-    if (type == CalcType.GPU) {
-      bspTaskNum = 1;
-      numGpuBspTask = 1;
-      GPUWorkload = 100;
-    }
+    // if (type == CalcType.GPU) {
+    // bspTaskNum = 1;
+    // numGpuBspTask = 1;
+    // GPUWorkload = 100;
+    // }
 
     // CPU + GPU Hybrid benchmark
-    // Plot 3
-    // if (bspTaskNum == maxTaskNum) {
-    // numGpuBspTask = 1;
-    // GPUWorkload = 75;
-    // } else {
-    // numGpuBspTask = 0;
-    // }
+    if (bspTaskNum == maxTaskNum) {
+      numGpuBspTask = 1;
+      GPUWorkload = 95;
+    } else {
+      numGpuBspTask = 0;
+    }
 
     // Set CPU tasks
     m_conf.setInt("bsp.peers.num", bspTaskNum);
