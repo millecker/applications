@@ -112,6 +112,7 @@
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.CPU.vs.GPU.json \
   9 "Matrix Size" "(sec)" false true n 0 "Matrix Size" "4 CPU tasks,1 GPU task" "0,0" false 5 50 256 256
 
+
 # GPUPercentage
 # Add to line 481
 #    geom_text(aes(y=barTextPosition,label=barText),family=fontType,size=7,angle=90,hjust=0) +
@@ -119,12 +120,24 @@
 #    annotate(geom="text",x=7,y=6,label="80% on 1 GPU task\n20% on 4 CPU tasks",family=fontType,size=7,angle=90,hjust=0) +
 #    annotate(geom="text",x=8,y=6,label="90% GPU\n10% CPU",family=fontType,size=7,angle=90,hjust=0) +
 #    annotate(geom="text",x=9,y=4,label="95% GPU\n5% CPU",family=fontType,size=5,angle=90,hjust=0) +
+
 ./CaliperResults.R \
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.GPUPercentage.json \
   9 "Percentage of GPU workload" "(sec)" true false "" 0 "" "" "" false 0 50 0 0 \
   "20% on 1 GPU task and 80% on 4 CPU tasks,30% on 1 GPU task and 70% on 4 CPU tasks,40% on 1 GPU task and 60% on 4 CPU tasks,\
 50% on 1 GPU task and 50% on 4 CPU tasks,60% on 1 GPU task and 40% on 4 CPU tasks, , , , " \
   6 7 "gray,gray,gray,gray,gray,gray,gray,gray,#F39200" "20%,30%,40%,50%,60%,70%,80%,90%,95%" 0
+
+
+# GPUPercentage 95 %
+# Change lines 820
+#    scale_y_continuous(breaks = round(seq(minY, maxY, by = 5), 1)) +
+
+./CaliperResults.R \
+  results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.GPUPercentage95.json \
+  9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 100 0 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU|1 Task on GPU" 45 10 \
+  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.331
 
 #######################
 # KMeansHybridBenchmark
