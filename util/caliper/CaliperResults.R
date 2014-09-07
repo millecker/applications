@@ -1,11 +1,11 @@
 #!/usr/bin/Rscript
-library(rjson)
-library(reshape2)
-suppressPackageStartupMessages(library(sqldf))
-library(ggplot2)
-library(scales) # percentage for efficiency plot
-library(extrafont) # extra font "LM Roman"
-library(stringr) # str_locate
+library(rjson) # install.packages("rjson")
+library(reshape2) # install.packages("reshape2")
+suppressPackageStartupMessages(library(sqldf)) # install.packages("sqldf")
+library(ggplot2) # install.packages("ggplot2")
+library(scales) # percentage for efficiency plot # install.packages("scales")
+library(extrafont) # extra font "LM Roman" # install.packages("extrafont") and font_import()
+library(stringr) # str_locate # install.packages("stringr")
 
 ###############################################################################
 # Defaults
