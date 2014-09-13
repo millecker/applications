@@ -38,6 +38,9 @@ defaultEfficiencyGeomLineColor <- "#F39200"
 #F39200 orange
 #F9B233 orange_light
 
+CPUShape <- 15 # square
+GPUShape <- 16 # circle
+
 ###############################################################################
 # List append function
 ###############################################################################
@@ -46,6 +49,16 @@ lappend <- function (lst, ...) {
   return(lst)
 }
 
+
+shapeCPUGPU <- function(type) {
+  if (type == 'CPU') {
+    return(CPUShape)
+  } else if (type == 'GPU') {
+    return(GPUShape)
+  } else {
+    return(1) # default empty circle
+  }
+}
 ###############################################################################
 # check command line arguments
 ###############################################################################
@@ -628,6 +641,10 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     benchmarkTableAvgScenarioGroup <- fn$sqldf('SELECT scenario,$customVariable,(avg(magnitude/weight) / power(10,$magnitudeNormalizer)) as magnitude,type FROM benchmarkTable GROUP BY scenario')
   }
   
+  # add shape column based on type CPU or GPU
+  benchmarkTableAvgScenarioGroup$shape <- sapply(benchmarkTableAvgScenarioGroup$type, shapeCPUGPU)
+  benchmarkTableAvgScenarioGroup$shape <- sapply(benchmarkTableAvgScenarioGroup$type, as.factor)
+  
   cat("BenchmarkTable Average Execution Time grouped by Scenarios\n")
   print(benchmarkTableAvgScenarioGroup)
   # str(benchmarkTableAvgScenarioGroup) # type infos
@@ -659,7 +676,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   #benchmarkTableAvgScenarioGroup
   # str(benchmarkTableAvgScenarioGroup)
   #benchmarkTableAvgScenarioGroup <- within(benchmarkTableAvgScenarioGroup, iterations <- n * constant)
-  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type")) + 
+  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type",shape="shape")) + 
     geom_point(size=5) + 
     geom_line() +
 #    scale_x_continuous(breaks = append(round(seq(minX, maxX, by = 20), 1), 10, 0)) +
@@ -670,7 +687,10 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     scale_color_manual(name="",
                        values=c(CPUColor,GPUColor),
                        breaks=benchmarkTableAvgScenarioGroup$type,
-                       labels=legendText) + 
+                       labels=legendText) +
+    scale_shape_manual(name="",
+                       values=c(CPUShape,GPUShape),
+                       labels=legendText) +
     ggtitle(title) +
     theme(text=element_text(family=fontType),
           legend.position = "bottom",
@@ -736,7 +756,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
 
   # convert variable to numeric
   benchmarkTableAvgScenarioGroup[, customVariable] <- sapply(benchmarkTableAvgScenarioGroup[, customVariable], as.numeric.factor)
-  
+
   # min and max for X axis ticks
   if (!is.na(YticksStart)) {
     minX <- XticksStart
@@ -747,7 +767,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   # cat(paste("Minimum of ", customVariable, ": ", minX, sep=""))
   # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
 
-  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type")) + 
+  ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type",shape="shape")) + 
     geom_point(size=4) +
     stat_function(fun=fCPU, colour=CPUColor, linetype="dashed") +
     stat_function(fun=fGPU, colour=GPUColor, linetype="dashed") +
@@ -760,7 +780,10 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
     scale_color_manual(name="",
                        values=c(CPUColor,GPUColor),
                        breaks=benchmarkTableAvgScenarioGroup$type,
-                       labels=legendText) + 
+                       labels=legendText) +
+    scale_shape_manual(name="",
+                       values=c(CPUShape,GPUShape),
+                       labels=legendText) +
     ggtitle(title) +
     theme(text=element_text(family=fontType),
           legend.position = "bottom",
