@@ -31,38 +31,35 @@ import org.apache.hama.HamaConfiguration;
 import org.apache.hama.bsp.BSPJob;
 
 import com.google.caliper.Benchmark;
+import com.google.caliper.Param;
 import com.google.caliper.api.Macrobenchmark;
 import com.google.caliper.model.ArbitraryMeasurement;
 import com.google.caliper.runner.CaliperMain;
 
 public class PiEstimatorHybridBenchmark extends Benchmark {
 
-  // Plot 1 - 8 CPU tasks versus GPU comparison
-  // Step 1
-  // @Param({ "10000", "20000", "40000", "60000", "80000", "100000", "120000",
-  // "140000", "160000", "180000", "200000", "220000", "240000", "260000",
-  // "280000", "300000" })
-  // Step 2
-  // @Param({ "300000", "320000", "340000", "360000", "380000", "400000",
-  // "420000", "440000", "460000", "480000", "500000" })
-  private long n = 500000;
+  // Plot 1 - CPU vs GPU comparison
+  @Param({ "250", "500", "750", "1000", "1250", "1500", "1750", "2000", "2250",
+      "2500", "2750", "3000" })
+  private long n; // = 3000;
 
-  // maximal 8 CPU tasks and 1 GPU task
-  private final int maxBspTaskNum = 9;
-  // @Param({ "1", "2", "3", "4", "5", "6", "7", "8", "9" })
-  private int bspTaskNum = 9; // = 1; Plot 1
+  // maximal 4 CPU tasks and 1 GPU task
+  private final int maxBspTaskNum = 5;
+  // @Param({ "1", "2", "3", "4", "5" })
+  private int bspTaskNum = 1; // = 1; Plot 1
 
   // GPU percentage of the input data
   // @Param({ "12", "50", "60", "70", "80" })
   // @Param({ "82", "85", "90", "95", "99" })
   private int GPUWorkload = 0; // = 0;
 
-  // Used for Plot 1 and 2 CPU vs GPU comparison
-  // @Param
-  // CalcType type;
-  // public enum CalcType {
-  // CPU, GPU
-  // };
+  // Used only for Plot 1 - CPU vs GPU comparison
+  @Param
+  CalcType type;
+
+  public enum CalcType {
+    CPU, GPU
+  };
 
   private static final String OUTPUT_DIR = "output/hama/hybrid/examples/piestimator/bench";
   private Path m_OUTPUT_DIR_PATH;
@@ -117,25 +114,25 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     m_OUTPUT_DIR_PATH = new Path(OUTPUT_DIR + "/bench_"
         + System.currentTimeMillis());
 
-    m_totalIterations = (long) m_blockSize * (long) m_gridSize * n;
+    m_totalIterations = (long) m_blockSize * (long) m_gridSize * (long) 1000
+        * n;
 
     int numGpuBspTask = 0;
 
-    // Plot 1 and 2 - CPU tasks versus GPU comparison
-    // if (type == CalcType.GPU) {
-    // bspTaskNum = 1;
-    // numGpuBspTask = 1;
-    // GPUWorkload = 100;
-    // }
-
-    // CPU + GPU Hybrid benchmark
-    // Plot 2
-    if (bspTaskNum == maxBspTaskNum) {
+    // Used only for Plot 1 - CPU vs GPU comparison
+    if (type == CalcType.GPU) {
+      bspTaskNum = 1;
       numGpuBspTask = 1;
-      GPUWorkload = 80;
-    } else {
-      numGpuBspTask = 0;
+      GPUWorkload = 100;
     }
+
+    // Used only for Plot 2 - CPU + GPU Hybrid benchmark
+    // if (bspTaskNum == maxBspTaskNum) {
+    // numGpuBspTask = 1;
+    // GPUWorkload = 80;
+    // } else {
+    // numGpuBspTask = 0;
+    // }
 
     // Set CPU tasks
     m_conf.setInt("bsp.peers.num", bspTaskNum);
