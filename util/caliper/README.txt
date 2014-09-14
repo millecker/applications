@@ -112,7 +112,6 @@
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.CPU.vs.GPU.json \
   9 "Matrix Size" "(sec)" false true n 0 "Matrix Size" "4 CPU tasks,1 GPU task" "0,0" false 5 50 256 256
 
-
 # GPUPercentage
 # Add to line 481
 #    geom_text(aes(y=barTextPosition,label=barText),family=fontType,size=7,angle=90,hjust=0) +
@@ -147,6 +146,7 @@
   9 "(n=2000000)" "(sec)" false true k 0 "Number of Centroids 'bolditalic(k)'" \
   "2 CPU tasks,1 GPU task" "90,0" false 30 20 50 50
 
+# printTitle <- FALSE
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.CPU.vs.GPU.n.json \
   9 "(k=500)" "(sec)" false true n 0 "Number of Input Vectors 'bolditalic(n)'" \
@@ -160,11 +160,12 @@
 75% on 1 GPU and 25% on 4 CPU tasks,80% on 1 GPU and 20% on 4 CPU tasks,90% on 1 GPU and 10% on 4 CPU tasks" 1.5 8 \
 "gray,gray,gray,gray,gray,gray,#F39200,gray,gray" "20%,30%,40%,50%,60%,70%,75%,80%,90%" 0
 
+# printTitle <- FALSE
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*.GPUPercentage75.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
   "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 CPUs|1 GPU" 5 10 \
-  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.331
+  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 1.377
 
 ./CaliperResults.R \
   results/hama/hybrid/kmeans/at.illecker.hama.hybrid.examples.kmeans.KMeansHybridBenchmark.*Z.json \
