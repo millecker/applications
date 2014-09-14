@@ -279,8 +279,9 @@ public class PiEstimatorHybridBSP extends
       startTime = System.currentTimeMillis();
     }
 
+    ResultList resultList = new ResultList();
     PiEstimatorKernel kernel = new PiEstimatorKernel(m_iterationsPerGPUThread,
-        System.currentTimeMillis());
+        System.currentTimeMillis(), m_blockSize, resultList);
 
     // Run GPU Kernels
     Context context = rootbeer.createDefaultContext();
@@ -292,8 +293,7 @@ public class PiEstimatorHybridBSP extends
 
     // Get GPU results
     long totalHits = 0;
-    Result[] resultList = kernel.resultList.getList();
-    for (Result result : resultList) {
+    for (Result result : resultList.getList()) {
       if (result == null) { // break at end of list
         break;
       }

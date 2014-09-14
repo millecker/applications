@@ -1,8 +1,8 @@
 <project>
 	<property name="root" value="../../.." />
 	<property name="rootbeer.version" value="rootbeer-develop-branch.jar" />
-	<property name="rootbeer.args" value="-64bit -noexceptions -computecapability sm_35 -shared-mem-size 8204" />
-	<!-- -shared-mem-size 1024*8 + 12 = 8192 + 12 = 8204 -->
+	<property name="rootbeer.args" value="-64bit -noexceptions -computecapability sm_35 -shared-mem-size 8216" />
+	<!-- -shared-mem-size 1024*8 + 24 = 8192 + 24 = 8216 -->
 	<!-- -maxrregcount 32 -->
 	<property name="output.file" value="PiEstimator" />
 	<property name="libjars.gpu" value="" />

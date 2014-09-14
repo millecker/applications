@@ -28,28 +28,32 @@ import org.trifort.rootbeer.runtime.util.Stopwatch;
 
 public class PiEstimatorKernel implements Kernel {
 
-  private long iterations; // input
-  private long seed; // input
-  public ResultList resultList; // output
+  private long m_iterations;
+  private long m_seed;
+  private ResultList m_resultList;
+  private int m_reductionStart;
 
-  public PiEstimatorKernel(long iterations, long seed) {
-    this.iterations = iterations;
-    this.seed = seed;
-    this.resultList = new ResultList();
+  public PiEstimatorKernel(long iterations, long seed, int blockSize,
+      ResultList resultList) {
+    this.m_iterations = iterations;
+    this.m_seed = seed;
+    this.m_resultList = resultList;
+    this.m_reductionStart = roundUpToNextPowerOfTwo(divup(blockSize, 2));
   }
 
   public void gpuMethod() {
     int thread_idxx = RootbeerGpu.getThreadIdxx();
-    int globalThreadId = RootbeerGpu.getThreadIdxx()
-        + RootbeerGpu.getBlockIdxx() * RootbeerGpu.getBlockDimx();
-    int reductionStart = roundUpToNextPowerOfTwo(divup(
-        RootbeerGpu.getBlockDimx(), 2));
+    int threadId = RootbeerGpu.getThreadId();
+
+    long iterations = m_iterations;
+    long seed = m_seed;
+    int reductionStart = m_reductionStart;
 
     LinearCongruentialRandomGenerator lcg = new LinearCongruentialRandomGenerator(
-        seed / globalThreadId);
+        seed / threadId);
 
     long hits = 0;
-    for (int i = 0; i < iterations; i++) {
+    for (long i = 0; i < iterations; i++) {
       double x = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
       double y = 2.0 * lcg.nextDouble() - 1.0; // value between -1 and 1
       if ((x * x + y * y) <= 1.0) {
@@ -78,10 +82,8 @@ public class PiEstimatorKernel implements Kernel {
     if (thread_idxx == 0) {
       Result result = new Result();
       result.hits = RootbeerGpu.getSharedLong(thread_idxx * 8);
-      resultList.add(result);
+      m_resultList.add(result);
     }
-
-    RootbeerGpu.syncblocks(1);
   }
 
   private int divup(int x, int y) {
@@ -104,15 +106,10 @@ public class PiEstimatorKernel implements Kernel {
   }
 
   public static void main(String[] args) {
-    // nvcc ~/.rootbeer/generated.cu --ptxas-options=-v -arch sm_35
-    // ptxas info : Used 39 registers, 40984 bytes smem, 380 bytes cmem[0], 88
-    // bytes cmem[2]
-
-    // using -maxrregcount 32
-    // using -shared-mem-size 1024*8 + 12 = 8192 + 12 = 8204
-
     // BlockSize = 1024
     // GridSize = 14
+    // using -maxrregcount 32
+    // using -shared-mem-size 1024*8 + 24 (Rootbeer) = 8192 + 24 = 8216
 
     long calculationsPerThread = 100000;
     int blockSize = 1024; // threads
@@ -124,8 +121,9 @@ public class PiEstimatorKernel implements Kernel {
       gridSize = Integer.parseInt(args[2]);
     }
 
+    ResultList resultList = new ResultList();
     PiEstimatorKernel kernel = new PiEstimatorKernel(calculationsPerThread,
-        System.currentTimeMillis());
+        System.currentTimeMillis(), blockSize, resultList);
     Rootbeer rootbeer = new Rootbeer();
 
     // Run GPU Kernels
@@ -155,8 +153,7 @@ public class PiEstimatorKernel implements Kernel {
     // Get GPU results
     long totalHits = 0;
     long resultCounter = 0;
-    Result[] resultList = kernel.resultList.getList();
-    for (Result result : resultList) {
+    for (Result result : resultList.getList()) {
       if (result == null) { // break at end of list
         break;
       }
