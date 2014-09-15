@@ -1,0 +1,120 @@
+Registering fonts with R
+BenchmarkTable Execution Times
+Loading required package: tcltk
+   scenario    magnitude unit weight weighted_magnitude AllParameters
+1         1 1.352413e+12   ns      1       1.352413e+12  bspTaskNum=1
+2         1 1.351973e+12   ns      1       1.351973e+12  bspTaskNum=1
+3         1 1.352649e+12   ns      1       1.352649e+12  bspTaskNum=1
+4         1 1.352172e+12   ns      1       1.352172e+12  bspTaskNum=1
+5         1 1.364090e+12   ns      1       1.364090e+12  bspTaskNum=1
+6         2 6.844418e+11   ns      1       6.844418e+11  bspTaskNum=2
+7         2 6.858182e+11   ns      1       6.858182e+11  bspTaskNum=2
+8         2 6.842493e+11   ns      1       6.842493e+11  bspTaskNum=2
+9         2 6.841890e+11   ns      1       6.841890e+11  bspTaskNum=2
+10        2 6.838839e+11   ns      1       6.838839e+11  bspTaskNum=2
+11        3 4.705464e+11   ns      1       4.705464e+11  bspTaskNum=3
+12        3 4.699575e+11   ns      1       4.699575e+11  bspTaskNum=3
+13        3 4.698244e+11   ns      1       4.698244e+11  bspTaskNum=3
+14        3 4.702638e+11   ns      1       4.702638e+11  bspTaskNum=3
+15        3 4.702808e+11   ns      1       4.702808e+11  bspTaskNum=3
+16        4 3.618624e+11   ns      1       3.618624e+11  bspTaskNum=4
+17        4 3.599359e+11   ns      1       3.599359e+11  bspTaskNum=4
+18        4 3.602939e+11   ns      1       3.602939e+11  bspTaskNum=4
+19        4 3.621778e+11   ns      1       3.621778e+11  bspTaskNum=4
+20        4 3.616554e+11   ns      1       3.616554e+11  bspTaskNum=4
+21        5 4.006694e+10   ns      1       4.006694e+10  bspTaskNum=5
+22        5 4.349640e+10   ns      1       4.349640e+10  bspTaskNum=5
+23        5 3.403854e+10   ns      1       3.403854e+10  bspTaskNum=5
+24        5 4.069969e+10   ns      1       4.069969e+10  bspTaskNum=5
+25        5 3.680926e+10   ns      1       3.680926e+10  bspTaskNum=5
+BenchmarkTable Average Execution Time avg(magnitude/weight)
+  scenario    magnitude unit AllParameters
+1        1 1.354659e+12   ns  bspTaskNum=1
+2        2 6.845164e+11   ns  bspTaskNum=2
+3        3 4.701746e+11   ns  bspTaskNum=3
+4        4 3.611851e+11   ns  bspTaskNum=4
+5        5 3.902217e+10   ns  bspTaskNum=5
+Warnmeldungen:
+1: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+2: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+3: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+4: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Barplot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_avg_barplot.pdf 
+Saving 14 x 14 in image
+Info: Saved GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_geom_line.pdf
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Boxplot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_boxplot.pdf 
+Saving 10.5 x 10.5 in image
+Info: Saved Speedup GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_speedup_geom_line.pdf (normalized magnitude 10^9)
+Saving 10.5 x 10.5 in image
+Info: Saved Efficiency GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_efficiency_geom_line.pdf (normalized magnitude 10^9)
+martin@martin-desktop:~/workspace/applications/util/caliper$ ./CaliperResults.R \
+>   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage95.json \
+>   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 100 0 0 \
+>   "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,  4 CPUs|  1 GPU" 30 9 \
+>   "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.8
+Registering fonts with R
+BenchmarkTable Execution Times
+Loading required package: tcltk
+   scenario    magnitude unit weight weighted_magnitude AllParameters
+1         1 1.352413e+12   ns      1       1.352413e+12  bspTaskNum=1
+2         1 1.351973e+12   ns      1       1.351973e+12  bspTaskNum=1
+3         1 1.352649e+12   ns      1       1.352649e+12  bspTaskNum=1
+4         1 1.352172e+12   ns      1       1.352172e+12  bspTaskNum=1
+5         1 1.364090e+12   ns      1       1.364090e+12  bspTaskNum=1
+6         2 6.844418e+11   ns      1       6.844418e+11  bspTaskNum=2
+7         2 6.858182e+11   ns      1       6.858182e+11  bspTaskNum=2
+8         2 6.842493e+11   ns      1       6.842493e+11  bspTaskNum=2
+9         2 6.841890e+11   ns      1       6.841890e+11  bspTaskNum=2
+10        2 6.838839e+11   ns      1       6.838839e+11  bspTaskNum=2
+11        3 4.705464e+11   ns      1       4.705464e+11  bspTaskNum=3
+12        3 4.699575e+11   ns      1       4.699575e+11  bspTaskNum=3
+13        3 4.698244e+11   ns      1       4.698244e+11  bspTaskNum=3
+14        3 4.702638e+11   ns      1       4.702638e+11  bspTaskNum=3
+15        3 4.702808e+11   ns      1       4.702808e+11  bspTaskNum=3
+16        4 3.618624e+11   ns      1       3.618624e+11  bspTaskNum=4
+17        4 3.599359e+11   ns      1       3.599359e+11  bspTaskNum=4
+18        4 3.602939e+11   ns      1       3.602939e+11  bspTaskNum=4
+19        4 3.621778e+11   ns      1       3.621778e+11  bspTaskNum=4
+20        4 3.616554e+11   ns      1       3.616554e+11  bspTaskNum=4
+21        5 4.006694e+10   ns      1       4.006694e+10  bspTaskNum=5
+22        5 4.349640e+10   ns      1       4.349640e+10  bspTaskNum=5
+23        5 3.403854e+10   ns      1       3.403854e+10  bspTaskNum=5
+24        5 4.069969e+10   ns      1       4.069969e+10  bspTaskNum=5
+25        5 3.680926e+10   ns      1       3.680926e+10  bspTaskNum=5
+BenchmarkTable Average Execution Time avg(magnitude/weight)
+  scenario    magnitude unit AllParameters
+1        1 1.354659e+12   ns  bspTaskNum=1
+2        2 6.845164e+11   ns  bspTaskNum=2
+3        3 4.701746e+11   ns  bspTaskNum=3
+4        4 3.611851e+11   ns  bspTaskNum=4
+5        5 3.902217e+10   ns  bspTaskNum=5
+Warnmeldungen:
+1: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+2: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+3: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+4: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Barplot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_avg_barplot.pdf 
+Saving 14 x 14 in image
+Info: Saved GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_geom_line.pdf
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Boxplot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_boxplot.pdf 
+Saving 10.5 x 10.5 in image
+Info: Saved Speedup GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_speedup_geom_line.pdf (normalized magnitude 10^9)
+Saving 10.5 x 10.5 in image
+Info: Saved Efficiency GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-15T12:34:43Z.GPUPercentage95.json_efficiency_geom_line.pdf (normalized magnitude 10^9)
+

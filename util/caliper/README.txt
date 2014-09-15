@@ -119,6 +119,16 @@
   "20% on 1 GPU and 80% on 4 CPU tasks,50% on 1 GPU and 50% on 4 CPU tasks,60% on 1 GPU and 40% on 4 CPU tasks, , , , , " \
   3 8 "gray,gray,gray,gray,gray,gray,gray,#F39200" "20%,50%,60%,70%,80%,85%,90%,95%" 0
 
+# GPUPercentage 95 %
+# printTitle <- FALSE
+# Change lines 843
+#    scale_y_continuous(breaks = round(seq(minY, maxY, by = 5), 1)) +
+./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage95.json \
+  9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 100 0 0 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,  4 CPUs|  1 GPU" 30 9 \
+  "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.793
+
 ############################
 # MatrixMultiplicationHybridBenchmark
 ############################
@@ -142,11 +152,9 @@
 50% on 1 GPU task and 50% on 4 CPU tasks,60% on 1 GPU task and 40% on 4 CPU tasks, , , , " \
   6 7 "gray,gray,gray,gray,gray,gray,gray,gray,#F39200" "20%,30%,40%,50%,60%,70%,80%,90%,95%" 0
 
-
 # GPUPercentage 95 %
-# Change lines 820
+# Change lines 843
 #    scale_y_continuous(breaks = round(seq(minY, maxY, by = 5), 1)) +
-
 ./CaliperResults.R \
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.GPUPercentage95.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 100 0 0 \
