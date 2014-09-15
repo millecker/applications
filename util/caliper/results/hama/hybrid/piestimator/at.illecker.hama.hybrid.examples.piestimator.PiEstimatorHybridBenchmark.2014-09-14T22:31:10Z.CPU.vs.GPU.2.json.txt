@@ -1,0 +1,197 @@
+Registering fonts with R
+BenchmarkTable Execution Times
+Loading required package: tcltk
+    scenario    magnitude unit weight weighted_magnitude    AllParameters
+1          1  38083543141   ns      1        38083543141  n=250\ntype=CPU
+2          1  40038758124   ns      1        40038758124  n=250\ntype=CPU
+3          1  37996328903   ns      1        37996328903  n=250\ntype=CPU
+4          1  37995444991   ns      1        37995444991  n=250\ntype=CPU
+5          1  38666287978   ns      1        38666287978  n=250\ntype=CPU
+6          2   6299784859   ns      1         6299784859  n=250\ntype=GPU
+7          2   7869648317   ns      1         7869648317  n=250\ntype=GPU
+8          2   5855411681   ns      1         5855411681  n=250\ntype=GPU
+9          2   8356511360   ns      1         8356511360  n=250\ntype=GPU
+10         2   7946064055   ns      1         7946064055  n=250\ntype=GPU
+11         3  64099875746   ns      1        64099875746  n=500\ntype=CPU
+12         3  66076819635   ns      1        66076819635  n=500\ntype=CPU
+13         3  66136078384   ns      1        66136078384  n=500\ntype=CPU
+14         3  65941438474   ns      1        65941438474  n=500\ntype=CPU
+15         3  63894036316   ns      1        63894036316  n=500\ntype=CPU
+16         4   9819189641   ns      1         9819189641  n=500\ntype=GPU
+17         4   9845640036   ns      1         9845640036  n=500\ntype=GPU
+18         4   9933720421   ns      1         9933720421  n=500\ntype=GPU
+19         4  10360969706   ns      1        10360969706  n=500\ntype=GPU
+20         4   9970493228   ns      1         9970493228  n=500\ntype=GPU
+21         5  94150026168   ns      1        94150026168  n=750\ntype=CPU
+22         5  94096322669   ns      1        94096322669  n=750\ntype=CPU
+23         5  94010849937   ns      1        94010849937  n=750\ntype=CPU
+24         5  94010760588   ns      1        94010760588  n=750\ntype=CPU
+25         5  95975199389   ns      1        95975199389  n=750\ntype=CPU
+26         6  11941478425   ns      1        11941478425  n=750\ntype=GPU
+27         6  12391474936   ns      1        12391474936  n=750\ntype=GPU
+28         6  11893958786   ns      1        11893958786  n=750\ntype=GPU
+29         6  11878586116   ns      1        11878586116  n=750\ntype=GPU
+30         6  11886798483   ns      1        11886798483  n=750\ntype=GPU
+31         7 124152245574   ns      1       124152245574 n=1000\ntype=CPU
+32         7 124186326081   ns      1       124186326081 n=1000\ntype=CPU
+33         7 124033796387   ns      1       124033796387 n=1000\ntype=CPU
+34         7 123996310875   ns      1       123996310875 n=1000\ntype=CPU
+35         7 123980765324   ns      1       123980765324 n=1000\ntype=CPU
+36         8  13965825984   ns      1        13965825984 n=1000\ntype=GPU
+37         8  13911427307   ns      1        13911427307 n=1000\ntype=GPU
+38         8  13886652857   ns      1        13886652857 n=1000\ntype=GPU
+39         8  14378115351   ns      1        14378115351 n=1000\ntype=GPU
+40         8  13846830121   ns      1        13846830121 n=1000\ntype=GPU
+41         9 154107280865   ns      1       154107280865 n=1250\ntype=CPU
+42         9 154275479710   ns      1       154275479710 n=1250\ntype=CPU
+43         9 154046875514   ns      1       154046875514 n=1250\ntype=CPU
+44         9 154042205201   ns      1       154042205201 n=1250\ntype=CPU
+45         9 154025535321   ns      1       154025535321 n=1250\ntype=CPU
+46        10  18019434180   ns      1        18019434180 n=1250\ntype=GPU
+47        10  17969179292   ns      1        17969179292 n=1250\ntype=GPU
+48        10  15914845567   ns      1        15914845567 n=1250\ntype=GPU
+49        10  15861514902   ns      1        15861514902 n=1250\ntype=GPU
+50        10  15957575032   ns      1        15957575032 n=1250\ntype=GPU
+51        11 183702108652   ns      1       183702108652 n=1500\ntype=CPU
+52        11 184361689998   ns      1       184361689998 n=1500\ntype=CPU
+53        11 183587089393   ns      1       183587089393 n=1500\ntype=CPU
+54        11 184085064345   ns      1       184085064345 n=1500\ntype=CPU
+55        11 184139554220   ns      1       184139554220 n=1500\ntype=CPU
+56        12  19995879632   ns      1        19995879632 n=1500\ntype=GPU
+57        12  19952690683   ns      1        19952690683 n=1500\ntype=GPU
+58        12  19991398480   ns      1        19991398480 n=1500\ntype=GPU
+59        12  19907020876   ns      1        19907020876 n=1500\ntype=GPU
+60        12  19907004576   ns      1        19907004576 n=1500\ntype=GPU
+61        13 212228395087   ns      1       212228395087 n=1750\ntype=CPU
+62        13 213791819707   ns      1       213791819707 n=1750\ntype=CPU
+63        13 214055116312   ns      1       214055116312 n=1750\ntype=CPU
+64        13 214170587370   ns      1       214170587370 n=1750\ntype=CPU
+65        13 214086336014   ns      1       214086336014 n=1750\ntype=CPU
+66        14  22054106833   ns      1        22054106833 n=1750\ntype=GPU
+67        14  21987196788   ns      1        21987196788 n=1750\ntype=GPU
+68        14  21914266594   ns      1        21914266594 n=1750\ntype=GPU
+69        14  21911721100   ns      1        21911721100 n=1750\ntype=GPU
+70        14  22416145284   ns      1        22416145284 n=1750\ntype=GPU
+71        15 244335155888   ns      1       244335155888 n=2000\ntype=CPU
+72        15 243763253456   ns      1       243763253456 n=2000\ntype=CPU
+73        15 242145727291   ns      1       242145727291 n=2000\ntype=CPU
+74        15 242047612628   ns      1       242047612628 n=2000\ntype=CPU
+75        15 242051764039   ns      1       242051764039 n=2000\ntype=CPU
+76        16  23970649009   ns      1        23970649009 n=2000\ntype=GPU
+77        16  23977529328   ns      1        23977529328 n=2000\ntype=GPU
+78        16  24437657736   ns      1        24437657736 n=2000\ntype=GPU
+79        16  23880014314   ns      1        23880014314 n=2000\ntype=GPU
+80        16  23916464731   ns      1        23916464731 n=2000\ntype=GPU
+81        17 271821137193   ns      1       271821137193 n=2250\ntype=CPU
+82        17 272353006915   ns      1       272353006915 n=2250\ntype=CPU
+83        17 271689620604   ns      1       271689620604 n=2250\ntype=CPU
+84        17 272119038581   ns      1       272119038581 n=2250\ntype=CPU
+85        17 272027322273   ns      1       272027322273 n=2250\ntype=CPU
+86        18  26063913826   ns      1        26063913826 n=2250\ntype=GPU
+87        18  25997813379   ns      1        25997813379 n=2250\ntype=GPU
+88        18  25882566679   ns      1        25882566679 n=2250\ntype=GPU
+89        18  25880186028   ns      1        25880186028 n=2250\ntype=GPU
+90        18  25946805774   ns      1        25946805774 n=2250\ntype=GPU
+91        19 302374552786   ns      1       302374552786 n=2500\ntype=CPU
+92        19 301839665918   ns      1       301839665918 n=2500\ntype=CPU
+93        19 302173017115   ns      1       302173017115 n=2500\ntype=CPU
+94        19 302101896806   ns      1       302101896806 n=2500\ntype=CPU
+95        19 301760359405   ns      1       301760359405 n=2500\ntype=CPU
+96        20  29993361970   ns      1        29993361970 n=2500\ntype=GPU
+97        20  27992229623   ns      1        27992229623 n=2500\ntype=GPU
+98        20  27879410646   ns      1        27879410646 n=2500\ntype=GPU
+99        20  28354838671   ns      1        28354838671 n=2500\ntype=GPU
+100       20  29949887064   ns      1        29949887064 n=2500\ntype=GPU
+101       21 332008166780   ns      1       332008166780 n=2750\ntype=CPU
+102       21 332336266721   ns      1       332336266721 n=2750\ntype=CPU
+103       21 332147702448   ns      1       332147702448 n=2750\ntype=CPU
+104       21 331728938479   ns      1       331728938479 n=2750\ntype=CPU
+105       21 332495419560   ns      1       332495419560 n=2750\ntype=CPU
+106       22  31592278228   ns      1        31592278228 n=2750\ntype=GPU
+107       22  32225332606   ns      1        32225332606 n=2750\ntype=GPU
+108       22  31996542612   ns      1        31996542612 n=2750\ntype=GPU
+109       22  33951842135   ns      1        33951842135 n=2750\ntype=GPU
+110       22  31939003895   ns      1        31939003895 n=2750\ntype=GPU
+111       23 362056667094   ns      1       362056667094 n=3000\ntype=CPU
+112       23 361909626662   ns      1       361909626662 n=3000\ntype=CPU
+113       23 362148843822   ns      1       362148843822 n=3000\ntype=CPU
+114       23 362107684517   ns      1       362107684517 n=3000\ntype=CPU
+115       23 361938124160   ns      1       361938124160 n=3000\ntype=CPU
+116       24  34044103453   ns      1        34044103453 n=3000\ntype=GPU
+117       24  33803815296   ns      1        33803815296 n=3000\ntype=GPU
+118       24  34001336564   ns      1        34001336564 n=3000\ntype=GPU
+119       24  34421669411   ns      1        34421669411 n=3000\ntype=GPU
+120       24  34095873992   ns      1        34095873992 n=3000\ntype=GPU
+BenchmarkTable Average Execution Time avg(magnitude/weight)
+   scenario    magnitude unit    AllParameters
+1         1  38556072627   ns  n=250\ntype=CPU
+2         2   7265484054   ns  n=250\ntype=GPU
+3         3  65229649711   ns  n=500\ntype=CPU
+4         4   9986002606   ns  n=500\ntype=GPU
+5         5  94448631750   ns  n=750\ntype=CPU
+6         6  11998459349   ns  n=750\ntype=GPU
+7         7 124069888848   ns n=1000\ntype=CPU
+8         8  13997770324   ns n=1000\ntype=GPU
+9         9 154099475322   ns n=1250\ntype=CPU
+10       10  16744509795   ns n=1250\ntype=GPU
+11       11 183975101322   ns n=1500\ntype=CPU
+12       12  19950798849   ns n=1500\ntype=GPU
+13       13 213666450898   ns n=1750\ntype=CPU
+14       14  22056687320   ns n=1750\ntype=GPU
+15       15 242868702660   ns n=2000\ntype=CPU
+16       16  24036463024   ns n=2000\ntype=GPU
+17       17 272002025113   ns n=2250\ntype=CPU
+18       18  25954257137   ns n=2250\ntype=GPU
+19       19 302049898406   ns n=2500\ntype=CPU
+20       20  28833945595   ns n=2500\ntype=GPU
+21       21 332143298798   ns n=2750\ntype=CPU
+22       22  32340999895   ns n=2750\ntype=GPU
+23       23 362032189251   ns n=3000\ntype=CPU
+24       24  34073359743   ns n=3000\ntype=GPU
+Warnmeldungen:
+1: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+2: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+3: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+4: In grid.Call(L_textBounds, as.graphicsAnnot(x$label), x$x, x$y,  :
+  unbekannte AFM Entität aufgetreten
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Barplot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-14T22:31:10Z.CPU.vs.GPU.2.json_avg_barplot.pdf 
+Saving 14 x 14 in image
+[1] TRUE
+Info: Saved Boxplot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-14T22:31:10Z.CPU.vs.GPU.2.json_boxplot.pdf 
+BenchmarkTable Average Execution Time grouped by Scenarios
+   scenario    n  magnitude type shape
+1         1  250  38.556073  CPU   CPU
+2         2  250   7.265484  GPU   GPU
+3         3  500  65.229650  CPU   CPU
+4         4  500   9.986003  GPU   GPU
+5         5  750  94.448632  CPU   CPU
+6         6  750  11.998459  GPU   GPU
+7         7 1000 124.069889  CPU   CPU
+8         8 1000  13.997770  GPU   GPU
+9         9 1250 154.099475  CPU   CPU
+10       10 1250  16.744510  GPU   GPU
+11       11 1500 183.975101  CPU   CPU
+12       12 1500  19.950799  GPU   GPU
+13       13 1750 213.666451  CPU   CPU
+14       14 1750  22.056687  GPU   GPU
+15       15 2000 242.868703  CPU   CPU
+16       16 2000  24.036463  GPU   GPU
+17       17 2250 272.002025  CPU   CPU
+18       18 2250  25.954257  GPU   GPU
+19       19 2500 302.049898  CPU   CPU
+20       20 2500  28.833946  GPU   GPU
+21       21 2750 332.143299  CPU   CPU
+22       22 2750  32.341000  GPU   GPU
+23       23 3000 362.032189  CPU   CPU
+24       24 3000  34.073360  GPU   GPU
+Saving 10.5 x 10.5 in image
+Info: Saved CPU+GPU GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-14T22:31:10Z.CPU.vs.GPU.2.json_n_cpu_gpu_geom_line.pdf (normalized magnitude 10^9)
+CPU function: y = 6.73158423740907 + 0.11817242942861 * x
+GPU function: y = 4.74654191101515 + 0.0097579607569035 * x
+Saving 10.5 x 10.5 in image
+Info: Saved CPU+GPU GeomLine Plot in results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.2014-09-14T22:31:10Z.CPU.vs.GPU.2.json_n_cpu_gpu_linear_regression.pdf (normalized magnitude 10^9)
