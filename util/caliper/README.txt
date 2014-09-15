@@ -30,10 +30,6 @@
    [XAxisBarTextAngle]
    [EfficiencyValue]
 
-###############################################################################
-# Rootbeer Examples
-###############################################################################
-
 ######################################
 # MatrixMultiplicationBenchmark Hadoop
 ######################################
@@ -49,10 +45,6 @@
 ./CaliperResults.R \
   results/hama/rootbeer/piestimator/at.illecker.hama.rootbeer.examples.piestimator.PiEstimatorBenchmark.*.json \
   9 "(n*1024*14)" "(sec)" false true n 3 "N" "" "90,90" false 2
-
-###############################################################################
-# Hybrid Examples
-###############################################################################
 
 ############################
 # PiEstimatorHybridBenchmark
@@ -102,6 +94,16 @@
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 10 0 0 \
   "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,5 Tasks on CPU,6 Tasks on CPU,7 Tasks on CPU,8 Tasks on CPU,8 CPUs|1 GPU" 4 7 \
   "gray,gray,gray,gray,gray,gray,gray,gray,#F39200" "1,2,3,4,5,6,7,8,9" 0 0.4987
+
+#############################
+# PiEstimatorHybridBenchmark2
+#############################
+
+# 4 CPU tasks and one GPU
+./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.CPU.vs.GPU.2.json \
+  9 "4 CPU tasks and 1 GPU task '(italic(n)%.%1024%.%14)'" "(sec)" false true \
+  n 0 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" "4 CPU tasks,1 GPU task" "90,0" false 10 20 250 250
 
 ############################
 # MatrixMultiplicationHybridBenchmark
