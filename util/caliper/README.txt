@@ -126,7 +126,7 @@
 ./CaliperResults.R \
   results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage95.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 100 0 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,  4 CPUs|  1 GPU" 30 9 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,  4 CPUs|  1 GPU" 30 10 \
   "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.793
 
 ############################
@@ -158,7 +158,7 @@
 ./CaliperResults.R \
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.GPUPercentage95.json \
   9 "Number of Tasks" "(sec)" true false "" 0 "" "" "" true 0 100 0 0 \
-  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,4 Tasks on CPU|1 Task on GPU" 45 10 \
+  "1 Task on CPU,2 Tasks on CPU,3 Tasks on CPU,4 Tasks on CPU,  4 Tasks on CPU|  1 Task on GPU" 30 10 \
   "gray,gray,gray,gray,#F39200" "1,2,3,4,5" 0 0.214
 
 #######################
