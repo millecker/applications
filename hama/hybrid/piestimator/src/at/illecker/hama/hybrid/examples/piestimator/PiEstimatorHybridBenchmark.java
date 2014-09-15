@@ -39,27 +39,26 @@ import com.google.caliper.runner.CaliperMain;
 public class PiEstimatorHybridBenchmark extends Benchmark {
 
   // Plot 1 - CPU vs GPU comparison
-  @Param({ "250", "500", "750", "1000", "1250", "1500", "1750", "2000", "2250",
-      "2500", "2750", "3000" })
-  private long n; // = 3000;
+  // @Param({ "250", "500", "750", "1000", "1250", "1500", "1750", "2000",
+  // "2250",
+  // "2500", "2750", "3000" })
+  private long n = 3000;
 
   // maximal 4 CPU tasks and 1 GPU task
   private final int maxBspTaskNum = 5;
-  // @Param({ "1", "2", "3", "4", "5" })
-  private int bspTaskNum = 4; // = 4; Plot 1
+  @Param({ "1", "2", "3", "4", "5" })
+  private int bspTaskNum; // = 5; // = 4; Plot 1
 
   // GPU percentage of the input data
-  // @Param({ "12", "50", "60", "70", "80" })
-  // @Param({ "82", "85", "90", "95", "99" })
-  private int GPUWorkload = 0; // = 0;
+  // @Param({ "20", "50", "60", "70", "80", "85", "90", "95" })
+  private int GPUWorkload = 0;
 
   // Used only for Plot 1 - CPU vs GPU comparison
-  @Param
-  CalcType type;
-
-  public enum CalcType {
-    CPU, GPU
-  };
+  // @Param
+  // CalcType type;
+  // public enum CalcType {
+  // CPU, GPU
+  // };
 
   private static final Path CONF_TMP_DIR = new Path(
       "output/hama/hybrid/examples/piestimator/bench-"
@@ -113,25 +112,24 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     }
 
     // calculate total sampling size
-    m_totalIterations = (long) m_blockSize * (long) m_gridSize * (long) 1000
-        * n;
+    m_totalIterations = (long) 1024 * (long) 14 * (long) 1000 * n;
 
     int numGpuBspTask = 0;
 
     // Used only for Plot 1 - CPU vs GPU comparison
-    if (type == CalcType.GPU) {
-      bspTaskNum = 1;
-      numGpuBspTask = 1;
-      GPUWorkload = 100;
-    }
+    // if (type == CalcType.GPU) {
+    // bspTaskNum = 1;
+    // numGpuBspTask = 1;
+    // GPUWorkload = 100;
+    // }
 
     // Used only for Plot 2 - CPU + GPU Hybrid benchmark
-    // if (bspTaskNum == maxBspTaskNum) {
-    // numGpuBspTask = 1;
-    // GPUWorkload = 80;
-    // } else {
-    // numGpuBspTask = 0;
-    // }
+    if (bspTaskNum == maxBspTaskNum) {
+      numGpuBspTask = 1;
+      GPUWorkload = 95;
+    } else {
+      numGpuBspTask = 0;
+    }
 
     // Set CPU tasks
     m_conf.setInt("bsp.peers.num", bspTaskNum);
