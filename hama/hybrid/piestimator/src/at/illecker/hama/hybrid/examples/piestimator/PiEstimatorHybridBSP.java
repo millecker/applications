@@ -64,9 +64,9 @@ public class PiEstimatorHybridBSP extends
   public static final String CONF_GRIDSIZE = "piestimator.hybrid.gridSize";
 
   // gridSize = amount of blocks and multiprocessors
-  public static final int GRID_SIZE = 14;
+  public static final int GRID_SIZE = 5600; // 14
   // blockSize = amount of threads
-  public static final int BLOCK_SIZE = 1024;
+  public static final int BLOCK_SIZE = 256; // 1024
 
   public static final long N = 500000;
 
@@ -397,8 +397,8 @@ public class PiEstimatorHybridBSP extends
         job.setNumBspGpuTask(Integer.parseInt(args[1]));
         job.set(CONF_ITERATIONS, args[2]);
         job.set(CONF_GPU_PERCENTAGE, args[3]);
-        job.setBoolean(CONF_DEBUG, Boolean.parseBoolean(args[5]));
-        job.setBoolean(CONF_TIME, Boolean.parseBoolean(args[4]));
+        job.setBoolean(CONF_DEBUG, Boolean.parseBoolean(args[4]));
+        job.setBoolean(CONF_TIME, Boolean.parseBoolean(args[5]));
       } else {
         System.out.println("Wrong argument size!");
         System.out.println("    Argument1=numBspTask");
