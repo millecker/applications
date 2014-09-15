@@ -105,6 +105,20 @@
   9 "4 CPU tasks and 1 GPU task '(italic(n)%.%1024%.%14)'" "(sec)" false true \
   n 0 "Number of Iterations '(italic(N)%.%1000%.%1024%.%14)'" "4 CPU tasks,1 GPU task" "90,0" false 10 20 250 250
 
+# GPUPercentage
+# Add to line 494
+#    geom_text(aes(y=barTextPosition,label=barText),family=fontType,size=7,angle=90,hjust=0) +
+#    annotate(geom="text",x=4,y=3,label="70% on 1 GPU task\n30% on 4 CPU tasks",family=fontType,size=7,angle=90,hjust=0) +
+#    annotate(geom="text",x=5,y=3,label="80% on 1 GPU task\n20% on 4 CPU tasks",family=fontType,size=7,angle=90,hjust=0) +
+#    annotate(geom="text",x=6,y=3,label="85% on 1 GPU\n15% on 4 CPUs",family=fontType,size=7,angle=90,hjust=0) +
+#    annotate(geom="text",x=7,y=3,label="90% GPU\n10% CPU",family=fontType,size=7,angle=90,hjust=0) +
+#    annotate(geom="text",x=8,y=3,label="95% GPU\n5% CPU",family=fontType,size=7,angle=90,hjust=0) +
+./CaliperResults.R \
+  results/hama/hybrid/piestimator/at.illecker.hama.hybrid.examples.piestimator.PiEstimatorHybridBenchmark.*.GPUPercentage.3.json \
+  9 "Percentage of GPU workload" "(sec)" true false "" 0 "" "" "" false 0 20 0 0\
+  "20% on 1 GPU and 80% on 4 CPU tasks,50% on 1 GPU and 50% on 4 CPU tasks,60% on 1 GPU and 40% on 4 CPU tasks, , , , , " \
+  3 8 "gray,gray,gray,gray,gray,gray,gray,#F39200" "20%,50%,60%,70%,80%,85%,90%,95%" 0
+
 ############################
 # MatrixMultiplicationHybridBenchmark
 ############################
@@ -115,13 +129,12 @@
   9 "Matrix Size" "(sec)" false true n 0 "Matrix Size" "4 CPU tasks,1 GPU task" "0,0" false 5 50 256 256
 
 # GPUPercentage
-# Add to line 481
+# Add to line 494
 #    geom_text(aes(y=barTextPosition,label=barText),family=fontType,size=7,angle=90,hjust=0) +
 #    annotate(geom="text",x=6,y=6,label="70% on 1 GPU task\n30% on 4 CPU tasks",family=fontType,size=7,angle=90,hjust=0) +
 #    annotate(geom="text",x=7,y=6,label="80% on 1 GPU task\n20% on 4 CPU tasks",family=fontType,size=7,angle=90,hjust=0) +
 #    annotate(geom="text",x=8,y=6,label="90% GPU\n10% CPU",family=fontType,size=7,angle=90,hjust=0) +
 #    annotate(geom="text",x=9,y=4,label="95% GPU\n5% CPU",family=fontType,size=5,angle=90,hjust=0) +
-
 ./CaliperResults.R \
   results/hama/hybrid/matrixmultiplication/at.illecker.hama.hybrid.examples.matrixmultiplication2.MatrixMultiplicationHybridBenchmark.*.GPUPercentage.json \
   9 "Percentage of GPU workload" "(sec)" true false "" 0 "" "" "" false 0 50 0 0 \
