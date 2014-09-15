@@ -46,7 +46,7 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
   // maximal 4 CPU tasks and 1 GPU task
   private final int maxBspTaskNum = 5;
   // @Param({ "1", "2", "3", "4", "5" })
-  private int bspTaskNum = 1; // = 1; Plot 1
+  private int bspTaskNum = 4; // = 4; Plot 1
 
   // GPU percentage of the input data
   // @Param({ "12", "50", "60", "70", "80" })
@@ -61,13 +61,15 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     CPU, GPU
   };
 
-  private static final String OUTPUT_DIR = "output/hama/hybrid/examples/piestimator/bench";
-  private Path m_OUTPUT_DIR_PATH;
-  private Configuration m_conf = null;
-  private boolean m_runLocally = false;
-
+  private static final Path CONF_TMP_DIR = new Path(
+      "output/hama/hybrid/examples/piestimator/bench-"
+          + System.currentTimeMillis());
+  private static final Path CONF_OUTPUT_DIR = new Path(CONF_TMP_DIR, "output");
   private static final int m_blockSize = PiEstimatorHybridBSP.BLOCK_SIZE;
   private static final int m_gridSize = PiEstimatorHybridBSP.GRID_SIZE;
+
+  private Configuration m_conf = null;
+  private boolean m_runLocally = false;
   private long m_totalIterations;
 
   @Override
@@ -110,10 +112,7 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
       // System.out.println("Loaded Hama configuration from " + HAMA);
     }
 
-    // Setup outputs
-    m_OUTPUT_DIR_PATH = new Path(OUTPUT_DIR + "/bench_"
-        + System.currentTimeMillis());
-
+    // calculate total sampling size
     m_totalIterations = (long) m_blockSize * (long) m_gridSize * (long) 1000
         * n;
 
@@ -147,21 +146,21 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     m_conf.setBoolean(PiEstimatorHybridBSP.CONF_TIME, false);
 
     // Debug output
-    System.out.println("OUTPUT_DIR_PATH: " + m_OUTPUT_DIR_PATH);
     System.out.println("Benchmark PiEstimatorHybridBSP[blockSize="
         + m_blockSize + ",gridSize=" + m_gridSize + "] n=" + n + ",bspTaskNum="
         + bspTaskNum + ",GpuBspTaskNum=" + numGpuBspTask + ",GPUWorkload="
         + GPUWorkload + ",totalSamples=" + m_totalIterations);
+    System.out.println("CONF_TMP_DIR: " + CONF_TMP_DIR.toString());
   }
 
   @Override
   protected void tearDown() throws Exception {
 
-    printOutput(m_conf, m_OUTPUT_DIR_PATH);
+    // printOutput(m_conf, CONF_OUTPUT_DIR);
 
     // Cleanup
     FileSystem fs = FileSystem.get(m_conf);
-    fs.delete(m_OUTPUT_DIR_PATH, true);
+    fs.delete(CONF_TMP_DIR, true);
   }
 
   static void printOutput(Configuration conf, Path path) throws IOException {
@@ -221,7 +220,7 @@ public class PiEstimatorHybridBenchmark extends Benchmark {
     @Override
     public int run(String[] arg0) throws Exception {
       BSPJob job = PiEstimatorHybridBSP.createPiEstimatorHybridConf(
-          new HamaConfiguration(m_conf), m_OUTPUT_DIR_PATH);
+          new HamaConfiguration(m_conf), CONF_OUTPUT_DIR);
 
       long startTime = System.currentTimeMillis();
       if (job.waitForCompletion(true)) {
