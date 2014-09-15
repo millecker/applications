@@ -768,7 +768,7 @@ if (!is.na(args[6]) && args[6]=='true' && !is.na(args[7])) {
   # cat(paste(" - Maximum of ", customVariable, ": ", maxX, "\n", sep=""))
 
   ggplot(benchmarkTableAvgScenarioGroup, aes_string(x=customVariable,y="magnitude",group="type",colour="type",shape="shape")) + 
-    geom_point(size=4) +
+    geom_point(size=5) +
     stat_function(fun=fCPU, colour=CPUColor, linetype="dashed") +
     stat_function(fun=fGPU, colour=GPUColor, linetype="dashed") +
     scale_x_continuous(breaks = round(seq(minX, maxX, by = XticksIncrement), 1)) +
